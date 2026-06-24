@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red Iguazú — Campaña</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // === Conexión a tu base de datos Supabase ===
+  const SUPABASE_URL = 'https://qgogamniszilcefqvtcq.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_RtlHSBqEDAi-aCfF6ZzKAg_RHg968Cr';
+  let sb = null;
+  function initSupabase(){
+    try{
+      if(window.supabase && SUPABASE_URL){ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }
+    }catch(e){ console.error('Supabase init:', e); }
+  }
+</script>
+<style>
+  :root{
+    --selva:#0f3d2e;--selva-2:#16573f;--tierra:#b5491f;--tierra-claro:#e2733f;
+    --arena:#f5f1e8;--arena-2:#ece5d6;--tinta:#1c2a23;--gris:#6b756f;--linea:#d8d0bf;
+    --verde-ok:#2e8b57;--amarillo:#e0a92e;--rojo:#c0432f;--blanco:#fffdf8;
+    --azul:#2c5f7c;
+    --sombra:0 1px 3px rgba(15,61,46,.08), 0 8px 24px rgba(15,61,46,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--arena);color:var(--tinta);-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-weight:700;letter-spacing:-.02em}
+  button{font-family:inherit;cursor:pointer;border:none}
+  input,select,textarea{font-family:inherit}
+
+  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--selva),var(--selva-2));padding:24px}
+  .login-card{background:var(--blanco);border-radius:20px;padding:40px 34px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .brand-dot{width:38px;height:38px;border-radius:11px;background:radial-gradient(circle at 30% 30%,var(--tierra-claro),var(--tierra));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
+  .brand-name{font-size:21px;font-weight:800;color:var(--selva)}
+  .login-sub{color:var(--gris);font-size:13.5px;margin:14px 0 26px;line-height:1.5}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--selva);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
+  .field select,.field input{width:100%;padding:12px 14px;border:1.5px solid var(--linea);border-radius:11px;font-size:15px;background:var(--arena);color:var(--tinta);transition:border .15s}
+  .field select:focus,.field input:focus{outline:none;border-color:var(--tierra)}
+  .btn-primary{width:100%;padding:13px;background:var(--tierra);color:#fff;border-radius:11px;font-size:15.5px;font-weight:700;margin-top:8px;transition:background .15s}
+  .btn-primary:hover{background:#9c3e1a}
+  .login-hint{font-size:11.5px;color:var(--gris);text-align:center;margin-top:18px;line-height:1.5}
+
+  #app{display:none;min-height:100vh;flex-direction:column}
+  .topbar{background:var(--selva);color:#fff;padding:11px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+  .topbar .brand-name{color:#fff;font-size:17px}
+  .topbar .brand-dot{width:30px;height:30px;border-radius:9px;font-size:16px}
+  .whoami{display:flex;align-items:center;gap:10px;font-size:13px}
+  .whoami .role{background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  .logout{background:rgba(255,255,255,.12);color:#fff;padding:6px 12px;border-radius:8px;font-size:12.5px;font-weight:600}
+
+  .tabs{display:flex;background:var(--blanco);border-bottom:1px solid var(--linea);position:sticky;top:52px;z-index:40;overflow-x:auto}
+  .tab{padding:13px 16px;font-size:13.5px;font-weight:600;color:var(--gris);border-bottom:3px solid transparent;white-space:nowrap;background:none;transition:.15s}
+  .tab.active{color:var(--tierra);border-bottom-color:var(--tierra)}
+  .tab:hover{color:var(--tinta)}
+
+  .view{display:none;padding:20px 18px 60px;max-width:1080px;margin:0 auto;width:100%}
+  .view.active{display:block}
+  .view-head{margin-bottom:18px}
+  .view-head h2{font-size:22px;color:var(--selva)}
+  .view-head p{color:var(--gris);font-size:13.5px;margin-top:3px}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px;margin-bottom:24px}
+  .stat{background:var(--blanco);border-radius:15px;padding:18px;box-shadow:var(--sombra);border:1px solid var(--linea)}
+  .stat .num{font-size:30px;font-weight:800;color:var(--selva);line-height:1}
+  .stat .lab{font-size:12px;color:var(--gris);margin-top:7px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  .stat.accent .num{color:var(--tierra)}
+  .stat.dual{display:flex;gap:12px;align-items:flex-start;grid-column:span 2}  .stat.dual .col{flex:1;min-width:0}
+  .stat.dual .col .num{font-size:24px}
+  .stat.dual .col .lab{font-size:10.5px;white-space:nowrap}
+  .stat.dual .col.conf .num{color:var(--verde-ok)}
+  .stat.dual .divider{width:1px;align-self:stretch;background:var(--linea);flex-shrink:0}
+  @media(max-width:560px){.stat.dual{grid-column:span 1}}
+
+  .progress-card{background:var(--blanco);border-radius:15px;padding:20px;box-shadow:var(--sombra);border:1px solid var(--linea);margin-bottom:20px}
+  .progress-card h3{font-size:15px;color:var(--selva);margin-bottom:4px}
+  .progress-card .meta-lab{font-size:12.5px;color:var(--gris);margin-bottom:16px}
+  .bar-track{height:13px;background:var(--arena-2);border-radius:10px;overflow:hidden;position:relative}
+  .bar-fill{height:100%;border-radius:10px;transition:width .6s;position:absolute;left:0;top:0}
+  .bar-fill.pos{background:#ddd4c0;z-index:1}
+  .bar-fill.proy{background:linear-gradient(90deg,var(--tierra),var(--tierra-claro));z-index:2}
+  .bar-fill.conf{background:var(--verde-ok);z-index:3}
+  .bar-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--gris);margin-top:7px;font-weight:600}
+  .legend{display:flex;gap:16px;font-size:11.5px;color:var(--gris);margin-top:10px;font-weight:600}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:middle}
+
+  table{width:100%;border-collapse:collapse;background:var(--blanco);border-radius:14px;overflow:hidden;box-shadow:var(--sombra)}
+  th{background:var(--selva);color:#fff;text-align:left;padding:11px 13px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  td{padding:11px 13px;border-bottom:1px solid var(--linea);font-size:13.5px}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--arena)}
+  .ref-name{font-weight:600;color:var(--tinta)}
+  .mini-bar{display:inline-block;width:80px;height:8px;background:var(--arena-2);border-radius:6px;overflow:hidden;vertical-align:middle;margin-right:8px}
+  .mini-bar i{display:block;height:100%;background:var(--verde-ok);border-radius:6px}
+  .semaforo{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+  .s-rojo{background:var(--rojo)}.s-amar{background:var(--amarillo)}.s-verde{background:var(--verde-ok)}.s-gris{background:#c3c3c3}
+
+  .form-card{background:var(--blanco);border-radius:16px;padding:22px;box-shadow:var(--sombra);border:1px solid var(--linea);max-width:580px}
+  .type-switch{display:flex;gap:9px;margin-bottom:20px}
+  .type-btn{flex:1;padding:14px 12px;border:1.5px solid var(--linea);border-radius:13px;background:var(--arena);text-align:left;transition:.15s}
+  .type-btn .t{font-size:14.5px;font-weight:700;color:var(--tinta);display:flex;align-items:center;gap:7px}
+  .type-btn .d{font-size:11.5px;color:var(--gris);margin-top:3px;line-height:1.35}
+  .type-btn.active{border-color:var(--tierra);background:#fff;box-shadow:0 0 0 3px rgba(181,73,31,.1)}
+  .type-btn .ico{width:22px;height:22px;border-radius:7px;background:var(--arena-2);display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+  .type-btn.active .ico{background:var(--tierra);color:#fff}
+
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:14px}
+  .form-field{margin-bottom:14px}
+  .form-field.full{grid-column:1/-1}
+  .form-field label{display:block;font-size:12.5px;font-weight:600;color:var(--selva);margin-bottom:6px}
+  .form-field .opt{color:var(--gris);font-weight:400}
+  .form-field input,.form-field select,.form-field textarea{width:100%;padding:11px 13px;border:1.5px solid var(--linea);border-radius:10px;font-size:14.5px;background:var(--arena)}
+  .form-field textarea{min-height:64px;resize:vertical}
+  .form-field input:focus,.form-field select:focus,.form-field textarea:focus{outline:none;border-color:var(--tierra)}
+  .req{color:var(--tierra)}
+  .btn-add{background:var(--selva);color:#fff;padding:12px 22px;border-radius:11px;font-weight:700;font-size:14.5px;margin-top:6px;transition:.15s}
+  .filtro-btn{padding:7px 14px;border-radius:20px;font-size:12.5px;font-weight:600;background:var(--blanco);border:1.5px solid var(--linea);color:var(--gris);cursor:pointer;transition:.12s}
+  .filtro-btn.active{background:var(--selva);color:#fff;border-color:var(--selva)}
+  .person-row.dup{border-color:var(--amarillo);background:#fdfaf0}
+  .dup-flag{font-size:10.5px;background:var(--amarillo);color:#6b4e0a;padding:2px 8px;border-radius:6px;font-weight:700;margin-left:6px}
+  .btn-add:hover{background:var(--selva-2)}
+  .helper{font-size:11.5px;color:var(--gris);margin-top:5px;line-height:1.4}
+
+  .padron-box{background:#eef4f1;border:1.5px dashed var(--azul);border-radius:11px;padding:11px 14px;font-size:12.5px;color:var(--azul);margin-top:-4px;margin-bottom:14px;display:none}
+  .padron-box.show{display:block}
+  .padron-box b{font-weight:700}
+
+  .alert{border-radius:11px;padding:13px 15px;font-size:13.5px;margin-bottom:14px;display:none;line-height:1.45}
+  .alert.show{display:block}
+  .alert.dup-hard{background:#fbe9e6;border:1.5px solid var(--rojo);color:#8a2a1c}
+  .alert.dup-soft{background:#fdf4e3;border:1.5px solid var(--amarillo);color:#8a6a1c}
+  .alert.ok{background:#e7f4ec;border:1.5px solid var(--verde-ok);color:#1c5c38}
+  .alert b{font-weight:700}
+
+  .recent{margin-top:26px}
+  .recent h3{font-size:14px;color:var(--selva);margin-bottom:12px}
+  .chip-list{display:flex;flex-direction:column;gap:8px}
+  .person-row{background:var(--blanco);border:1px solid var(--linea);border-radius:11px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;font-size:13.5px}
+  .person-row .who b{font-weight:700}
+  .person-row .meta{font-size:11.5px;color:var(--gris);margin-top:2px}
+  .badge{font-size:10.5px;color:#fff;padding:2px 7px;border-radius:6px;margin-left:6px;font-weight:600;letter-spacing:.02em}
+  .badge-conf{background:var(--azul)}
+  .badge-vot{background:var(--gris)}
+  .tag{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
+  .tag.conf{background:#e7f4ec;color:var(--verde-ok)}
+  .tag.prom{background:#fdf4e3;color:#8a6a1c}
+  .tag.cont{background:#eceff1;color:#5a6b73}
+
+  /* piramide */
+  .tree{margin-top:4px}
+  .node{background:var(--blanco);border:1px solid var(--linea);border-radius:12px;margin-bottom:8px;box-shadow:var(--sombra)}
+  .node-head{padding:13px 15px;display:flex;align-items:center;gap:11px;cursor:pointer}
+  .node-head .caret{font-size:12px;color:var(--gris);transition:transform .2s;width:12px}
+  .node-head.open .caret{transform:rotate(90deg)}
+  .node-ava{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:14px;flex-shrink:0}
+  .lvl-ref .node-ava{background:var(--tierra)}
+  .lvl-conf .node-ava{background:var(--azul)}
+  .node-info{flex:1;min-width:0}
+  .node-info .nm{font-size:14.5px;font-weight:700;color:var(--tinta)}
+  .node-info .sb{font-size:11.5px;color:var(--gris);margin-top:1px}
+  .node-votos{text-align:right;flex-shrink:0}
+  .node-votos .big{font-size:18px;font-weight:800;color:var(--selva);line-height:1}
+  .node-votos .lb{font-size:10px;color:var(--gris);font-weight:600;text-transform:uppercase}
+  .node-children{padding:0 13px 10px 40px;display:none}
+  .node-children.open{display:block}
+  .leaf{padding:8px 12px;border-left:2px solid var(--arena-2);margin-left:4px;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+  .leaf .lnm{color:var(--tinta);font-weight:600}
+  .leaf .lmeta{font-size:11px;color:var(--gris)}
+
+  /* agenda */
+  .agenda-list{display:flex;flex-direction:column;gap:10px}
+  .ev{background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:14px 16px;box-shadow:var(--sombra);display:flex;gap:14px;align-items:flex-start}
+  .ev-date{flex-shrink:0;text-align:center;background:var(--arena);border-radius:10px;padding:8px 12px;min-width:58px}
+  .ev-date .d{font-size:20px;font-weight:800;color:var(--tierra);line-height:1}
+  .ev-date .m{font-size:10.5px;color:var(--gris);font-weight:700;text-transform:uppercase}
+  .ev-body{flex:1}
+  .ev-body .ti{font-size:14.5px;font-weight:700;color:var(--tinta)}
+  .ev-body .me{font-size:12px;color:var(--gris);margin-top:3px;line-height:1.4}
+  .ev-type{font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:700;color:#fff;letter-spacing:.02em}
+  .et-visita{background:var(--azul)}.et-reunion{background:var(--tierra)}.et-acto{background:var(--selva)}
+
+  .barrio-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .barrio-card{background:var(--blanco);border-radius:14px;padding:17px;box-shadow:var(--sombra);border:1px solid var(--linea);position:relative;overflow:hidden}
+  .barrio-card .bname{font-size:15px;font-weight:700;color:var(--selva);margin-bottom:3px}
+  .barrio-card .bcount{font-size:28px;font-weight:800;color:var(--tierra);line-height:1.1}
+  .barrio-card .blab{font-size:11.5px;color:var(--gris);font-weight:600}
+  .heat{position:absolute;right:-20px;bottom:-20px;width:90px;height:90px;border-radius:50%;opacity:.12;background:var(--tierra)}
+
+  .note{font-size:12px;color:var(--gris);margin-top:18px;line-height:1.55;background:var(--arena-2);padding:12px 14px;border-radius:10px;border-left:3px solid var(--tierra)}
+
+  @media(max-width:560px){
+    .form-row{grid-template-columns:1fr}
+    .view{padding:16px 13px 50px}
+    .hide-sm{display:none}
+    .type-switch{flex-direction:column}
+  }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="login-card">
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú</div></div>
+    <p class="login-sub">Plataforma de contactos de campaña. Entrá con tu usuario y clave.</p>
+    <div class="field">
+      <label>Usuario</label>
+      <input type="text" id="inUsuario" placeholder="tu usuario" autocomplete="username" autocapitalize="none">
+    </div>
+    <div class="field"><label>Clave</label><input type="password" id="pass" placeholder="••••••" autocomplete="current-password"></div>
+    <div id="loginError" style="display:none;background:#fbe9e6;border:1.5px solid var(--rojo);color:#8a2a1c;border-radius:10px;padding:10px 13px;font-size:13px;margin-bottom:12px"></div>
+    <button class="btn-primary" id="btnEntrar" onclick="login()">Entrar</button>
+    <p class="login-hint">Tus datos están protegidos. Si olvidaste la clave, pedile a coordinación que te la resetee.</p>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú</div></div>
+    <div class="whoami">
+      <span class="role" id="roleTag">Referente</span>
+      <span class="hide-sm" id="userName">—</span>
+      <button class="logout" onclick="logout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <!-- DASHBOARD -->
+  <div class="view" id="view-dash">
+    <div class="view-head"><h2 id="dashTitle">Tablero de avance</h2><p id="dashSub">Cómo viene la red de contactos.</p></div>
+    <div class="stat-grid" id="statGrid"></div>
+    <div class="progress-card">
+      <h3>Avance real de votos</h3>
+      <div class="meta-lab" id="metaLab">—</div>
+      <div class="bar-track">
+        <div class="bar-fill pos" id="metaBarPos" style="width:0%"></div>
+        <div class="bar-fill proy" id="metaBarProy" style="width:0%"></div>
+        <div class="bar-fill conf" id="metaBarConf" style="width:0%"></div>
+      </div>
+      <div class="bar-labels"><span id="metaNow">0</span><span id="metaGoal">meta</span></div>
+      <div class="legend">
+        <span><i style="background:var(--verde-ok)"></i>Firmes</span>
+        <span><i style="background:var(--tierra)"></i>Proyección</span>
+        <span><i style="background:var(--arena-2);border:1px solid var(--linea)"></i>Cargados</span>
+      </div>
+    </div>
+    <div id="refTableWrap">
+      <h3 style="font-size:15px;color:var(--selva);margin:24px 0 12px">Ranking de referentes</h3>
+      <table id="refTable"><thead><tr>
+        <th>Referente</th><th class="hide-sm">Zona</th><th>Avance</th><th>Proyec./Cargados</th><th>Calidad datos</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <!-- CARGAR -->
+  <div class="view" id="view-cargar">
+    <div class="view-head"><h2>Cargar</h2><p>Un votante suelto, o una persona de confianza que trae a su gente.</p></div>
+    <div class="form-card">
+
+      <div class="type-switch">
+        <button class="type-btn active" id="tb-persona" onclick="setTipo('persona')">
+          <span class="t"><span class="ico">👤</span>Votante</span>
+          <span class="d">Una persona individual que vota.</span>
+        </button>
+        <button class="type-btn" id="tb-conf" onclick="setTipo('conf')">
+          <span class="t"><span class="ico">⭐</span>Persona de confianza</span>
+          <span class="d">Alguien que te trae varios votos. Cuelga su gente.</span>
+        </button>
+      </div>
+
+      <div id="dupAlert" class="alert"></div>
+
+      <!-- comunes: nombre/apellido -->
+      <div class="form-row">
+        <div class="form-field"><label>Nombre <span class="req">*</span></label><input id="fNombre" placeholder="Juan" oninput="buscarPadronNombre()" autocomplete="off"></div>
+        <div class="form-field"><label>Apellido <span class="req">*</span></label><input id="fApellido" placeholder="Pérez" oninput="buscarPadronNombre()" autocomplete="off"></div>
+      </div>
+      <div id="padronSug" style="display:none;background:var(--blanco);border:1.5px solid var(--azul);border-radius:11px;margin-bottom:14px;max-height:240px;overflow:auto;box-shadow:var(--sombra)"></div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>DNI <span class="opt">(opcional — solo si lo tenés)</span></label>
+          <input id="fDni" placeholder="dejalo vacío si no lo tenés" oninput="onDni()">
+        </div>
+        <div class="form-field"><label>Teléfono <span class="opt">(opcional)</span></label><input id="fTel" placeholder="3757-..."></div>
+      </div>
+      <div class="padron-box" id="padronBox"></div>
+
+      <!-- solo persona de confianza -->
+      <div id="campos-conf" style="display:none">
+        <div class="form-field full">
+          <label>¿A cuánta gente trae? <span class="req">*</span></label>
+          <input id="fConfVotos" type="number" min="1" placeholder="4" oninput="clearAlert()">
+          <div class="helper">Cuántos votos te suma esta persona (su familia, vecinos, etc.). Después podés cargar los nombres uno por uno.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field"><label>Barrio / Zona <span class="opt">(escribí si no está en la lista)</span></label>
+          <input id="fBarrio" list="barriosList" placeholder="Centro" autocomplete="off">
+          <datalist id="barriosList"></datalist>
+        </div>
+        <div class="form-field"><label>Estado</label>
+          <select id="fEstado"><option value="cont">Contactado</option><option value="prom">Prometido</option><option value="conf">Confirmado</option></select>
+        </div>
+      </div>
+
+      <button class="btn-add" id="btnGuardar" onclick="tryAdd()">Guardar</button>
+    </div>
+
+    <div class="recent">
+      <h3>Lo último que cargaste</h3>
+      <div class="chip-list" id="recentList"></div>
+    </div>
+  </div>
+
+  <!-- PIRAMIDE -->
+  <div class="view" id="view-piramide">
+    <div class="view-head"><h2>Pirámide de la red</h2><p>Quién trae a quién. Tocá un nombre para ver su gente.</p></div>
+    <button onclick="cargarRegistrosDB();cargarReferentesDB();toast('Actualizado',true)" style="background:var(--arena-2);color:var(--tinta);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;margin-bottom:14px">🔄 Actualizar desde la base</button>
+    <div class="tree" id="tree"></div>
+  </div>
+
+  <!-- AGENDA -->
+  <div class="view" id="view-agenda">
+    <div class="view-head"><h2>Agenda</h2><p>Reservá un turno. Lunes a sábado, de 10 a 20hs. Si un turno ya está tomado, no aparece.</p></div>
+    <div class="form-card" style="margin-bottom:24px">
+      <div class="form-row">
+        <div class="form-field"><label>Tipo</label>
+          <select id="evTipo"><option value="visita">Visita</option><option value="reunion">Reunión</option><option value="acto">Acto / evento</option></select>
+        </div>
+        <div class="form-field"><label>Fecha <span class="req">*</span></label><input id="evFecha" type="date" onchange="renderTurnos()"></div>
+      </div>
+      <div class="form-field full"><label>Turno <span class="req">*</span></label>
+        <div id="turnoGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px">
+          <div class="empty" style="grid-column:1/-1;padding:10px">Elegí una fecha para ver los turnos libres.</div>
+        </div>
+        <input type="hidden" id="evTurno">
+      </div>
+      <div class="form-field full"><label>Título <span class="req">*</span></label><input id="evTitulo" placeholder="Visita a familia Cuenca"></div>
+      <div class="form-field full"><label>Barrio / Lugar</label><input id="evLugar" list="barriosList" placeholder="Centro" autocomplete="off"></div>
+      <div class="form-field full"><label>Nota <span class="opt">(opcional)</span></label><textarea id="evNota" placeholder="Llevar folletos, confirmar antes por WhatsApp..."></textarea></div>
+      <button class="btn-add" onclick="addEvento()">Reservar turno</button>
+    </div>
+    <div class="agenda-list" id="agendaList"></div>
+  </div>
+
+  <!-- LISTA / BUSCADOR -->
+  <div class="view" id="view-lista">
+    <div class="view-head"><h2 id="listaTitle">Lista completa</h2><p>Buscá por nombre, apellido, DNI o barrio. Los repetidos aparecen marcados.</p></div>
+    <div style="position:sticky;top:96px;z-index:30;background:var(--arena);padding-bottom:10px">
+      <input id="buscador" placeholder="🔍 Buscar nombre, apellido, DNI o barrio..." oninput="renderLista()" autocomplete="off"
+        style="width:100%;padding:13px 15px;border:1.5px solid var(--linea);border-radius:12px;font-size:15px;background:var(--blanco);box-shadow:var(--sombra)">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="filtro-btn active" data-f="todos" onclick="setFiltro('todos')">Todos</button>
+        <button class="filtro-btn" data-f="votante" onclick="setFiltro('votante')">Votantes</button>
+        <button class="filtro-btn" data-f="conf" onclick="setFiltro('conf')">De confianza</button>
+        <button class="filtro-btn" data-f="dups" onclick="setFiltro('dups')">⚠ Repetidos</button>
+      </div>
+    </div>
+    <div id="dupWarn" style="display:none;background:#fdf4e3;border:1.5px solid var(--amarillo);border-radius:11px;padding:12px 15px;font-size:13px;color:#8a6a1c;margin:12px 0"></div>
+    <div id="listaCount" style="font-size:12.5px;color:var(--gris);margin:14px 2px 10px;font-weight:600"></div>
+    <div class="chip-list" id="listaBody"></div>
+  </div>
+
+  <!-- DÍA D -->
+  <div class="view" id="view-diad">
+    <div class="view-head"><h2>Día D — Movilización</h2><p>Organizá los autos y controlá quién ya votó. En vivo el día de la elección.</p></div>
+
+    <div class="stat-grid" id="diadStats"></div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+      <button class="filtro-btn active" data-d="transporte" onclick="setDiadTab('transporte')">🚗 Transporte y autos</button>
+      <button class="filtro-btn" data-d="control" onclick="setDiadTab('control')">✅ Control de votación</button>
+    </div>
+
+    <!-- TRANSPORTE -->
+    <div id="diad-transporte">
+      <div class="form-card" style="max-width:none;margin-bottom:20px">
+        <h3 style="font-size:15px;color:var(--selva);margin-bottom:14px">➕ Agregar auto</h3>
+        <div class="form-row">
+          <div class="form-field"><label>Conductor</label><input id="auCond" placeholder="Nombre del conductor"></div>
+          <div class="form-field"><label>Zona que cubre</label><input id="auZona" list="barriosList" placeholder="Centro" autocomplete="off"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Capacidad (pasajeros)</label><input id="auCap" type="number" min="1" value="4"></div>
+          <div class="form-field"><label>Teléfono <span class="opt">(opcional)</span></label><input id="auTel" placeholder="3757-..."></div>
+        </div>
+        <button class="btn-add" onclick="agregarAuto()">Agregar auto</button>
+        <div class="helper" style="margin-top:8px">La zona ayuda a sugerir qué gente buscar (los del mismo barrio van juntos en un viaje).</div>
+      </div>
+      <div id="movByRef"></div>
+    </div>
+
+    <!-- CONTROL -->
+    <div id="diad-control" style="display:none">
+      <div class="note" style="border-left-color:var(--verde-ok);margin-top:0;margin-bottom:16px">Tildá a cada persona cuando confirmes que <b>ya votó</b>. El tablero de arriba se actualiza solo.</div>
+      <input id="buscadorDiaD" placeholder="🔍 Buscar persona..." oninput="renderControl()" autocomplete="off"
+        style="width:100%;padding:12px 15px;border:1.5px solid var(--linea);border-radius:12px;font-size:15px;background:var(--blanco);box-shadow:var(--sombra);margin-bottom:14px">
+      <div id="controlList" class="chip-list"></div>
+    </div>
+  </div>
+
+  <!-- MAPA -->
+  <div class="view" id="view-mapa">
+    <div class="view-head"><h2>Votos posibles por barrio</h2><p>Dónde está concentrada tu red. Te muestra dónde reforzar.</p></div>
+    <div class="barrio-grid" id="barrioGrid"></div>
+    <div class="note"><b>Próximo paso:</b> con el DNI cargado, cuando subamos el padrón electoral 2023 el sistema busca solo en qué mesa y circuito vota cada persona, y te marca quién está habilitado.</div>
+  </div>
+
+  <!-- REFERENTES (solo coordinación) -->
+  <div class="view" id="view-referentes">
+    <div class="view-head"><h2>Referentes</h2><p>Dar de alta, editar y administrar tu red de referentes.</p></div>
+    <div class="form-card" style="margin-bottom:24px">
+      <h3 style="font-size:15px;color:var(--selva);margin-bottom:14px">➕ Nuevo referente</h3>
+      <div class="form-row">
+        <div class="form-field"><label>Nombre y apellido <span class="req">*</span></label><input id="nrNombre" placeholder="Juan Pérez"></div>
+        <div class="form-field"><label>Usuario <span class="req">*</span></label><input id="nrUsuario" placeholder="juanp" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Categoría</label>
+          <select id="nrCat"><option value="barrial">Referente Barrial</option><option value="politico">Referente Político</option><option value="sectorial">Referente Sectorial</option></select>
+        </div>
+        <div class="form-field"><label>Zona / Barrio</label><input id="nrZona" list="barriosList" placeholder="Centro" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Meta de votos</label><input id="nrMeta" type="number" min="1" placeholder="100" value="100"></div>
+        <div class="form-field"><label>Clave inicial <span class="req">*</span></label><input id="nrClave" placeholder="se la pasás por WhatsApp"></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--tinta);font-weight:600;cursor:pointer;margin:4px 0 6px">
+        <input type="checkbox" id="nrCoord" style="width:18px;height:18px;accent-color:var(--tierra)">
+        Darle acceso de coordinación (ve la red de otros referentes)
+      </label>
+      <div class="helper" style="background:#eef4f1;border-left:3px solid var(--azul);padding:9px 12px;border-radius:8px;margin-bottom:12px">🔒 Al crear el referente se genera su usuario y clave en la base. Pasale los datos por WhatsApp para que pueda entrar.</div>
+      <button class="btn-add" onclick="crearReferente()">Crear referente</button>
+    </div>
+    <button onclick="cargarReferentesDB();toast('Actualizado',true)" style="background:var(--arena-2);color:var(--tinta);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;margin-bottom:12px">🔄 Actualizar lista</button>
+    <table id="refAdminTable"><thead><tr>
+      <th>Referente</th><th class="hide-sm">Usuario</th><th>Categoría</th><th class="hide-sm">Zona</th><th>Estado</th><th>Acceso</th><th></th>
+    </tr></thead><tbody></tbody></table>
+
+    <h3 style="font-size:15px;color:var(--selva);margin:30px 0 12px">🏘 Barrios de la campaña</h3>
+    <div class="form-card" style="max-width:none">
+      <div style="display:flex;gap:9px;margin-bottom:14px">
+        <input id="nuevoBarrio" placeholder="Agregar un barrio nuevo" style="flex:1;padding:11px 13px;border:1.5px solid var(--linea);border-radius:10px;font-size:14.5px;background:var(--arena)">
+        <button class="btn-add" style="margin:0" onclick="agregarBarrio()">Agregar</button>
+      </div>
+      <div id="barriosChips" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      <div class="helper" style="margin-top:10px">Estos barrios aparecen como sugerencia al cargar gente y referentes. Tocá la ✕ para quitar uno.</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR -->
+<div id="modalBg" style="display:none;position:fixed;inset:0;background:rgba(15,61,46,.45);z-index:200;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--blanco);border-radius:18px;padding:24px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow:auto">
+    <h3 id="modalTit" style="font-size:18px;color:var(--selva);margin-bottom:16px">Editar</h3>
+    <div id="modalBody"></div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn-add" style="flex:1" onclick="guardarEdit()">Guardar cambios</button>
+      <button onclick="cerrarModal()" style="padding:12px 18px;border-radius:11px;background:var(--arena-2);color:var(--tinta);font-weight:700">Cancelar</button>
+    </div>
+    <button id="btnBorrar" onclick="borrarRegistro()" style="width:100%;margin-top:10px;padding:11px;border-radius:11px;background:#fbe9e6;color:var(--rojo);font-weight:700;font-size:13.5px">🗑 Borrar este registro</button>
+  </div>
+</div>
+
+<script>
+let REFERENTES = []; // se llena desde la tabla usuarios al iniciar sesión
+const CATS={politico:'Político',barrial:'Barrial',sectorial:'Sectorial'};
+const CAT_COLOR={politico:'var(--tierra)',barrial:'var(--azul)',sectorial:'var(--selva)'};
+
+// REGISTROS: tipo 'persona'(votante) o 'conf'(persona de confianza, votosPos = lo que trae)
+// ref = id del referente dueño. padre = (futuro) id de persona de confianza de quien cuelga.
+let REGISTROS = []; // se llena desde la base al iniciar sesión
+
+// padrón simulado: cuando cargás uno de estos DNI, "aparece" en el padrón
+// Padrón de PRUEBA — 3 DNI de ejemplo. El padrón real (76.628 electores) va en la versión final con Supabase.
+const PADRON_DEMO = {
+  '18234567':{apellido:'CERBIN', nombre:'GRACIELA NOEMI', mesa:'1052', circuito:'Iguazú Centro', clase:'1972', domicilio:'AV CENTRO 100'},
+  '16998877':{apellido:'CUENCA', nombre:'ROBERTO', mesa:'1048', circuito:'Iguazú Centro', clase:'1968', domicilio:'BARRIO CENTRO'},
+  '33445566':{apellido:'MOREIRA', nombre:'MATIAS', mesa:'1090', circuito:'Costa Norte', clase:'1989', domicilio:'COSTA NORTE'},
+};
+
+let EVENTOS = []; // se llena desde la tabla eventos al iniciar sesión
+
+let BARRIOS = ['Centro','1º de Mayo','2000 Hectáreas','Las Leñas','Villa Nueva','Ñandú','Costa Norte','1000 Viviendas','Las Orquídeas','San Cayetano','Itá','Yacuy','Integración','Brasilera','Ex Combatientes','Lote A','Lote B','Lote 7','Lote 8','Lote 14','Lote 47','Don Bosco','Santa Rosa','Las Américas','Belén','Obrero','Ramón Mercado','Costa Brava','Calle Río Paraná','Otro'];
+const MESES=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+let AUTOS=[]; // se llena desde la tabla autos al iniciar sesión
+let current=null, tipoCarga='persona', softOk=false, seq=100;
+
+async function login(){
+  const usuario=(document.getElementById('inUsuario').value||'').trim().toLowerCase();
+  const clave=document.getElementById('pass').value||'';
+  const errBox=document.getElementById('loginError');
+  const btn=document.getElementById('btnEntrar');
+  errBox.style.display='none';
+  if(!usuario||!clave){errBox.textContent='Poné usuario y clave.';errBox.style.display='block';return;}
+
+  if(!sb)initSupabase();
+  if(!sb){errBox.textContent='No se pudo conectar con la base. Revisá tu internet.';errBox.style.display='block';return;}
+
+  btn.textContent='Entrando...'; btn.disabled=true;
+  try{
+    const {data,error}=await sb.rpc('login_usuario',{p_usuario:usuario,p_clave:clave});
+    if(error)throw error;
+    if(!data||!data.length){
+      errBox.textContent='Usuario o clave incorrectos.';errBox.style.display='block';
+      btn.textContent='Entrar'; btn.disabled=false; return;
+    }
+    const u=data[0];
+    current={id:u.id, nombre:u.nombre, usuario:u.usuario,
+             role:u.rol==='coordinacion'?'admin':'ref', coord:!!u.coord};
+    iniciarSesion();
+  }catch(e){
+    console.error(e);
+    errBox.textContent='Error al entrar: '+(e.message||e);errBox.style.display='block';
+    btn.textContent='Entrar'; btn.disabled=false;
+  }
+}
+function iniciarSesion(){
+  const btn=document.getElementById('btnEntrar');
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('userName').textContent=current.nombre;
+  document.getElementById('roleTag').textContent=current.role==='admin'?'Coordinación':(current.coord?'Referente + Coord.':'Referente');
+  document.getElementById('barriosList').innerHTML=BARRIOS.map(b=>`<option value="${b}">`).join('');
+  if(btn){btn.textContent='Entrar'; btn.disabled=false;}
+  document.getElementById('pass').value='';
+  buildTabs(); renderAll();
+  cargarRegistrosDB(); // traer lo que ya está guardado en la base
+  cargarReferentesDB(); // traer los referentes reales
+  cargarAutosDB();      // traer los autos del día D
+  cargarEventosDB();    // traer la agenda
+  cargarBarriosDB();    // traer los barrios
+}
+
+/* ============ CAPA DE BASE DE DATOS — REGISTROS ============ */
+// Convierte una fila de la base (columnas SQL) al formato que usa la app
+function filaABApp(r){
+  return {
+    id:r.id, tipo:r.tipo, nombre:r.nombre, apellido:r.apellido,
+    dni:r.dni||'', tel:r.tel||'', barrio:r.barrio||'', estado:r.estado||'cont',
+    votosPos:r.votos_pos||1, mesa:r.mesa||'', circuito:r.circuito||'',
+    ref:r.ref_id, refNom:r.ref_nom||current.nombre, padre:r.padre_id||undefined,
+    transporte:!!r.transporte, voto:!!r.voto, autoId:r.auto_id||undefined,
+    visita:!!r.visita, prioritaria:!!r.prioritaria
+  };
+}
+// Convierte un registro de la app al formato de la base (columnas SQL)
+function appAFila(p){
+  return {
+    tipo:p.tipo, nombre:p.nombre, apellido:p.apellido,
+    dni:p.dni||null, tel:p.tel||null, barrio:p.barrio||null, estado:p.estado||'cont',
+    votos_pos:p.votosPos||1, mesa:p.mesa||null, circuito:p.circuito||null,
+    ref_id:p.ref||current.id, padre_id:p.padre||null,
+    transporte:!!p.transporte, voto:!!p.voto, auto_id:p.autoId||null,
+    visita:!!p.visita, prioritaria:!!p.prioritaria,
+    creado_por:current.id
+  };
+}
+// Leer todos los registros de la base
+async function cargarRegistrosDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('registros').select('*').order('creado_en',{ascending:false});
+    if(error)throw error;
+    if(data){
+      REGISTROS = data.map(filaABApp);
+      renderAll();
+    }
+  }catch(e){ console.error('cargar registros:', e); toast('No se pudieron leer los registros de la base.'); }
+}
+// Leer los referentes (usuarios) de la base
+async function cargarReferentesDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('usuarios').select('id,usuario,nombre,rol,coord,categoria,zona,meta,estado').order('nombre');
+    if(error)throw error;
+    if(data){
+      if(!data.length){toast('La base no devolvió referentes (puede ser un tema de permisos RLS).');}
+      REFERENTES = data.map(u=>({
+        id:u.id, nombre:u.nombre, usuario:u.usuario,
+        cat:u.categoria||'barrial', zona:u.zona||'', estado:u.estado||'activo',
+        meta:u.meta||100, coord:!!u.coord, rol:u.rol
+      }));
+      renderAll();
+    }
+  }catch(e){ console.error('cargar referentes:', e); toast('Error al leer referentes: '+(e.message||e)); }
+}
+// Leer autos del día D
+async function cargarAutosDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('autos').select('*').order('creado_en');
+    if(error)throw error;
+    if(data){
+      AUTOS = data.map(a=>({id:a.id, conductor:a.conductor, cap:a.capacidad||4, barrio:a.barrio||'', tel:a.tel||'', enViaje:!!a.en_viaje}));
+      renderDiaD();
+    }
+  }catch(e){ console.error('cargar autos:', e); }
+}
+// Leer eventos de la agenda
+async function cargarEventosDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('eventos').select('*').order('fecha');
+    if(error)throw error;
+    if(data){
+      EVENTOS = data.map(e=>({id:e.id, tipo:e.tipo, titulo:e.titulo, fecha:e.fecha, turno:e.turno||'', lugar:e.lugar||'', nota:e.nota||'', ref:e.ref_id, refNom:e.ref_nom||''}));
+      renderAgenda();
+    }
+  }catch(e){ console.error('cargar eventos:', e); }
+}
+// Guardar un registro nuevo en la base; devuelve la fila guardada (con su id real)
+async function guardarRegistroDB(p){
+  if(!sb)return null;
+  const {data,error}=await sb.from('registros').insert(appAFila(p)).select().single();
+  if(error){ console.error('guardar registro:', error); toast('Error al guardar: '+error.message); return null; }
+  return filaABApp(data);
+}
+// Actualizar un registro existente en la base
+async function actualizarRegistroDB(id, cambios){
+  if(!sb)return false;
+  const {error}=await sb.from('registros').update(cambios).eq('id', id);
+  if(error){ console.error('actualizar registro:', error); toast('Error al actualizar: '+error.message); return false; }
+  return true;
+}
+// Borrar un registro de la base
+async function borrarRegistroDB(id){
+  if(!sb)return false;
+  const {error}=await sb.from('registros').delete().eq('id', id);
+  if(error){ console.error('borrar registro:', error); toast('Error al borrar: '+error.message); return false; }
+  return true;
+}
+// Aviso liviano (toast) arriba a la derecha
+function toast(msg, ok){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';
+    t.style.cssText='position:fixed;top:16px;right:16px;z-index:999;background:var(--selva);color:#fff;padding:12px 18px;border-radius:11px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:300px';
+    document.body.appendChild(t);}
+  t.style.background=ok?'var(--verde-ok)':'var(--rojo)';
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(window._toastT); window._toastT=setTimeout(()=>{t.style.display='none'},3500);
+}
+function renderAll(){renderDash();renderRecent();renderTree();renderAgenda();renderMapa();renderReferentes();refreshUserSelect();refreshBarrios();renderLista();renderDiaD();}
+function logout(){current=null;document.getElementById('app').style.display='none';document.getElementById('login').style.display='flex';}
+function refreshUserSelect(){
+  const sel=document.getElementById('userSelect');if(!sel)return; // ya no existe en login real
+}
+let BARRIOS_DB=[]; // [{id, nombre}] desde la base
+async function cargarBarriosDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('barrios').select('*').order('orden');
+    if(error)throw error;
+    if(data&&data.length){
+      BARRIOS_DB=data.map(b=>({id:b.id,nombre:b.nombre}));
+      BARRIOS=BARRIOS_DB.map(b=>b.nombre);
+      if(!BARRIOS.includes('Otro'))BARRIOS.push('Otro');
+      refreshBarrios();
+    }
+  }catch(e){ console.error('cargar barrios:', e); }
+}
+function refreshBarrios(){
+  const dl=document.getElementById('barriosList');
+  if(dl)dl.innerHTML=BARRIOS.map(b=>`<option value="${b}">`).join('');
+  const chips=document.getElementById('barriosChips');
+  if(chips)chips.innerHTML=BARRIOS.map((b,i)=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--arena-2);border-radius:20px;padding:5px 12px;font-size:12.5px;font-weight:600;color:var(--tinta)">${b}<button onclick="quitarBarrio('${b.replace(/'/g,"\\'")}')" style="background:none;color:var(--rojo);font-weight:800;font-size:15px;line-height:1;cursor:pointer">×</button></span>`).join('');
+}
+async function agregarBarrio(){
+  const inp=document.getElementById('nuevoBarrio');const b=inp.value.trim();
+  if(!b)return;
+  if(BARRIOS.some(x=>x.toLowerCase()===b.toLowerCase())){alert('Ese barrio ya está en la lista.');return;}
+  const otroIdx=BARRIOS.indexOf('Otro');
+  BARRIOS.splice(otroIdx>=0?otroIdx:BARRIOS.length,0,b);
+  inp.value='';refreshBarrios();
+  // GUARDAR EN LA BASE
+  if(sb){
+    const {data,error}=await sb.from('barrios').insert({nombre:b,orden:BARRIOS.length}).select().single();
+    if(error)toast('Error al guardar el barrio: '+error.message);
+    else{BARRIOS_DB.push({id:data.id,nombre:b});toast('Barrio agregado ✓',true);}
+  }
+}
+async function quitarBarrio(nombre){
+  if(nombre==='Otro')return;
+  if(!confirm(`¿Quitar "${nombre}" de la lista de barrios?`))return;
+  BARRIOS=BARRIOS.filter(x=>x!==nombre);refreshBarrios();
+  // BORRAR EN LA BASE
+  const reg=BARRIOS_DB.find(b=>b.nombre===nombre);
+  if(sb&&reg){
+    const {error}=await sb.from('barrios').delete().eq('id',reg.id);
+    if(error)toast('Error al borrar el barrio: '+error.message);
+    else{BARRIOS_DB=BARRIOS_DB.filter(b=>b.id!==reg.id);toast('Barrio quitado ✓',true);}
+  }
+}
+
+/* ---- GESTIÓN DE REFERENTES (contra la base) ---- */
+async function crearReferente(){
+  const nombre=document.getElementById('nrNombre').value.trim();
+  const usuario=document.getElementById('nrUsuario').value.trim().toLowerCase();
+  const cat=document.getElementById('nrCat').value;
+  const zona=document.getElementById('nrZona').value.trim()||null;
+  const meta=parseInt(document.getElementById('nrMeta').value)||100;
+  const clave=document.getElementById('nrClave').value.trim();
+  const coord=document.getElementById('nrCoord').checked;
+  if(!nombre||!usuario||!clave){alert('Faltan datos: nombre, usuario y clave inicial son obligatorios.');return;}
+  if(REFERENTES.find(r=>r.usuario===usuario)){alert('Ya existe un referente con ese usuario. Elegí otro.');return;}
+  if(!sb){alert('No hay conexión con la base.');return;}
+  const btn=document.querySelector('#view-referentes .btn-add');
+  if(btn){btn.textContent='Creando...';btn.disabled=true;}
+  try{
+    const {data,error}=await sb.rpc('crear_usuario',{
+      p_usuario:usuario, p_clave:clave, p_nombre:nombre,
+      p_rol:coord?'referente':'referente', p_coord:coord,
+      p_categoria:cat, p_zona:zona, p_meta:meta
+    });
+    if(error)throw error;
+    ['nrNombre','nrUsuario','nrZona','nrClave'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('nrMeta').value='100';document.getElementById('nrCoord').checked=false;
+    await cargarReferentesDB();
+    toast('Referente creado ✓', true);
+    alert(`Referente "${nombre}" creado y guardado en la base.\n\nUsuario: ${usuario}\nClave: ${clave}\n\nPasale estos datos por WhatsApp. ${coord?'Tiene acceso de coordinación.':'Acceso de referente.'}`);
+  }catch(e){
+    console.error(e);
+    alert('No se pudo crear: '+(e.message||e)+(/(duplicate|unique)/i.test(e.message||'')?'\n\nEse usuario ya existe.':''));
+  }
+  if(btn){btn.textContent='Crear referente';btn.disabled=false;}
+}
+function renderReferentes(){
+  const tb=document.querySelector('#refAdminTable tbody');if(!tb)return;
+  if(!REFERENTES.length){
+    tb.innerHTML='<tr><td colspan="7" style="padding:18px;text-align:center;color:var(--gris)">No hay referentes cargados todavía. Creá uno con el formulario de arriba, o tocá «🔄 Actualizar».</td></tr>';
+    return;
+  }
+  tb.innerHTML=REFERENTES.map(r=>{
+    const v=votosDe(REGISTROS.filter(x=>x.ref===r.id));
+    const estCol=r.estado==='activo'?'var(--verde-ok)':r.estado==='tibio'?'var(--amarillo)':'var(--gris)';
+    const esYo=r.id===current.id;
+    return `<tr${esYo?' style="background:#fbf3e8"':''}>
+      <td><span class="ref-name">${r.nombre}</span>${esYo?' <span class="badge" style="background:var(--selva)">vos</span>':''}<div style="font-size:11px;color:var(--gris)">${v.pos} votos · meta ${r.meta}</div></td>
+      <td class="hide-sm">${r.usuario}</td>
+      <td><span class="badge" style="background:${CAT_COLOR[r.cat]}">${CATS[r.cat]}</span></td>
+      <td class="hide-sm">${r.zona}</td>
+      <td><span class="semaforo" style="background:${estCol}"></span>${r.estado}</td>
+      <td>${r.coord?'<span class="badge" style="background:var(--tierra)">Coord.</span>':'Referente'}</td>
+      <td><button onclick="editRef('${r.id}')" style="background:var(--arena-2);border-radius:8px;width:30px;height:30px;font-size:14px">✏️</button></td>
+    </tr>`;
+  }).join('');
+}
+function editRef(id){
+  const r=REFERENTES.find(x=>x.id===id);if(!r)return;editRefId=id;
+  document.getElementById('modalTit').textContent=`Referente: ${r.nombre}`;
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-row">
+      <div class="form-field"><label>Nombre</label><input id="erNombre" value="${r.nombre}"></div>
+      <div class="form-field"><label>Usuario</label><input id="erUsuario" value="${r.usuario}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Categoría</label><select id="erCat">
+        <option value="barrial"${r.cat==='barrial'?' selected':''}>Barrial</option>
+        <option value="politico"${r.cat==='politico'?' selected':''}>Político</option>
+        <option value="sectorial"${r.cat==='sectorial'?' selected':''}>Sectorial</option></select></div>
+      <div class="form-field"><label>Zona</label><input id="erZona" list="barriosList" value="${r.zona}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Meta</label><input id="erMeta" type="number" value="${r.meta}"></div>
+      <div class="form-field"><label>Estado</label><select id="erEstado">
+        <option value="activo"${r.estado==='activo'?' selected':''}>Activo</option>
+        <option value="tibio"${r.estado==='tibio'?' selected':''}>Tibio</option>
+        <option value="inactivo"${r.estado==='inactivo'?' selected':''}>Inactivo</option></select></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600;cursor:pointer">
+      <input type="checkbox" id="erCoord" ${r.coord?'checked':''} style="width:18px;height:18px;accent-color:var(--tierra)">Acceso de coordinación</label>
+    <div class="form-field" style="margin-top:14px"><label>Resetear clave <span class="opt">(dejá vacío para no cambiarla)</span></label><input id="erClave" placeholder="nueva clave (opcional)"></div>`;
+  document.getElementById('btnBorrar').textContent='🗑 Dar de baja este referente';
+  document.getElementById('btnBorrar').setAttribute('onclick','bajaRef()');
+  document.getElementById('modalBg').querySelector('.btn-add').setAttribute('onclick','guardarRef()');
+  document.getElementById('modalBg').style.display='flex';
+}
+async function guardarRef(){
+  const r=REFERENTES.find(x=>x.id===editRefId);if(!r)return;
+  const id=editRefId;
+  r.nombre=document.getElementById('erNombre').value.trim()||r.nombre;
+  r.usuario=document.getElementById('erUsuario').value.trim().toLowerCase()||r.usuario;
+  r.cat=document.getElementById('erCat').value;
+  r.zona=document.getElementById('erZona').value.trim()||r.zona;
+  r.meta=parseInt(document.getElementById('erMeta').value)||r.meta;
+  r.estado=document.getElementById('erEstado').value;
+  r.coord=document.getElementById('erCoord').checked;
+  const claveNueva=document.getElementById('erClave')?document.getElementById('erClave').value.trim():'';
+  cerrarModal();restoreModalButtons();renderAll();
+  // GUARDAR EN LA BASE
+  if(sb){
+    const {error}=await sb.from('usuarios').update({
+      nombre:r.nombre, usuario:r.usuario, categoria:r.cat,
+      zona:r.zona, meta:r.meta, estado:r.estado, coord:r.coord
+    }).eq('id', id);
+    if(error){toast('Error al actualizar: '+error.message);}
+    else{
+      if(claveNueva){
+        const {error:e2}=await sb.rpc('resetear_clave',{p_usuario:r.usuario,p_clave_nueva:claveNueva});
+        if(e2)toast('Datos guardados, pero la clave no se pudo cambiar.');
+        else{toast('Datos y clave actualizados ✓',true);alert(`Clave de ${r.nombre} cambiada a: ${claveNueva}\nPasásela por WhatsApp.`);return;}
+      }
+      toast('Referente actualizado ✓',true);
+    }
+  }
+}
+async function bajaRef(){
+  const r=REFERENTES.find(x=>x.id===editRefId);if(!r)return;
+  const id=editRefId;
+  const n=REGISTROS.filter(x=>x.ref===id).length;
+  if(!confirm(`¿Dar de baja a ${r.nombre}?${n?` Tiene ${n} registro(s) cargados, que se conservan.`:''}\n\nNo podrá entrar más a la app, pero sus datos quedan.`))return;
+  // baja = marcar inactivo (conserva sus registros y su historial). No borramos el usuario.
+  r.estado='inactivo';
+  cerrarModal();restoreModalButtons();renderAll();
+  if(sb){
+    const {error}=await sb.from('usuarios').update({estado:'inactivo'}).eq('id',id);
+    if(error)toast('Error al dar de baja: '+error.message);
+    else toast('Referente dado de baja ✓',true);
+  }
+}
+function restoreModalButtons(){
+  const save=document.getElementById('modalBg').querySelector('.btn-add');
+  save.setAttribute('onclick','guardarEdit()');
+  const del=document.getElementById('btnBorrar');
+  del.textContent='🗑 Borrar este registro';del.setAttribute('onclick','borrarRegistro()');
+  editRefId=null;
+}
+let editRefId=null;
+
+function buildTabs(){
+  const esCoord = current.role==='admin'||current.coord;
+  const tabs = esCoord
+    ? [['dash','Tablero'],['cargar','Cargar'],['lista','Lista'],['piramide','Pirámide'],['agenda','Agenda'],['diad','Día D'],['mapa','Mapa'],['referentes','Referentes']]
+    : [['cargar','Cargar'],['lista','Mi lista'],['piramide','Mi red'],['agenda','Agenda'],['diad','Día D'],['dash','Mi avance']];
+  const c=document.getElementById('tabs');c.innerHTML='';
+  tabs.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='tab'+(i===0?' active':'');b.textContent=t[1];
+    b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');showView(t[0]);};
+    c.appendChild(b);
+  });
+  showView(tabs[0][0]);
+}
+function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');}
+
+function setTipo(t){
+  tipoCarga=t; softOk=false;
+  document.getElementById('tb-persona').classList.toggle('active',t==='persona');
+  document.getElementById('tb-conf').classList.toggle('active',t==='conf');
+  document.getElementById('campos-conf').style.display = t==='conf'?'block':'none';
+  clearAlert(true);
+}
+
+/* ---- PADRÓN REAL: busca en la base (43 mil electores) ---- */
+let _padronCache={}; // cache simple por DNI ya consultado
+async function padronPorDniDB(dni){
+  if(!dni||!sb)return null;
+  if(_padronCache[dni]!==undefined)return _padronCache[dni];
+  try{
+    const {data,error}=await sb.from('padron').select('*').eq('dni',dni).maybeSingle();
+    if(error)throw error;
+    _padronCache[dni]=data||null;
+    return data||null;
+  }catch(e){ console.error('padron dni:', e); return null; }
+}
+async function onDni(){
+  clearAlert();
+  const dni=normDni(document.getElementById('fDni').value);
+  const box=document.getElementById('padronBox');
+  if(dni.length<7){box.className='padron-box';return;}
+  box.className='padron-box show';
+  box.innerHTML='Buscando en el padrón...';
+  const m=await padronPorDniDB(dni);
+  // por si el usuario siguió tipeando, revalidar
+  if(normDni(document.getElementById('fDni').value)!==dni)return;
+  if(m){
+    const fn=document.getElementById('fNombre'), fa=document.getElementById('fApellido');
+    if(fn && !fn.value.trim()) fn.value=m.nombres;
+    if(fa && !fa.value.trim()) fa.value=m.apellido;
+    box.className='padron-box show';
+    box.innerHTML=`✔ <b>Encontrado en el padrón:</b> ${m.apellido}, ${m.nombres} · Mesa ${m.mesa} · ${m.circuito} · Clase ${m.clase}${m.domicilio?'<br><span style="font-size:11.5px">📍 '+m.domicilio+'</span>':''}`;
+  }else{
+    box.className='padron-box show';
+    box.innerHTML=`Este DNI no figura en el padrón de Puerto Iguazú (circuito 80). Se guarda igual.`;
+  }
+}
+// Buscar en el padrón por nombre/apellido y sugerir
+let _buscarTimer=null;
+async function buscarPadronNombre(){
+  const ape=document.getElementById('fApellido').value.trim();
+  const nom=document.getElementById('fNombre').value.trim();
+  const box=document.getElementById('padronSug');
+  if(!box)return;
+  if((ape+nom).length<3){box.style.display='none';return;}
+  clearTimeout(_buscarTimer);
+  _buscarTimer=setTimeout(async()=>{
+    if(!sb)return;
+    try{
+      let q=sb.from('padron').select('dni,apellido,nombres,clase,domicilio,mesa,circuito').limit(20);
+      if(ape)q=q.ilike('apellido',ape+'%');
+      if(nom)q=q.ilike('nombres','%'+nom+'%');
+      const {data,error}=await q;
+      if(error)throw error;
+      if(!data||!data.length){box.style.display='none';return;}
+      box.style.display='block';
+      box.innerHTML=data.map(e=>`<div onclick='elegirDelPadron(${JSON.stringify(e).replace(/'/g,"&#39;")})' style="padding:10px 14px;border-bottom:1px solid var(--linea);cursor:pointer;font-size:13px" onmouseover="this.style.background='var(--arena)'" onmouseout="this.style.background='transparent'"><b>${e.apellido}, ${e.nombres}</b> <span style="color:var(--azul);font-weight:600">DNI ${e.dni}</span><div style="font-size:11px;color:var(--gris)">Mesa ${e.mesa} · clase ${e.clase}${e.domicilio?' · '+e.domicilio:''}</div></div>`).join('');
+    }catch(e){ console.error('buscar padron:', e); box.style.display='none'; }
+  },280);
+}
+function elegirDelPadron(e){
+  document.getElementById('fApellido').value=e.apellido;
+  document.getElementById('fNombre').value=e.nombres;
+  document.getElementById('fDni').value=e.dni;
+  document.getElementById('padronSug').style.display='none';
+  _padronCache[e.dni]=e;
+  onDni();
+}
+
+// ¿el DNI está verificado en el padrón? (usa cache; si no, queda en false hasta consultar)
+function dniVerificado(p){return p.dni&&_padronCache[normDni(p.dni)]?true:false;}
+
+// PESO POR ESTADO (lo que dice el referente)
+const PESO_ESTADO={cont:0.35,prom:0.55,conf:0.80};
+// La evidencia ajusta hacia arriba o abajo ese peso:
+//  - DNI verificado en padrón: +0.15 (oro)
+//  - tiene DNI pero sin verificar: +0.05
+//  - tiene teléfono: +0.05
+//  - es solo un número sin nombre (hijo fantasma): se trata como humo (0.15)
+function fuerzaVoto(p){
+  let base=PESO_ESTADO[p.estado]??0.45;
+  if(dniVerificado(p))base+=0.15;
+  else if(p.dni)base+=0.05;
+  if(p.tel)base+=0.05;
+  return Math.min(0.97,base);
+}
+// nivel de evidencia textual (para mostrar)
+function nivelEvidencia(p){
+  if(dniVerificado(p))return {n:'Verificado',col:'var(--verde-ok)'};
+  if(p.dni)return {n:'Con DNI',col:'var(--azul)'};
+  if(p.tel)return {n:'Contactable',col:'var(--amarillo)'};
+  return {n:'Sin respaldo',col:'var(--gris)'};
+}
+
+// totales honestos de una lista
+function votosDe(list){
+  let pos=0,conf=0,proy=0,firmes=0;
+  list.forEach(r=>{
+    if(r.tipo==='conf'){
+      const hijos=REGISTROS.filter(x=>x.padre===r.id && list.includes(x));
+      const sinNombre=Math.max(0,r.votosPos-hijos.length);
+      // pos: la persona de confianza (1) + los votos que promete sin nombre.
+      // Los hijos con nombre se cuentan por sí solos en su propia iteración.
+      pos+=1+sinNombre;
+      proy+=fuerzaVoto(r)+sinNombre*0.15;
+      if(r.estado==='conf'&&(dniVerificado(r)||r.dni))firmes++;
+    }else{
+      pos+=r.votosPos;
+      proy+=fuerzaVoto(r);
+      if(r.estado==='conf')conf+=r.votosPos;
+      if(r.estado==='conf'&&(dniVerificado(r)||r.dni))firmes++;
+    }
+  });
+  return {pos,conf,proy:Math.round(proy),firmes};
+}
+
+// calidad de un referente: % con DNI, % con tel, y si está frío
+function calidadRef(refId){
+  const regs=REGISTROS.filter(x=>x.ref===refId);
+  const n=regs.length;
+  if(!n)return {n:0,pctDni:0,pctTel:0,score:0,nivel:'vacio'};
+  const conDni=regs.filter(x=>x.dni).length;
+  const conTel=regs.filter(x=>x.tel).length;
+  const pctDni=Math.round(conDni/n*100);
+  const pctTel=Math.round(conTel/n*100);
+  // score simple: mezcla de cobertura de DNI y teléfono
+  const score=Math.round(pctDni*0.65+pctTel*0.35);
+  let nivel='malo';
+  if(score>=60)nivel='bueno'; else if(score>=30)nivel='regular';
+  return {n,pctDni,pctTel,score,nivel};
+}
+
+function renderDash(){
+  const isAdmin=current.role==='admin'||current.coord;
+  const mine = isAdmin?REGISTROS:REGISTROS.filter(r=>r.ref===current.id);
+  const {pos,conf,proy,firmes}=votosDe(mine);
+  const meta = isAdmin?REFERENTES.reduce((s,r)=>s+r.meta,0):(REFERENTES.find(r=>r.id===current.id)?.meta||100);
+
+  document.getElementById('dashTitle').textContent=isAdmin?'Tablero general':'Mi avance';
+  document.getElementById('dashSub').textContent=isAdmin?'Los números reales de la campaña, sin humo.':'Tu progreso real.';
+
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat"><div class="num">${pos}</div><div class="lab">Votos cargados</div></div>
+    <div class="stat" style="border:2px solid var(--tierra)"><div class="num" style="color:var(--tierra)">${proy}</div><div class="lab">Proyección realista</div></div>
+    <div class="stat"><div class="num" style="color:var(--verde-ok)">${firmes}</div><div class="lab">Firmes (DNI+confirm.)</div></div>
+    <div class="stat"><div class="num">${Math.round(proy/meta*100)}%</div><div class="lab">Avance real de meta</div></div>`;
+
+  // barra: cargado (claro) / proyección (naranja) / firmes (verde)
+  document.getElementById('metaBarPos').style.width=Math.min(100,Math.round(pos/meta*100))+'%';
+  document.getElementById('metaBarConf').style.width=Math.min(100,Math.round(firmes/meta*100))+'%';
+  const proyBar=document.getElementById('metaBarProy');
+  if(proyBar)proyBar.style.width=Math.min(100,Math.round(proy/meta*100))+'%';
+  document.getElementById('metaNow').textContent=`${firmes} firmes · ${proy} proyectados · ${pos} cargados`;
+  document.getElementById('metaGoal').textContent='meta: '+meta;
+  document.getElementById('metaLab').textContent=isAdmin
+    ? `Meta total: ${meta}. La proyección descuenta el humo: pondera cada voto por su evidencia real.`
+    : `Tu objetivo: ${meta}. El número naranja es lo que de verdad podés contar.`;
+
+  document.getElementById('refTableWrap').style.display=isAdmin?'block':'none';
+  if(isAdmin){
+    const rows=REFERENTES.map(r=>{const v=votosDe(REGISTROS.filter(x=>x.ref===r.id));const q=calidadRef(r.id);return {...r,...v,q};}).sort((a,b)=>b.proy-a.proy);
+    const tb=document.querySelector('#refTable tbody');tb.innerHTML='';
+    rows.forEach(r=>{
+      const p=Math.round(r.proy/r.meta*100);
+      let sem='s-gris'; if(p===0)sem='s-gris';else if(p<33)sem='s-rojo';else if(p<66)sem='s-amar';else sem='s-verde';
+      const qCol=r.q.nivel==='bueno'?'var(--verde-ok)':r.q.nivel==='regular'?'var(--amarillo)':r.q.nivel==='vacio'?'#c3c3c3':'var(--rojo)';
+      const qTxt=r.q.n?`${r.q.pctDni}% DNI`:'—';
+      const frio=esFrio(r.id);
+      tb.innerHTML+=`<tr><td class="ref-name">${r.nombre}${frio?' <span class="dup-flag" style="background:var(--azul);color:#fff">frío</span>':''}</td>
+        <td class="hide-sm">${r.zona}</td>
+        <td><span class="mini-bar"><i style="width:${Math.min(100,p)}%"></i></span>${p}%</td>
+        <td><span class="semaforo ${sem}"></span>${r.proy}<span style="color:var(--gris);font-size:11px">/${r.pos}</span></td>
+        <td><span class="semaforo" style="background:${qCol}"></span><span style="font-size:11.5px">${qTxt}</span></td></tr>`;
+    });
+  }
+}
+// referente frío: tiene registros pero ninguno reciente (en demo: marca a los inactivos o sin carga)
+function esFrio(refId){
+  const r=REFERENTES.find(x=>x.id===refId);
+  if(r&&r.estado==='inactivo')return true;
+  const regs=REGISTROS.filter(x=>x.ref===refId);
+  return regs.length>0 && regs.length<2; // poca actividad (proxy en la demo)
+}
+
+function norm(s){return (s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+function estLabel(e){return e==='conf'?'Confirmado':e==='prom'?'Prometido':'Contactado';}
+function estClass(e){return e==='conf'?'conf':e==='prom'?'prom':'cont';}
+function normDni(s){return (s||'').replace(/\D/g,'');}
+
+async function tryAdd(){
+  const a=document.getElementById('dupAlert');
+  const nombre=document.getElementById('fNombre').value.trim();
+  const apellido=document.getElementById('fApellido').value.trim();
+  const dni=normDni(document.getElementById('fDni').value);
+  const tel=document.getElementById('fTel').value.trim();
+  const barrio=document.getElementById('fBarrio').value;
+  const estado=document.getElementById('fEstado').value;
+
+  if(!nombre||!apellido)return warn(a,'Faltan datos: nombre y apellido son obligatorios.');
+
+  // dedup fuerte por DNI (para los dos tipos)
+  if(dni){
+    const hit=REGISTROS.find(p=>normDni(p.dni)===dni);
+    if(hit)return hard(a,`<b>Ya está cargada.</b> Ese DNI pertenece a <b>${hit.nombre} ${hit.apellido}</b>, cargada por <b>${hit.refNom}</b>.`);
+  }else{
+    const hit=REGISTROS.find(p=>norm(p.nombre)===norm(nombre)&&norm(p.apellido)===norm(apellido));
+    if(hit&&!softOk){softOk=true;return soft(a,`<b>Posible repetido.</b> Ya hay un <b>${hit.nombre} ${hit.apellido}</b> cargado por <b>${hit.refNom}</b>. Si es otra persona, guardá de nuevo (mejor con DNI).`);}
+  }
+
+  const pad=dni?(_padronCache[dni]||await padronPorDniDB(dni)):null;
+  const mesa=pad?pad.mesa:'', circuito=pad?pad.circuito:'';
+  let nuevo;
+  if(tipoCarga==='conf'){
+    const votos=parseInt(document.getElementById('fConfVotos').value)||0;
+    if(votos<1)return warn(a,'¿A cuánta gente trae esta persona de confianza?');
+    nuevo={tipo:'conf',nombre,apellido,dni,tel,votosPos:votos,barrio,estado,ref:current.id,refNom:current.nombre,mesa,circuito};
+  }else{
+    nuevo={tipo:'persona',nombre,apellido,dni,tel,votosPos:1,barrio,estado,ref:current.id,refNom:current.nombre,mesa,circuito};
+  }
+
+  // GUARDAR EN LA BASE
+  const btn=document.querySelector('#view-cargar .btn-add');
+  if(btn){btn.textContent='Guardando...';btn.disabled=true;}
+  const guardado=await guardarRegistroDB(nuevo);
+  if(btn){btn.textContent='Guardar';btn.disabled=false;}
+  if(!guardado){ warn(a,'No se pudo guardar en la base. Revisá tu internet e intentá de nuevo.'); return; }
+
+  guardado.refNom=current.nombre;
+  REGISTROS.unshift(guardado);
+  ok(a,`<b>Guardado en la base.</b> ${nombre} ${apellido}${mesa?' · vota en mesa '+mesa:''}.`);
+  toast('Guardado ✓', true);
+  document.getElementById('fConfVotos').value='';
+  ['fNombre','fApellido','fDni','fTel'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('padronBox').className='padron-box';
+  softOk=false; renderAll();
+}
+function warn(a,m){a.className='alert dup-soft show';a.innerHTML=m;}
+function soft(a,m){a.className='alert dup-soft show';a.innerHTML=m;}
+function hard(a,m){a.className='alert dup-hard show';a.innerHTML=m;}
+function ok(a,m){a.className='alert ok show';a.innerHTML=m;}
+function clearAlert(force){const a=document.getElementById('dupAlert');if(force||a.classList.contains('ok')){a.className='alert';softOk=false;}}
+
+function renderRecent(){
+  const mine=REGISTROS.filter(p=>current.role==='admin'||p.ref===current.id).slice(0,8);
+  const l=document.getElementById('recentList');
+  if(!mine.length){l.innerHTML='<div style="color:var(--gris);font-size:13px">Todavía no cargaste nada. Empezá arriba.</div>';return;}
+  l.innerHTML=mine.map(p=>{
+    const badge = p.tipo==='conf'?`<span class="badge badge-conf">trae ${p.votosPos}</span>`:`<span class="badge badge-vot">votante</span>`;
+    const sub = `${p.barrio}${p.dni?` · DNI ${p.dni}`:''}${current.role==='admin'?' · por '+p.refNom:''}`;
+    return `<div class="person-row"><div class="who"><div><b>${p.nombre} ${p.apellido}</b>${badge}</div><div class="meta">${sub}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="tag ${estClass(p.estado)}">${estLabel(p.estado)}</span>
+        <button onclick="abrirEdit('${p.id}')" title="Editar" style="background:var(--arena-2);border-radius:8px;width:30px;height:30px;font-size:14px">✏️</button>
+      </div></div>`;
+  }).join('');
+}
+
+/* ---- PIRÁMIDE ---- */
+function renderTree(){
+  const isAdmin=current.role==='admin'||current.coord;
+  // base: coordinación ve todos los referentes; un referente se ve a sí mismo
+  let refs = isAdmin?REFERENTES.slice():REFERENTES.filter(r=>r.id===current.id);
+  // asegurar que el usuario actual esté como nodo (aunque no esté en la lista de referentes)
+  if(!refs.find(r=>r.id===current.id)){
+    refs.unshift({id:current.id, nombre:current.nombre, zona:current.zona||'—', meta:current.meta||0, coord:current.coord});
+  }
+  // Solo coordinación ve huérfanos sueltos, agrupados aparte y claramente marcados,
+  // para no atribuirlos falsamente a nadie.
+  const idsValidos=new Set(refs.map(r=>r.id));
+  const huerfanos=isAdmin?REGISTROS.filter(p=>!p.ref||!idsValidos.has(p.ref)):[];
+  const cont=document.getElementById('tree'); cont.innerHTML='';
+  refs.forEach(r=>{
+    // gente del referente (cada uno la suya, sin mezclar)
+    let mis=REGISTROS.filter(x=>x.ref===r.id);
+    const v=votosDe(mis);
+    const confs=mis.filter(x=>x.tipo==='conf');
+    const sueltos=mis.filter(x=>x.tipo==='persona'&&!x.padre);
+    const ini=(r.nombre[0]||'?').toUpperCase();
+    let kids='';
+    confs.forEach(c=>{
+      const hijos=REGISTROS.filter(x=>x.padre===c.id);
+      let leafs=hijos.map(h=>`<div class="leaf"><span class="lnm">${h.nombre} ${h.apellido} <button onclick="event.stopPropagation();abrirEdit('${h.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">${estLabel(h.estado).toLowerCase()}${dniVerificado(h)?' · ✔padrón':h.dni?' · DNI':''}</span></div>`).join('');
+      const faltan=c.votosPos-hijos.length;
+      if(faltan>0) leafs+=`<div class="leaf"><span class="lmeta" style="font-style:italic">+ ${faltan} voto(s) sin nombre todavía</span></div>`;
+      const btnAdd=`<div class="leaf" style="border:none;padding:4px 0 8px"><button onclick="event.stopPropagation();addHijo('${c.id}')" style="background:#e6eef3;color:var(--azul);font-size:12px;font-weight:700;padding:6px 11px;border-radius:8px">+ Agregar nombre a la gente de ${c.nombre}</button></div>`;
+      kids+=`<div class="leaf" style="border:none;padding:6px 0 2px"><span class="lnm" style="color:var(--azul)">⭐ ${c.nombre} ${c.apellido} <button onclick="event.stopPropagation();abrirEdit('${c.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">trae ${c.votosPos}</span></div>${leafs}${btnAdd}`;
+    });
+    sueltos.forEach(s=>{kids+=`<div class="leaf"><span class="lnm">${s.nombre} ${s.apellido} <button onclick="event.stopPropagation();abrirEdit('${s.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">votante directo</span></div>`;});
+    if(!kids) kids='<div class="leaf"><span class="lmeta" style="font-style:italic">Sin gente cargada todavía. Cargá votantes o personas de confianza desde «Cargar».</span></div>';
+    cont.innerHTML+=`<div class="node lvl-ref">
+      <div class="node-head" onclick="toggleNode(this)">
+        <span class="caret">▶</span>
+        <div class="node-ava">${ini}</div>
+        <div class="node-info"><div class="nm">${r.nombre}</div><div class="sb">${r.zona||'—'} · ${confs.length} de confianza · meta ${r.meta||0}</div></div>
+        <div class="node-votos"><div class="big">${v.pos}</div><div class="lb">votos</div></div>
+      </div>
+      <div class="node-children">${kids}</div>
+    </div>`;
+  });
+  // Nodo de huérfanos (solo coordinación): registros de prueba o sin referente válido
+  if(huerfanos.length){
+    const confs=huerfanos.filter(x=>x.tipo==='conf');
+    const sueltos=huerfanos.filter(x=>x.tipo==='persona'&&!x.padre);
+    let kids='';
+    confs.forEach(c=>{
+      const hijos=huerfanos.filter(x=>x.padre===c.id);
+      let leafs=hijos.map(h=>`<div class="leaf"><span class="lnm">${h.nombre} ${h.apellido} <button onclick="event.stopPropagation();abrirEdit('${h.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">${estLabel(h.estado).toLowerCase()}</span></div>`).join('');
+      kids+=`<div class="leaf" style="border:none;padding:6px 0 2px"><span class="lnm" style="color:var(--azul)">⭐ ${c.nombre} ${c.apellido} <button onclick="event.stopPropagation();abrirEdit('${c.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">trae ${c.votosPos}</span></div>${leafs}`;
+    });
+    sueltos.forEach(s=>{kids+=`<div class="leaf"><span class="lnm">${s.nombre} ${s.apellido} <button onclick="event.stopPropagation();abrirEdit('${s.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">votante directo</span></div>`;});
+    cont.innerHTML+=`<div class="node lvl-ref" style="opacity:.85">
+      <div class="node-head" onclick="toggleNode(this)">
+        <span class="caret">▶</span>
+        <div class="node-ava" style="background:var(--gris)">?</div>
+        <div class="node-info"><div class="nm">Sin referente asignado</div><div class="sb">registros viejos o de prueba · revisá y reasigná o borrá</div></div>
+        <div class="node-votos"><div class="big">${votosDe(huerfanos).pos}</div><div class="lb">votos</div></div>
+      </div>
+      <div class="node-children">${kids}</div>
+    </div>`;
+  }
+}
+function toggleNode(h){h.classList.toggle('open');h.parentElement.querySelector('.node-children').classList.toggle('open');}
+
+/* ---- EDITAR / BORRAR / AGREGAR HIJO ---- */
+let editId=null;
+function abrirEdit(id){
+  const p=REGISTROS.find(x=>x.id===id); if(!p)return;
+  editId=id;
+  document.getElementById('modalTit').textContent=`Editar: ${p.nombre} ${p.apellido}`;
+  const esConf=p.tipo==='conf';
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-row">
+      <div class="form-field"><label>Nombre</label><input id="eNombre" value="${p.nombre||''}"></div>
+      <div class="form-field"><label>Apellido</label><input id="eApellido" value="${p.apellido||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>DNI</label><input id="eDni" value="${p.dni||''}" placeholder="agregalo si te lo pasaron"></div>
+      <div class="form-field"><label>Teléfono</label><input id="eTel" value="${p.tel||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Barrio</label><input id="eBarrio" list="barriosList" value="${p.barrio||''}"></div>
+      <div class="form-field"><label>Estado</label><select id="eEstado"><option value="cont"${p.estado==='cont'?' selected':''}>Contactado</option><option value="prom"${p.estado==='prom'?' selected':''}>Prometido</option><option value="conf"${p.estado==='conf'?' selected':''}>Confirmado</option></select></div>
+    </div>
+    ${esConf?`<div class="form-field"><label>¿A cuánta gente trae?</label><input id="eVotos" type="number" min="1" value="${p.votosPos}"><div class="helper">Subilo o bajalo según lo que confirmes. Ya tiene ${REGISTROS.filter(x=>x.padre===p.id).length} nombre(s) cargado(s).</div></div>`:''}`;
+  document.getElementById('modalBg').style.display='flex';
+}
+async function guardarEdit(){
+  const p=REGISTROS.find(x=>x.id===editId); if(!p)return;
+  p.nombre=document.getElementById('eNombre').value.trim()||p.nombre;
+  p.apellido=document.getElementById('eApellido').value.trim();
+  p.dni=normDni(document.getElementById('eDni').value);
+  p.tel=document.getElementById('eTel').value.trim();
+  p.barrio=document.getElementById('eBarrio').value.trim()||p.barrio;
+  p.estado=document.getElementById('eEstado').value;
+  const ev=document.getElementById('eVotos'); if(ev){const nh=REGISTROS.filter(x=>x.padre===p.id).length;p.votosPos=Math.max(parseInt(ev.value)||p.votosPos,nh);}
+  // si el DNI ahora figura en el padrón, completar mesa/circuito
+  const pad=p.dni?(_padronCache[p.dni]||await padronPorDniDB(p.dni)):null;
+  if(pad){p.mesa=pad.mesa;p.circuito=pad.circuito;}
+  cerrarModal(); renderAll();
+  // GUARDAR EN LA BASE
+  const okDB=await actualizarRegistroDB(p.id,{
+    nombre:p.nombre, apellido:p.apellido, dni:p.dni||null, tel:p.tel||null,
+    barrio:p.barrio||null, estado:p.estado, votos_pos:p.votosPos,
+    mesa:p.mesa||null, circuito:p.circuito||null
+  });
+  if(okDB)toast('Cambios guardados ✓', true);
+}
+async function borrarRegistro(){
+  const p=REGISTROS.find(x=>x.id===editId); if(!p)return;
+  const hijos=REGISTROS.filter(x=>x.padre===editId).length;
+  const msg=hijos?`Esta persona de confianza tiene ${hijos} nombre(s) colgando. Si la borrás, esos quedan sueltos. ¿Borrar igual?`:`¿Borrar a ${p.nombre} ${p.apellido}?`;
+  if(!confirm(msg))return;
+  const idBorrar=editId;
+  REGISTROS.forEach(x=>{if(x.padre===idBorrar)delete x.padre;});
+  REGISTROS=REGISTROS.filter(x=>x.id!==idBorrar);
+  cerrarModal(); renderAll();
+  // BORRAR EN LA BASE
+  const okDB=await borrarRegistroDB(idBorrar);
+  if(okDB)toast('Borrado ✓', true);
+}
+function cerrarModal(){document.getElementById('modalBg').style.display='none';editId=null;if(typeof restoreModalButtons==='function'&&editRefId!==null)restoreModalButtons();}
+async function addHijo(confId){
+  const c=REGISTROS.find(x=>x.id===confId); if(!c)return;
+  const nom=prompt(`Nombre y apellido de alguien de la gente de ${c.nombre} ${c.apellido}:`);
+  if(!nom||!nom.trim())return;
+  const parts=nom.trim().split(' ');
+  const nombre=parts[0]; const apellido=parts.slice(1).join(' ')||'';
+  const nuevo={tipo:'persona',nombre,apellido,dni:'',tel:'',votosPos:1,barrio:c.barrio,estado:'prom',ref:c.ref,refNom:c.refNom,padre:confId};
+  const guardado=await guardarRegistroDB(nuevo);
+  if(!guardado){toast('No se pudo guardar el nombre.');return;}
+  guardado.refNom=c.refNom;
+  REGISTROS.unshift(guardado);
+  // si ya hay más nombres que el estimado, subir el total y guardarlo
+  const nHijos=REGISTROS.filter(x=>x.padre===confId).length;
+  if(nHijos>c.votosPos){c.votosPos=nHijos;await actualizarRegistroDB(c.id,{votos_pos:c.votosPos});}
+  toast('Nombre agregado ✓', true);
+  renderAll();
+}
+
+/* ---- AGENDA con TURNOS ---- */
+const TURNOS=['10:00–12:00','14:00–16:00','16:00–18:00','18:00–20:00'];
+function renderTurnos(){
+  const fecha=document.getElementById('evFecha').value;
+  const grid=document.getElementById('turnoGrid');
+  document.getElementById('evTurno').value='';
+  if(!fecha){grid.innerHTML='<div class="empty" style="grid-column:1/-1;padding:10px">Elegí una fecha para ver los turnos libres.</div>';return;}
+  const d=new Date(fecha+'T00:00');
+  if(d.getDay()===0){grid.innerHTML='<div class="empty" style="grid-column:1/-1;padding:10px;color:var(--rojo)">El domingo no hay turnos. Elegí de lunes a sábado.</div>';return;}
+  grid.innerHTML=TURNOS.map(t=>{
+    const tomado=EVENTOS.find(e=>e.fecha===fecha&&e.turno===t);
+    if(tomado){
+      return `<div style="padding:12px;border:1.5px solid var(--linea);border-radius:11px;background:var(--arena-2);opacity:.6;text-align:center">
+        <div style="font-weight:700;text-decoration:line-through;color:var(--gris)">${t}</div>
+        <div style="font-size:10.5px;color:var(--rojo);font-weight:600;margin-top:2px">OCUPADO</div></div>`;
+    }
+    return `<button type="button" onclick="elegirTurno('${t}',this)" style="padding:12px;border:1.5px solid var(--linea);border-radius:11px;background:var(--arena);font-weight:700;color:var(--tinta);cursor:pointer;transition:.12s">
+      ${t}<div style="font-size:10.5px;color:var(--verde-ok);font-weight:600;margin-top:2px">libre</div></button>`;
+  }).join('');
+}
+function elegirTurno(t,btn){
+  document.getElementById('evTurno').value=t;
+  document.querySelectorAll('#turnoGrid button').forEach(b=>{b.style.background='var(--arena)';b.style.borderColor='var(--linea)';b.style.color='var(--tinta)';});
+  btn.style.background='var(--selva)';btn.style.borderColor='var(--selva)';btn.style.color='#fff';
+}
+async function addEvento(){
+  const tipo=document.getElementById('evTipo').value;
+  const fecha=document.getElementById('evFecha').value;
+  const turno=document.getElementById('evTurno').value;
+  const titulo=document.getElementById('evTitulo').value.trim();
+  const lugar=document.getElementById('evLugar').value.trim();
+  const nota=document.getElementById('evNota').value.trim();
+  if(!fecha||!titulo){alert('Poné fecha y título.');return;}
+  if(!turno){alert('Elegí un turno disponible.');return;}
+  // doble chequeo por si dos cargan a la vez (agenda global)
+  if(EVENTOS.find(e=>e.fecha===fecha&&e.turno===turno)){alert('Ese turno se acaba de ocupar. Elegí otro.');renderTurnos();return;}
+  if(!sb){alert('Sin conexión con la base.');return;}
+  // GUARDAR EN LA BASE
+  const {data,error}=await sb.from('eventos').insert({tipo,titulo,fecha,turno,lugar:lugar||null,nota:nota||null,ref_id:current.id}).select().single();
+  if(error){
+    if(/(duplicate|unique)/i.test(error.message)){alert('Ese turno ya está ocupado. Elegí otro.');renderTurnos();}
+    else toast('Error al guardar el turno: '+error.message);
+    return;
+  }
+  EVENTOS.push({id:data.id,tipo,fecha,turno,titulo,lugar,nota,ref:current.id,refNom:current.nombre});
+  ['evTitulo','evLugar','evNota'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('evFecha').value='';document.getElementById('evTurno').value='';
+  document.getElementById('turnoGrid').innerHTML='<div class="empty" style="grid-column:1/-1;padding:10px">Elegí una fecha para ver los turnos libres.</div>';
+  renderAgenda();
+  toast('Turno reservado ✓',true);
+}
+function renderAgenda(){
+  const isAdmin=current.role==='admin'||current.coord;
+  const mine=EVENTOS.filter(e=>isAdmin||e.ref===current.id||e.ref==='admin')
+    .slice().sort((a,b)=>(a.fecha+(a.turno||'')).localeCompare(b.fecha+(b.turno||'')));
+  const l=document.getElementById('agendaList');
+  if(!mine.length){l.innerHTML='<div style="color:var(--gris);font-size:13px">No hay nada agendado. Reservá un turno arriba.</div>';return;}
+  l.innerHTML=mine.map(e=>{
+    const d=new Date(e.fecha+'T00:00');
+    const tEt = e.tipo==='visita'?'et-visita':e.tipo==='reunion'?'et-reunion':'et-acto';
+    const tNm = e.tipo==='visita'?'Visita':e.tipo==='reunion'?'Reunión':'Acto';
+    return `<div class="ev">
+      <div class="ev-date"><div class="d">${d.getDate()}</div><div class="m">${MESES[d.getMonth()]}</div></div>
+      <div class="ev-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div class="ti">${e.titulo}</div><span class="ev-type ${tEt}">${tNm}</span>
+        </div>
+        <div class="me"><b>${e.turno||e.hora||'—'}</b> · ${e.lugar||'—'}${e.nota?'<br>'+e.nota:''}${isAdmin?'<br><span style="color:var(--tierra)">'+e.refNom+'</span>':''}</div>
+      </div></div>`;
+  }).join('');
+}
+
+/* ---- LISTA + BUSCADOR + REPETIDOS ---- */
+let filtroLista='todos';
+function setFiltro(f){filtroLista=f;document.querySelectorAll('.filtro-btn').forEach(b=>b.classList.toggle('active',b.dataset.f===f));renderLista();}
+function claveDup(p){return p.dni?('dni:'+normDni(p.dni)):('nom:'+norm(p.nombre)+'|'+norm(p.apellido));}
+function mapaDuplicados(lista){
+  // cuenta cuántas veces aparece cada clave; >1 = repetido
+  const cuenta={};
+  lista.forEach(p=>{const k=claveDup(p);cuenta[k]=(cuenta[k]||0)+1;});
+  return cuenta;
+}
+function renderLista(){
+  const cont=document.getElementById('listaBody');if(!cont)return;
+  const esCoord=current.role==='admin'||current.coord;
+  let base=REGISTROS.filter(p=>esCoord||p.ref===current.id);
+  document.getElementById('listaTitle').textContent=esCoord?'Lista completa':'Mi lista';
+
+  // detección de repetidos sobre TODA la base visible (no sobre el filtro)
+  const dupCount=mapaDuplicados(base);
+  const totalDups=Object.values(dupCount).filter(n=>n>1).length;
+  const warn=document.getElementById('dupWarn');
+  if(totalDups>0){warn.style.display='block';warn.innerHTML=`⚠ Hay <b>${totalDups}</b> nombre(s)/DNI que aparecen más de una vez. Tocá el filtro <b>Repetidos</b> para revisarlos y borrar el que sobre.`;}
+  else{warn.style.display='none';}
+
+  const q=norm(document.getElementById('buscador').value);
+  let list=base.filter(p=>{
+    if(filtroLista==='votante'&&p.tipo!=='persona')return false;
+    if(filtroLista==='conf'&&p.tipo!=='conf')return false;
+    if(filtroLista==='dups'&&dupCount[claveDup(p)]<2)return false;
+    if(!q)return true;
+    return [p.nombre,p.apellido,p.dni,p.barrio,p.refNom].some(v=>norm(v||'').includes(q));
+  });
+  // ordenar: repetidos primero si filtro dups, sino alfabético por apellido
+  list.sort((a,b)=>norm(a.apellido+a.nombre).localeCompare(norm(b.apellido+b.nombre)));
+
+  document.getElementById('listaCount').textContent=`${list.length} resultado${list.length!==1?'s':''}${q?` para "${document.getElementById('buscador').value}"`:''}`;
+  if(!list.length){cont.innerHTML='<div class="empty">Nada para mostrar con este filtro o búsqueda.</div>';return;}
+  cont.innerHTML=list.map(p=>{
+    const esDup=dupCount[claveDup(p)]>1;
+    const badge=p.tipo==='conf'?`<span class="badge badge-conf">trae ${p.votosPos}</span>`:`<span class="badge badge-vot">votante</span>`;
+    const padre=p.padre?REGISTROS.find(x=>x.id===p.padre):null;
+    const ev=nivelEvidencia(p);
+    const marcas=[
+      p.prioritaria?'<span style="color:var(--rojo);font-weight:700">⚡ urgente</span>':'',
+      p.visita?'<span style="color:var(--tierra);font-weight:700">📍 visitar</span>':'',
+      p.transporte?'<span style="color:var(--azul);font-weight:700">🚗 transporte</span>':''
+    ].filter(Boolean).join(' · ');
+    const sub=`${p.barrio}${padre?` · gente de ${padre.nombre}`:''}${esCoord?' · '+p.refNom:''} · <span style="color:${ev.col};font-weight:700">${ev.n}</span>${marcas?' · '+marcas:''}`;
+    return `<div class="person-row ${esDup?'dup':''}" style="${p.prioritaria?'border-left:4px solid var(--rojo)':''}"><div class="who">
+        <div><b>${p.nombre} ${p.apellido}</b>${badge}${esDup?'<span class="dup-flag">REPETIDO</span>':''}</div>
+        <div class="meta">${sub}</div></div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+        <span class="tag ${estClass(p.estado)}">${estLabel(p.estado)}</span>
+        <button onclick="toggleMarca('${p.id}','prioritaria')" title="Urgente / prioritaria" style="background:${p.prioritaria?'var(--rojo)':'var(--arena-2)'};color:${p.prioritaria?'#fff':'inherit'};border-radius:8px;width:30px;height:30px;font-size:14px">⚡</button>
+        <button onclick="toggleMarca('${p.id}','visita')" title="Pendiente de visita" style="background:${p.visita?'var(--tierra)':'var(--arena-2)'};color:${p.visita?'#fff':'inherit'};border-radius:8px;width:30px;height:30px;font-size:14px">📍</button>
+        <button onclick="toggleTransporte('${p.id}')" title="Necesita transporte" style="background:${p.transporte?'var(--azul)':'var(--arena-2)'};color:${p.transporte?'#fff':'inherit'};border-radius:8px;width:30px;height:30px;font-size:14px">🚗</button>
+        <button onclick="agendarVisitaA('${p.id}')" title="Agendar visita" style="background:var(--selva);color:#fff;border-radius:8px;height:30px;font-size:12px;font-weight:700;padding:0 10px">📅 Visita</button>
+        <button onclick="abrirEdit('${p.id}')" title="Editar" style="background:var(--arena-2);border-radius:8px;width:30px;height:30px;font-size:14px">✏️</button>
+      </div></div>`;
+  }).join('');
+}
+async function toggleMarca(id,campo){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  p[campo]=!p[campo];renderLista();
+  await actualizarRegistroDB(id,{[campo]:p[campo]});
+}
+async function toggleTransporte(id){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  p.transporte=!p.transporte;renderLista();renderDiaD();
+  await actualizarRegistroDB(id,{transporte:p.transporte});
+}
+// Llevar a la agenda con los datos de la persona precargados
+function agendarVisitaA(id){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  // marcar como pendiente de visita
+  if(!p.visita){p.visita=true;actualizarRegistroDB(id,{visita:true});}
+  // ir a la pestaña Agenda
+  document.querySelectorAll('.tab').forEach(t=>{if(t.textContent.trim()==='Agenda'){t.click();}});
+  // precargar el formulario
+  setTimeout(()=>{
+    const ti=document.getElementById('evTitulo'); if(ti)ti.value=`Visita a ${p.nombre} ${p.apellido}`;
+    const tipo=document.getElementById('evTipo'); if(tipo)tipo.value='visita';
+    const lug=document.getElementById('evLugar'); if(lug)lug.value=p.barrio||'';
+    const nota=document.getElementById('evNota'); if(nota)nota.value=(p.tel?'Tel: '+p.tel+'. ':'')+(p.mesa?'Mesa '+p.mesa+'. ':'');
+    if(ti)ti.scrollIntoView({behavior:'smooth',block:'center'});
+    toast('Completá fecha y turno para agendar',true);
+  },100);
+}
+
+/* ---- DÍA D: MOVILIZACIÓN ---- */
+let diadTab='transporte';
+function setDiadTab(t){
+  diadTab=t;
+  document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('active',b.dataset.d===t));
+  document.getElementById('diad-transporte').style.display=t==='transporte'?'block':'none';
+  document.getElementById('diad-control').style.display=t==='control'?'block':'none';
+  if(t==='control')renderControl();
+}
+function necesitanTransporte(){const c=current.role==='admin'||current.coord;return REGISTROS.filter(p=>p.transporte&&(c||p.ref===current.id));}
+function renderDiaD(){
+  if(!document.getElementById('diadStats'))return;
+  const esCoord=current.role==='admin'||current.coord;
+
+  // El referente solo ve Control (no arma autos). Coordinación ve todo.
+  const formAuto=document.querySelector('#diad-transporte .form-card');
+  if(formAuto)formAuto.style.display=esCoord?'block':'none';
+  const tabsBtns=document.querySelectorAll('[data-d]');
+  if(!esCoord){
+    // forzar a control y ocultar el botón de transporte para referente
+    document.querySelector('[data-d="transporte"]').style.display='none';
+    if(diadTab==='transporte'){diadTab='control';}
+  }else{
+    document.querySelector('[data-d="transporte"]').style.display='';
+  }
+  document.getElementById('diad-transporte').style.display=(diadTab==='transporte'&&esCoord)?'block':'none';
+  document.getElementById('diad-control').style.display=(diadTab==='control'||!esCoord)?'block':'none';
+  document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('active',b.dataset.d===diadTab));
+
+  const scope=esCoord?REGISTROS:REGISTROS.filter(p=>p.ref===current.id);
+  const totalTransp=scope.filter(p=>p.transporte).length;
+  const autosScope=AUTOS;
+  const capacidadTotal=autosScope.reduce((s,a)=>s+a.cap,0);
+  const yaVotaron=scope.filter(p=>p.voto).length;
+  const totalGente=scope.filter(p=>p.tipo==='persona'||p.tipo==='conf').length;
+  const sinAuto=scope.filter(p=>p.transporte&&!p.voto&&!p.autoId).length;
+
+  document.getElementById('diadStats').innerHTML=`
+    <div class="stat"><div class="num">${totalTransp}</div><div class="lab">Necesitan transporte</div></div>
+    <div class="stat"><div class="num">${autosScope.length}</div><div class="lab">Autos · ${capacidadTotal} lugares</div></div>
+    <div class="stat" style="${sinAuto>0?'border:2px solid var(--rojo)':''}"><div class="num" style="color:${sinAuto>0?'var(--rojo)':'var(--verde-ok)'}">${sinAuto>0?sinAuto:'OK'}</div><div class="lab">${sinAuto>0?'Sin auto aún':'Todos con auto'}</div></div>
+    <div class="stat"><div class="num" style="color:var(--verde-ok)">${yaVotaron}<span style="font-size:16px;color:var(--gris)">/${totalGente}</span></div><div class="lab">Ya votaron</div></div>`;
+
+  renderMovByRef();
+  if(diadTab==='control'||!esCoord)renderControl();
+}
+function renderMovByRef(){
+  const cont=document.getElementById('movByRef');if(!cont)return;
+  const esCoord=current.role==='admin'||current.coord;
+  // universo: quienes necesitan transporte y NO votaron
+  const pendientes=REGISTROS.filter(p=>p.transporte&&!p.voto&&(esCoord||p.ref===current.id));
+  const autosScope=esCoord?AUTOS:AUTOS.filter(a=>a.ref===current.id);
+
+  // COLA = pendientes sin auto, agrupados por barrio
+  const enCola=pendientes.filter(p=>!p.autoId);
+  const porBarrio={};
+  enCola.forEach(p=>{(porBarrio[p.barrio]=porBarrio[p.barrio]||[]).push(p);});
+
+  let html='';
+
+  // ---- COLA ----
+  html+=`<h3 style="font-size:15px;color:var(--selva);margin:6px 0 10px">📍 Cola: sin auto asignado (${enCola.length})</h3>`;
+  if(!enCola.length){
+    html+='<div class="empty" style="margin-bottom:18px">Toda la gente con transporte ya tiene auto, o ya votó.</div>';
+  }else{
+    html+='<div style="margin-bottom:20px">';
+    Object.keys(porBarrio).sort().forEach(b=>{
+      html+=`<div style="background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--sombra)">
+        <div style="font-weight:700;color:var(--tierra);font-size:13.5px;margin-bottom:8px">${b} <span style="color:var(--gris);font-weight:600">· ${porBarrio[b].length} para buscar</span></div>`;
+      porBarrio[b].forEach(p=>{
+        const opts=autosScope.map(a=>`<option value="${a.id}">${a.conductor} (${a.barrio||'—'})</option>`).join('');
+        html+=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--arena-2)">
+          <div style="font-size:13px"><b>${p.nombre} ${p.apellido}</b><div style="font-size:11px;color:var(--gris)">${p.tel||'sin tel'}${p.mesa?' · mesa '+p.mesa:''}</div></div>
+          ${esCoord&&autosScope.length?`<select onchange="asignarAuto('${p.id}',this.value)" style="padding:6px 9px;border:1.5px solid var(--linea);border-radius:8px;font-size:12px;background:var(--arena)"><option value="">→ asignar a auto</option>${opts}</select>`:''}
+        </div>`;
+      });
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  // ---- AUTOS ----
+  html+=`<h3 style="font-size:15px;color:var(--selva);margin:18px 0 10px">🚗 Autos y su gente</h3>`;
+  if(!autosScope.length){
+    html+='<div class="empty">No hay autos cargados todavía.</div>';
+  }else{
+    autosScope.forEach(a=>{
+      const asignados=REGISTROS.filter(p=>p.autoId===a.id&&p.transporte);
+      const pend=asignados.filter(p=>!p.voto);
+      const votaron=asignados.filter(p=>p.voto);
+      const libre=a.cap-pend.length;
+      const lleno=libre<=0;
+      const otrosAutos=autosScope.filter(x=>x.id!==a.id);
+      const genteHtml=asignados.length?asignados.map(p=>{
+        const reasignar=otrosAutos.length?otrosAutos.map(x=>`<option value="${x.id}">→ ${x.conductor}</option>`).join(''):'';
+        return `<div class="leaf" style="${p.voto?'opacity:.55':''}">
+          <span class="lnm">${p.nombre} ${p.apellido} ${p.voto?'<b style="color:var(--verde-ok)">✓ votó</b>':''}</span>
+          <span style="display:flex;gap:5px;align-items:center">
+            <span class="lmeta">${p.barrio}${p.mesa?' · m'+p.mesa:''}</span>
+            ${esCoord&&!p.voto?`<select onchange="reasignar('${p.id}',this.value)" style="padding:4px 7px;border:1px solid var(--linea);border-radius:7px;font-size:11px;background:var(--arena)"><option value="">mover…</option><option value="__cola">→ a la cola</option>${reasignar}</select>`:''}
+          </span></div>`;
+      }).join(''):'<div class="leaf"><span class="lmeta" style="font-style:italic">Sin gente asignada. Asignale desde la cola de arriba.</span></div>';
+      html+=`<div class="node" style="margin-bottom:12px">
+        <div class="node-head" onclick="toggleNode(this)"><span class="caret">▶</span>
+          <div class="node-ava" style="background:${lleno?'var(--rojo)':'var(--azul)'}">🚗</div>
+          <div class="node-info"><div class="nm">${a.conductor} ${a.barrio?'· '+a.barrio:''}</div><div class="sb">${pend.length}/${a.cap} a bordo${votaron.length?' · '+votaron.length+' ya votaron':''}${a.tel?' · '+a.tel:''}</div></div>
+          <div class="node-votos"><div class="big" style="color:${lleno?'var(--rojo)':'var(--verde-ok)'}">${libre>0?libre:'lleno'}</div><div class="lb">${libre>0?'lugares':''}</div></div>
+        </div>
+        <div class="node-children">
+          ${genteHtml}
+          ${esCoord?`<div class="leaf" style="border:none;padding-top:8px"><button onclick="event.stopPropagation();vaciarAuto('${a.id}')" style="background:#fdf4e3;color:#8a6a1c;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px;margin-right:6px">Mandar todos a la cola</button><button onclick="event.stopPropagation();quitarAuto('${a.id}')" style="background:#fbe9e6;color:var(--rojo);font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px">Eliminar auto</button></div>`:''}
+        </div></div>`;
+    });
+  }
+  cont.innerHTML=html;
+}
+async function asignarAuto(personaId,autoId){
+  if(!autoId)return;
+  const p=REGISTROS.find(x=>x.id===personaId);if(!p)return;
+  const a=AUTOS.find(x=>x.id===autoId);
+  const aBordo=REGISTROS.filter(x=>x.autoId===autoId&&x.transporte&&!x.voto).length;
+  if(a&&aBordo>=a.cap){if(!confirm(`El auto de ${a.conductor} ya está completo (${a.cap}). ¿Asignar igual?`))return;}
+  p.autoId=autoId;renderDiaD();
+  await actualizarRegistroDB(personaId,{auto_id:autoId});
+}
+async function reasignar(personaId,destino){
+  const p=REGISTROS.find(x=>x.id===personaId);if(!p)return;
+  if(destino==='__cola'){delete p.autoId;await actualizarRegistroDB(personaId,{auto_id:null});}
+  else if(destino){p.autoId=destino;await actualizarRegistroDB(personaId,{auto_id:destino});}
+  renderDiaD();
+}
+async function vaciarAuto(autoId){
+  if(!confirm('¿Mandar a toda la gente de este auto de vuelta a la cola?'))return;
+  const ids=REGISTROS.filter(p=>p.autoId===autoId).map(p=>p.id);
+  REGISTROS.forEach(p=>{if(p.autoId===autoId)delete p.autoId;});
+  renderDiaD();
+  for(const id of ids){await actualizarRegistroDB(id,{auto_id:null});}
+}
+async function agregarAuto(){
+  const conductor=document.getElementById('auCond').value.trim();
+  const barrio=document.getElementById('auZona').value.trim();
+  const cap=parseInt(document.getElementById('auCap').value)||4;
+  const tel=document.getElementById('auTel').value.trim();
+  if(!conductor){alert('Poné el nombre del conductor.');return;}
+  if(!sb){alert('Sin conexión con la base.');return;}
+  // GUARDAR EN LA BASE
+  const {data,error}=await sb.from('autos').insert({conductor,capacidad:cap,barrio:barrio||null,tel:tel||null,en_viaje:false}).select().single();
+  if(error){toast('Error al guardar el auto: '+error.message);return;}
+  const nuevo={id:data.id,conductor,cap,tel,barrio,enViaje:false};
+  AUTOS.push(nuevo);
+  // ASIGNACIÓN POR DEFECTO: tomar gente sin auto del mismo barrio, hasta llenar capacidad
+  if(barrio){
+    const candidatos=REGISTROS.filter(p=>p.transporte&&!p.voto&&!p.autoId&&norm(p.barrio)===norm(barrio));
+    for(const p of candidatos.slice(0,cap)){p.autoId=nuevo.id;await actualizarRegistroDB(p.id,{auto_id:nuevo.id});}
+  }
+  ['auCond','auZona','auTel'].forEach(id=>document.getElementById(id).value='');document.getElementById('auCap').value='4';
+  toast('Auto agregado ✓',true);
+  renderDiaD();
+}
+async function quitarAuto(id){
+  if(!confirm('¿Quitar este auto? La gente que tenía asignada vuelve a la cola.'))return;
+  // liberar a su gente
+  const ids=REGISTROS.filter(p=>p.autoId===id).map(p=>p.id);
+  REGISTROS.forEach(p=>{if(p.autoId===id)delete p.autoId;});
+  AUTOS=AUTOS.filter(a=>a.id!==id);
+  renderDiaD();
+  if(sb){
+    for(const rid of ids){await actualizarRegistroDB(rid,{auto_id:null});}
+    const {error}=await sb.from('autos').delete().eq('id',id);
+    if(error)toast('Error al borrar el auto: '+error.message);
+    else toast('Auto eliminado ✓',true);
+  }
+}
+function renderControl(){
+  const cont=document.getElementById('controlList');if(!cont)return;
+  const esCoord=current.role==='admin'||current.coord;
+  const q=norm(document.getElementById('buscadorDiaD').value);
+  let list=REGISTROS.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&(esCoord||p.ref===current.id));
+  if(q)list=list.filter(p=>[p.nombre,p.apellido,p.barrio,p.refNom].some(v=>norm(v||'').includes(q)));
+  list.sort((a,b)=>(a.voto?1:0)-(b.voto?1:0)||norm(a.apellido).localeCompare(norm(b.apellido)));
+  if(!list.length){cont.innerHTML='<div class="empty">No tenés gente para controlar todavía.</div>';return;}
+  cont.innerHTML=list.map(p=>`
+    <div class="person-row" style="${p.voto?'background:#e7f4ec;border-color:var(--verde-ok)':''}">
+      <div class="who"><div><b>${p.nombre} ${p.apellido}</b>${p.transporte?'<span class="badge" style="background:var(--azul)">🚗 transporte</span>':''}</div>
+        <div class="meta">${p.barrio}${esCoord?' · '+p.refNom:''}${p.tel?' · '+p.tel:''}</div></div>
+      <button onclick="toggleVoto('${p.id}')" style="padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:700;${p.voto?'background:var(--verde-ok);color:#fff':'background:var(--arena-2);color:var(--tinta)'}">${p.voto?'✓ Ya votó':'Marcar votó'}</button>
+    </div>`).join('');
+}
+async function toggleVoto(id){const p=REGISTROS.find(x=>x.id===id);if(!p)return;p.voto=!p.voto;renderDiaD();await actualizarRegistroDB(id,{voto:p.voto});}
+
+function renderMapa(){
+  const counts={};BARRIOS.forEach(b=>counts[b]=0);
+  REGISTROS.forEach(p=>{if(counts[p.barrio]!==undefined)counts[p.barrio]+=p.votosPos;});
+  const max=Math.max(1,...Object.values(counts));
+  document.getElementById('barrioGrid').innerHTML=BARRIOS.map(b=>{
+    const c=counts[b];const op=(0.06+0.30*(c/max)).toFixed(2);
+    return `<div class="barrio-card"><div class="heat" style="opacity:${op}"></div>
+      <div class="bname">${b}</div><div class="bcount">${c}</div><div class="blab">votos posibles</div></div>`;
+  }).join('');
+}
+
+// Inicializar conexión y atajos al cargar
+window.addEventListener('DOMContentLoaded', ()=>{
+  initSupabase();
+  const pass=document.getElementById('pass');
+  if(pass)pass.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+  const usr=document.getElementById('inUsuario');
+  if(usr)usr.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('pass').focus();});
+});
+</script>
+</body>
+</html>
