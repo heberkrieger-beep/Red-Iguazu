@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v12</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v15</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -400,6 +400,12 @@
         </div>
       </div>
 
+      <div class="form-field full" id="campoRefAsignar" style="display:none">
+        <label>¿De quién es esta persona? <span class="opt">(referente al que se le suma)</span></label>
+        <select id="fRefAsignar"></select>
+        <div class="helper">Por defecto te la asignás a vos. Si la estás cargando en nombre de otro referente, elegilo acá.</div>
+      </div>
+
       <button class="btn-add" id="btnGuardar" onclick="tryAdd()">Guardar</button>
     </div>
 
@@ -444,6 +450,7 @@
   <div class="view" id="view-lista">
     <div class="view-head"><h2 id="listaTitle">Lista completa</h2><p>Buscá por nombre, apellido, DNI o barrio. Los repetidos aparecen marcados.</p></div>
     <div style="position:sticky;top:96px;z-index:30;background:var(--arena);padding-bottom:10px">
+      <select id="selRefLista" onchange="renderLista()" style="display:none;width:100%;padding:12px 14px;border:1.5px solid var(--selva);border-radius:12px;font-size:14.5px;font-weight:700;background:var(--blanco);color:var(--selva);margin-bottom:10px"></select>
       <input id="buscador" placeholder="🔍 Buscar nombre, apellido, DNI o barrio..." oninput="renderLista()" autocomplete="off"
         style="width:100%;padding:13px 15px;border:1.5px solid var(--linea);border-radius:12px;font-size:15px;background:var(--blanco);box-shadow:var(--sombra)">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
@@ -483,8 +490,12 @@
           <div class="form-field"><label>Capacidad (pasajeros)</label><input id="auCap" type="number" min="1" value="4"></div>
           <div class="form-field"><label>Teléfono <span class="opt">(opcional)</span></label><input id="auTel" placeholder="3757-..."></div>
         </div>
+        <div class="form-row">
+          <div class="form-field"><label>Modelo / color <span class="opt">(opcional)</span></label><input id="auModelo" placeholder="Gol gris, Hilux blanca..."></div>
+          <div class="form-field"><label>Dominio / patente <span class="opt">(opcional)</span></label><input id="auDominio" placeholder="AB123CD" style="text-transform:uppercase"></div>
+        </div>
         <button class="btn-add" onclick="agregarAuto()">Agregar auto</button>
-        <div class="helper" style="margin-top:8px">La zona ayuda a sugerir qué gente buscar (los del mismo barrio van juntos en un viaje).</div>
+        <div class="helper" style="margin-top:8px">El modelo y la patente sirven para que la gente reconozca el auto que la va a buscar.</div>
       </div>
       <div id="movByRef"></div>
     </div>
@@ -702,7 +713,7 @@ async function cargarAutosDB(){
     const {data,error}=await sb.from('autos').select('*').order('creado_en');
     if(error)throw error;
     if(data){
-      AUTOS = data.map(a=>({id:a.id, conductor:a.conductor, cap:a.capacidad||4, barrio:a.barrio||'', tel:a.tel||'', enViaje:!!a.en_viaje}));
+      AUTOS = data.map(a=>({id:a.id, conductor:a.conductor, cap:a.capacidad||4, barrio:a.barrio||'', tel:a.tel||'', modelo:a.modelo||'', dominio:a.dominio||'', enViaje:!!a.en_viaje}));
       renderDiaD();
     }
   }catch(e){ console.error('cargar autos:', e); }
@@ -753,7 +764,19 @@ function toast(msg, ok){
 function renderAll(){renderDash();renderRecent();renderTree();renderAgenda();renderMapa();renderReferentes();refreshUserSelect();refreshBarrios();renderLista();renderDiaD();}
 function logout(){current=null;document.getElementById('app').style.display='none';document.getElementById('login').style.display='flex';}
 function refreshUserSelect(){
-  const sel=document.getElementById('userSelect');if(!sel)return; // ya no existe en login real
+  // llenar el selector "¿de quién es?" en Cargar (solo para coordinación)
+  const campo=document.getElementById('campoRefAsignar');
+  const sel=document.getElementById('fRefAsignar');
+  if(!campo||!sel||!current)return;
+  const esCoord=current.role==='admin'||current.coord;
+  if(!esCoord){campo.style.display='none';return;}
+  campo.style.display='block';
+  const activos=REFERENTES.filter(r=>r.estado!=='inactivo');
+  // poner al usuario actual (Heber) primero, como opción por defecto
+  const yo=activos.find(r=>r.id===current.id);
+  const otros=activos.filter(r=>r.id!==current.id).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const ordenados=yo?[yo,...otros]:otros;
+  sel.innerHTML=ordenados.map(r=>`<option value="${r.id}"${r.id===current.id?' selected':''}>${r.nombre}${r.id===current.id?' (vos)':''}</option>`).join('');
 }
 let BARRIOS_DB=[]; // [{id, nombre}] desde la base
 async function cargarBarriosDB(){
@@ -1291,13 +1314,19 @@ async function tryAdd(){
 
   const pad=dni?(_padronCache[dni]||await padronPorDniDB(dni)):null;
   const mesa=pad?pad.mesa:'', circuito=pad?pad.circuito:'';
+  // ¿a qué referente se le asigna? coordinación puede elegir; un referente, siempre a sí mismo
+  const esCoord=current.role==='admin'||current.coord;
+  const refSel=document.getElementById('fRefAsignar');
+  const refId=(esCoord && refSel && refSel.value)?refSel.value:current.id;
+  const refUser=REFERENTES.find(u=>u.id===refId);
+  const refNombre=refUser?refUser.nombre:current.nombre;
   let nuevo;
   if(tipoCarga==='conf'){
     const votos=parseInt(document.getElementById('fConfVotos').value)||0;
     if(votos<1)return warn(a,'¿A cuánta gente trae esta persona de confianza?');
-    nuevo={tipo:'conf',nombre,apellido,dni,tel,votosPos:votos,barrio,estado,ref:current.id,refNom:current.nombre,mesa,circuito};
+    nuevo={tipo:'conf',nombre,apellido,dni,tel,votosPos:votos,barrio,estado,ref:refId,refNom:refNombre,mesa,circuito};
   }else{
-    nuevo={tipo:'persona',nombre,apellido,dni,tel,votosPos:1,barrio,estado,ref:current.id,refNom:current.nombre,mesa,circuito};
+    nuevo={tipo:'persona',nombre,apellido,dni,tel,votosPos:1,barrio,estado,ref:refId,refNom:refNombre,mesa,circuito};
   }
 
   // GUARDAR EN LA BASE
@@ -1443,7 +1472,8 @@ function abrirEdit(id){
       <div class="form-field"><label>Barrio</label><input id="eBarrio" list="barriosList" value="${p.barrio||''}"></div>
       <div class="form-field"><label>Estado</label><select id="eEstado"><option value="porconv"${p.estado==='porconv'?' selected':''}>Por convencer</option><option value="cont"${p.estado==='cont'?' selected':''}>Contactado</option><option value="prom"${p.estado==='prom'?' selected':''}>Prometió</option><option value="conf"${p.estado==='conf'?' selected':''}>Confirmado</option></select></div>
     </div>
-    ${esConf?`<div class="form-field"><label>¿A cuánta gente trae?</label><input id="eVotos" type="number" min="1" value="${p.votosPos}"><div class="helper">Subilo o bajalo según lo que confirmes. Ya tiene ${REGISTROS.filter(x=>x.padre===p.id).length} nombre(s) cargado(s).</div></div>`:''}`;
+    ${esConf?`<div class="form-field"><label>¿A cuánta gente trae?</label><input id="eVotos" type="number" min="1" value="${p.votosPos}"><div class="helper">Subilo o bajalo según lo que confirmes. Ya tiene ${REGISTROS.filter(x=>x.padre===p.id).length} nombre(s) cargado(s).</div></div>`:''}
+    ${(current.role==='admin'||current.coord)?`<div class="form-field"><label>Referente <span class="opt">(a quién pertenece)</span></label><select id="eRefAsignar">${REFERENTES.filter(r=>r.estado!=='inactivo').sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(r=>`<option value="${r.id}"${r.id===p.ref?' selected':''}>${r.nombre}${r.id===current.id?' (vos)':''}</option>`).join('')}</select><div class="helper">Cambialo si esta persona fue cargada para otro referente por error.</div></div>`:''}`;
   document.getElementById('modalBg').style.display='flex';
 }
 async function guardarEdit(){
@@ -1458,13 +1488,30 @@ async function guardarEdit(){
   // si el DNI ahora figura en el padrón, completar mesa/circuito
   const pad=p.dni?(_padronCache[p.dni]||await padronPorDniDB(p.dni)):null;
   if(pad){p.mesa=pad.mesa;p.circuito=pad.circuito;}
+  // reasignar referente (solo coordinación)
+  let refCambiado=null;
+  const refSel=document.getElementById('eRefAsignar');
+  if(refSel && refSel.value && refSel.value!==p.ref){
+    p.ref=refSel.value;
+    const ru=REFERENTES.find(u=>u.id===p.ref);
+    p.refNom=ru?ru.nombre:p.refNom;
+    refCambiado=p.ref;
+    // si es persona de confianza, mover también a su gente
+    REGISTROS.forEach(x=>{if(x.padre===p.id){x.ref=p.ref;x.refNom=p.refNom;}});
+  }
   cerrarModal(); renderAll();
   // GUARDAR EN LA BASE
-  const okDB=await actualizarRegistroDB(p.id,{
+  const updates={
     nombre:p.nombre, apellido:p.apellido, dni:p.dni||null, tel:p.tel||null,
     barrio:p.barrio||null, estado:p.estado, votos_pos:p.votosPos,
     mesa:p.mesa||null, circuito:p.circuito||null
-  });
+  };
+  if(refCambiado)updates.ref_id=refCambiado;
+  const okDB=await actualizarRegistroDB(p.id,updates);
+  // guardar el cambio de referente en la gente colgante también
+  if(refCambiado){
+    for(const x of REGISTROS.filter(y=>y.padre===p.id)){await actualizarRegistroDB(x.id,{ref_id:refCambiado});}
+  }
   if(okDB)toast('Cambios guardados ✓', true);
 }
 async function borrarRegistro(){
@@ -1620,8 +1667,35 @@ function mapaDuplicados(lista){
 function renderLista(){
   const cont=document.getElementById('listaBody');if(!cont)return;
   const esCoord=current.role==='admin'||current.coord;
-  let base=REGISTROS.filter(p=>esCoord||p.ref===current.id);
-  document.getElementById('listaTitle').textContent=esCoord?'Lista completa':'Mi lista';
+
+  // selector de referente (solo coordinación): por defecto "lo mío"
+  const selRef=document.getElementById('selRefLista');
+  if(esCoord && selRef){
+    if(!selRef.dataset.lleno || selRef.dataset.lleno!==String(REFERENTES.length)){
+      const yo=REFERENTES.find(r=>r.id===current.id);
+      const otros=REFERENTES.filter(r=>r.id!==current.id && r.estado!=='inactivo').sort((a,b)=>a.nombre.localeCompare(b.nombre));
+      selRef.innerHTML=`<option value="__mio">👤 Solo lo mío</option><option value="__todos">👥 Todos los referentes</option>`+
+        otros.map(r=>`<option value="${r.id}">${r.nombre}</option>`).join('');
+      selRef.dataset.lleno=String(REFERENTES.length);
+      if(!selRef.value)selRef.value='__mio'; // arranca en lo mío
+    }
+    selRef.style.display='block';
+  }else if(selRef){selRef.style.display='none';}
+
+  // alcance según el selector
+  const modo=esCoord&&selRef?selRef.value||'__mio':'__propio';
+  let base;
+  if(!esCoord) base=REGISTROS.filter(p=>p.ref===current.id);
+  else if(modo==='__todos') base=REGISTROS.slice();
+  else if(modo==='__mio') base=REGISTROS.filter(p=>p.ref===current.id);
+  else base=REGISTROS.filter(p=>p.ref===modo); // un referente puntual
+
+  const refElegido=(modo!=='__todos'&&modo!=='__mio'&&modo!=='__propio')?REFERENTES.find(r=>r.id===modo):null;
+  document.getElementById('listaTitle').textContent=
+    !esCoord?'Mi lista':
+    modo==='__todos'?'Lista completa':
+    modo==='__mio'?'Mi lista':
+    refElegido?'Lista de '+refElegido.nombre:'Lista';
 
   // detección de repetidos sobre TODA la base visible (no sobre el filtro)
   const dupCount=mapaDuplicados(base);
@@ -1892,7 +1966,7 @@ function renderMovByRef(){
       html+=`<div class="node" style="margin-bottom:12px">
         <div class="node-head" onclick="toggleNode(this)"><span class="caret">▶</span>
           <div class="node-ava" style="background:${lleno?'var(--rojo)':'var(--azul)'}">🚗</div>
-          <div class="node-info"><div class="nm">${a.conductor} ${a.barrio?'· '+a.barrio:''}</div><div class="sb">${pend.length}/${a.cap} a bordo${votaron.length?' · '+votaron.length+' ya votaron':''}${a.tel?' · '+a.tel:''}</div></div>
+          <div class="node-info"><div class="nm">${a.conductor} ${a.barrio?'· '+a.barrio:''}${a.dominio?' <span style="background:var(--tinta);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;letter-spacing:.5px">'+a.dominio+'</span>':''}</div><div class="sb">${a.modelo?'🚗 '+a.modelo+' · ':''}${pend.length}/${a.cap} a bordo${votaron.length?' · '+votaron.length+' ya votaron':''}${a.tel?' · '+a.tel:''}</div></div>
           <div class="node-votos"><div class="big" style="color:${lleno?'var(--rojo)':'var(--verde-ok)'}">${libre>0?libre:'lleno'}</div><div class="lb">${libre>0?'lugares':''}</div></div>
         </div>
         <div class="node-children">
@@ -1930,19 +2004,21 @@ async function agregarAuto(){
   const barrio=document.getElementById('auZona').value.trim();
   const cap=parseInt(document.getElementById('auCap').value)||4;
   const tel=document.getElementById('auTel').value.trim();
+  const modelo=document.getElementById('auModelo').value.trim();
+  const dominio=document.getElementById('auDominio').value.trim().toUpperCase();
   if(!conductor){alert('Poné el nombre del conductor.');return;}
   if(!sb){alert('Sin conexión con la base.');return;}
   // GUARDAR EN LA BASE
-  const {data,error}=await sb.from('autos').insert({conductor,capacidad:cap,barrio:barrio||null,tel:tel||null,en_viaje:false}).select().single();
+  const {data,error}=await sb.from('autos').insert({conductor,capacidad:cap,barrio:barrio||null,tel:tel||null,modelo:modelo||null,dominio:dominio||null,en_viaje:false}).select().single();
   if(error){toast('Error al guardar el auto: '+error.message);return;}
-  const nuevo={id:data.id,conductor,cap,tel,barrio,enViaje:false};
+  const nuevo={id:data.id,conductor,cap,tel,barrio,modelo,dominio,enViaje:false};
   AUTOS.push(nuevo);
   // ASIGNACIÓN POR DEFECTO: tomar gente sin auto del mismo barrio, hasta llenar capacidad
   if(barrio){
     const candidatos=REGISTROS.filter(p=>p.transporte&&!p.voto&&!p.autoId&&norm(p.barrio)===norm(barrio));
     for(const p of candidatos.slice(0,cap)){p.autoId=nuevo.id;await actualizarRegistroDB(p.id,{auto_id:nuevo.id});}
   }
-  ['auCond','auZona','auTel'].forEach(id=>document.getElementById(id).value='');document.getElementById('auCap').value='4';
+  ['auCond','auZona','auTel','auModelo','auDominio'].forEach(id=>document.getElementById(id).value='');document.getElementById('auCap').value='4';
   toast('Auto agregado ✓',true);
   renderDiaD();
 }
