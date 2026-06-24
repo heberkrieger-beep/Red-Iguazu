@@ -2,8 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Red Iguazú — Campaña</title>
+<meta name="theme-color" content="#0f3d2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Red Iguazú">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // === Conexión a tu base de datos Supabase ===
@@ -29,6 +36,39 @@
   h1,h2,h3{font-weight:700;letter-spacing:-.02em}
   button{font-family:inherit;cursor:pointer;border:none}
   input,select,textarea{font-family:inherit}
+
+  /* ====== ESCALA "APP GRANDE" EN CELULAR ====== */
+  @media(max-width:680px){
+    html{font-size:17px}
+    .topbar{padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top))}
+    .topbar .brand-name{font-size:19px}
+    .topbar .brand-dot{width:34px;height:34px;font-size:18px}
+    .whoami{font-size:14px}
+    .tabs{top:auto;bottom:0;position:fixed;left:0;right:0;border-top:1px solid var(--linea);border-bottom:none;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(0,0,0,.06);justify-content:space-around}
+    .tab{padding:12px 10px;font-size:13px;border-bottom:none;border-top:3px solid transparent;flex:1;text-align:center;min-width:0}
+    .tab.active{border-top-color:var(--tierra);border-bottom-color:transparent}
+    .view{padding:18px 16px 90px}  /* espacio para la barra de tabs abajo */
+    .view-head h2{font-size:25px}
+    .view-head p{font-size:15px}
+    .form-field input,.form-field select,.form-field textarea{padding:14px 15px;font-size:16px;border-radius:12px}
+    .field select,.field input{padding:15px 16px;font-size:16px}
+    .btn-add{padding:15px 24px;font-size:16px;width:100%}
+    .btn-primary{padding:16px;font-size:17px}
+    .form-card{padding:20px 18px;border-radius:18px}
+    .stat{padding:18px 14px}
+    .stat .num{font-size:34px}
+    .stat .lab{font-size:13px}
+    .person-row{padding:15px 16px}
+    .person-row .who b{font-size:16px}
+    .filtro-btn{padding:10px 16px;font-size:14px}
+    th,td{padding:13px 12px;font-size:14px}
+    .node-head{padding:14px 12px}
+    .helper{font-size:13px}
+    label{font-size:14px}
+  }
+  @supports(padding:max(0px)){
+    body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+  }
 
   #login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--selva),var(--selva-2));padding:24px}
   .login-card{background:var(--blanco);border-radius:20px;padding:40px 34px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -1618,6 +1658,10 @@ window.addEventListener('DOMContentLoaded', ()=>{
   if(pass)pass.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
   const usr=document.getElementById('inUsuario');
   if(usr)usr.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('pass').focus();});
+  // Registrar el service worker (hace que sea instalable como app)
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW:',e));
+  }
 });
 </script>
 </body>
