@@ -71,9 +71,7 @@
     .helper{font-size:13px;line-height:1.5}
     label{font-size:14px}
   }
-  @supports(padding:max(0px)){
-    body{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
-  }
+  html,body{max-width:100%;overflow-x:hidden}
 
   #login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--selva),var(--selva-2));padding:24px}
   .login-card{background:var(--blanco);border-radius:20px;padding:40px 34px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
@@ -464,8 +462,9 @@
     <div class="stat-grid" id="diadStats"></div>
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
-      <button class="filtro-btn active" data-d="transporte" onclick="setDiadTab('transporte')">🚗 Transporte y autos</button>
-      <button class="filtro-btn" data-d="control" onclick="setDiadTab('control')">✅ Control de votación</button>
+      <button class="filtro-btn active" data-d="transporte" onclick="setDiadTab('transporte')"><span class="ti ti-car" aria-hidden="true"></span> Transporte</button>
+      <button class="filtro-btn" data-d="escuela" onclick="setDiadTab('escuela')"><span class="ti ti-building" aria-hidden="true"></span> Por escuela</button>
+      <button class="filtro-btn" data-d="control" onclick="setDiadTab('control')"><span class="ti ti-checkbox" aria-hidden="true"></span> Control</button>
     </div>
 
     <!-- TRANSPORTE -->
@@ -484,6 +483,12 @@
         <div class="helper" style="margin-top:8px">La zona ayuda a sugerir qué gente buscar (los del mismo barrio van juntos en un viaje).</div>
       </div>
       <div id="movByRef"></div>
+    </div>
+
+    <!-- POR ESCUELA -->
+    <div id="diad-escuela" style="display:none">
+      <div class="note" style="border-left-color:var(--azul);margin-top:0;margin-bottom:16px">Tu gente agrupada por <b>dónde vota</b> (escuela y mesa). Tocá una escuela para ver sus mesas, y una mesa para ver los nombres e ir tachando.</div>
+      <div id="escuelaList"></div>
     </div>
 
     <!-- CONTROL -->
@@ -1336,6 +1341,24 @@ function toggleNode(h){h.classList.toggle('open');h.parentElement.querySelector(
 
 /* ---- EDITAR / BORRAR / AGREGAR HIJO ---- */
 let editId=null;
+async function onDniEdit(){
+  const dni=normDni(document.getElementById('eDni').value);
+  const box=document.getElementById('eDniBox');
+  const fn=document.getElementById('eNombre'), fa=document.getElementById('eApellido');
+  if(dni.length<7){box.className='padron-box';return;}
+  box.className='padron-box show';box.innerHTML='Buscando en el padrón...';
+  const m=await padronPorDniDB(dni);
+  if(normDni(document.getElementById('eDni').value)!==dni)return;
+  if(m){
+    // el padrón es oficial: actualiza nombre y apellido
+    fn.value=m.nombres; fa.value=m.apellido;
+    box.className='padron-box show';
+    box.innerHTML=`✔ <b>${m.apellido}, ${m.nombres}</b> · Mesa ${m.mesa} · ${m.circuito}`;
+  }else{
+    box.className='padron-box show';
+    box.innerHTML='Ese DNI no figura en el padrón de Puerto Iguazú.';
+  }
+}
 function abrirEdit(id){
   const p=REGISTROS.find(x=>x.id===id); if(!p)return;
   editId=id;
@@ -1347,7 +1370,7 @@ function abrirEdit(id){
       <div class="form-field"><label>Apellido</label><input id="eApellido" value="${p.apellido||''}"></div>
     </div>
     <div class="form-row">
-      <div class="form-field"><label>DNI</label><input id="eDni" value="${p.dni||''}" placeholder="agregalo si te lo pasaron"></div>
+      <div class="form-field"><label>DNI</label><input id="eDni" value="${p.dni||''}" placeholder="agregalo para ubicar dónde vota" oninput="onDniEdit()"><div id="eDniBox" class="padron-box"></div></div>
       <div class="form-field"><label>Teléfono</label><input id="eTel" value="${p.tel||''}"></div>
     </div>
     <div class="form-row">
@@ -1592,8 +1615,10 @@ function setDiadTab(t){
   diadTab=t;
   document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('active',b.dataset.d===t));
   document.getElementById('diad-transporte').style.display=t==='transporte'?'block':'none';
+  document.getElementById('diad-escuela').style.display=t==='escuela'?'block':'none';
   document.getElementById('diad-control').style.display=t==='control'?'block':'none';
   if(t==='control')renderControl();
+  if(t==='escuela')renderEscuela();
 }
 function necesitanTransporte(){const c=current.role==='admin'||current.coord;return REGISTROS.filter(p=>p.transporte&&(c||p.ref===current.id));}
 function renderDiaD(){
@@ -1612,7 +1637,8 @@ function renderDiaD(){
     document.querySelector('[data-d="transporte"]').style.display='';
   }
   document.getElementById('diad-transporte').style.display=(diadTab==='transporte'&&esCoord)?'block':'none';
-  document.getElementById('diad-control').style.display=(diadTab==='control'||!esCoord)?'block':'none';
+  document.getElementById('diad-escuela').style.display=(diadTab==='escuela')?'block':'none';
+  document.getElementById('diad-control').style.display=(diadTab==='control'||(!esCoord&&diadTab!=='escuela'))?'block':'none';
   document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('active',b.dataset.d===diadTab));
 
   const scope=esCoord?REGISTROS:REGISTROS.filter(p=>p.ref===current.id);
@@ -1630,8 +1656,69 @@ function renderDiaD(){
     <div class="stat"><div class="num" style="color:var(--verde-ok)">${yaVotaron}<span style="font-size:16px;color:var(--gris)">/${totalGente}</span></div><div class="lab">Ya votaron</div></div>`;
 
   renderMovByRef();
-  if(diadTab==='control'||!esCoord)renderControl();
+  if(diadTab==='control')renderControl();
+  if(diadTab==='escuela')renderEscuela();
 }
+// ===== VISTA POR ESCUELA (dónde votan) =====
+let _escAbierta={};
+function renderEscuela(){
+  const cont=document.getElementById('escuelaList');if(!cont)return;
+  const esCoord=current.role==='admin'||current.coord;
+  const scope=REGISTROS.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&(esCoord||p.ref===current.id));
+  // solo los que tienen mesa (vienen del padrón)
+  const conMesa=scope.filter(p=>p.mesa);
+  const sinMesa=scope.filter(p=>!p.mesa);
+  if(!conMesa.length){
+    cont.innerHTML=`<div class="empty">Todavía no hay gente con escuela/mesa asignada.<br><span style="font-size:12.5px">Se asigna sola cuando cargás a alguien con DNI que figura en el padrón.</span>${sinMesa.length?`<br><br><b>${sinMesa.length}</b> persona(s) cargadas sin DNI del padrón (no sabemos dónde votan).`:''}</div>`;
+    return;
+  }
+  // agrupar por circuito (escuela) -> mesa
+  const escuelas={};
+  conMesa.forEach(p=>{
+    const esc=p.circuito||'Sin escuela';
+    (escuelas[esc]=escuelas[esc]||{}); 
+    (escuelas[esc][p.mesa]=escuelas[esc][p.mesa]||[]).push(p);
+  });
+  let html='';
+  Object.keys(escuelas).sort().forEach(esc=>{
+    const mesas=escuelas[esc];
+    const totalEsc=Object.values(mesas).reduce((s,arr)=>s+arr.length,0);
+    const votaronEsc=Object.values(mesas).flat().filter(p=>p.voto).length;
+    const abierta=_escAbierta[esc];
+    html+=`<div class="node" style="margin-bottom:12px">
+      <div class="node-head" onclick="toggleEscuela('${esc.replace(/'/g,"\\'")}')">
+        <span class="caret">${abierta?'▼':'▶'}</span>
+        <div class="node-ava" style="background:var(--azul)"><span class="ti ti-building" aria-hidden="true"></span></div>
+        <div class="node-info"><div class="nm">${esc}</div><div class="sb">${Object.keys(mesas).length} mesa(s) · ${totalEsc} de tu gente</div></div>
+        <div class="node-votos"><div class="big" style="color:var(--verde-ok)">${votaronEsc}<span style="font-size:14px;color:var(--gris)">/${totalEsc}</span></div><div class="lb">votaron</div></div>
+      </div>
+      <div class="node-children" style="${abierta?'display:block':'display:none'}">`;
+    Object.keys(mesas).sort((a,b)=>a-b).forEach(mesa=>{
+      const gente=mesas[mesa].sort((a,b)=>(a.voto?1:0)-(b.voto?1:0)||norm(a.apellido).localeCompare(norm(b.apellido)));
+      const votaron=gente.filter(p=>p.voto).length;
+      const mid=esc+'__'+mesa;
+      const mAbierta=_escAbierta[mid];
+      html+=`<div style="margin:4px 0 8px">
+        <div onclick="toggleEscuela('${mid.replace(/'/g,"\\'")}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--arena);border-radius:10px;cursor:pointer">
+          <span style="font-weight:700;font-size:13.5px;color:var(--tierra)">Mesa ${mesa}</span>
+          <span style="font-size:12.5px;color:var(--gris)">${votaron}/${gente.length} votaron ${mAbierta?'▲':'▼'}</span>
+        </div>`;
+      if(mAbierta){
+        html+=gente.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--arena-2);${p.voto?'opacity:.6':''}">
+          <span style="font-size:13.5px"><b>${p.nombre} ${p.apellido}</b>${p.transporte?' <span class="ti ti-car" style="color:var(--azul)" aria-hidden="true"></span>':''}</span>
+          <button onclick="event.stopPropagation();toggleVoto('${p.id}')" style="padding:7px 13px;border-radius:8px;font-size:12px;font-weight:700;${p.voto?'background:var(--verde-ok);color:#fff':'background:var(--arena-2);color:var(--tinta)'}">${p.voto?'✓ votó':'votó'}</button>
+        </div>`).join('');
+      }
+      html+='</div>';
+    });
+    html+='</div></div>';
+  });
+  if(sinMesa.length){
+    html+=`<div class="helper" style="margin-top:10px;background:#faf3e6;border-left:3px solid var(--amarillo);padding:10px 13px;border-radius:8px"><b>${sinMesa.length}</b> persona(s) cargadas sin DNI del padrón — no sabemos en qué escuela votan. Cargales el DNI para ubicarlas.</div>`;
+  }
+  cont.innerHTML=html;
+}
+function toggleEscuela(id){_escAbierta[id]=!_escAbierta[id];renderEscuela();}
 function renderMovByRef(){
   const cont=document.getElementById('movByRef');if(!cont)return;
   const esCoord=current.role==='admin'||current.coord;
