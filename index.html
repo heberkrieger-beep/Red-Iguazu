@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="Red Iguazú">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // === Conexión a tu base de datos Supabase ===
@@ -47,23 +48,27 @@
     .tabs{top:auto;bottom:0;position:fixed;left:0;right:0;border-top:1px solid var(--linea);border-bottom:none;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(0,0,0,.06);justify-content:space-around}
     .tab{padding:12px 10px;font-size:13px;border-bottom:none;border-top:3px solid transparent;flex:1;text-align:center;min-width:0}
     .tab.active{border-top-color:var(--tierra);border-bottom-color:transparent}
-    .view{padding:18px 16px 90px}  /* espacio para la barra de tabs abajo */
+    .view{padding:20px 18px 100px}  /* espacio para la barra de tabs abajo */
+    .view-head{margin-bottom:20px}
     .view-head h2{font-size:25px}
-    .view-head p{font-size:15px}
-    .form-field input,.form-field select,.form-field textarea{padding:14px 15px;font-size:16px;border-radius:12px}
-    .field select,.field input{padding:15px 16px;font-size:16px}
-    .btn-add{padding:15px 24px;font-size:16px;width:100%}
-    .btn-primary{padding:16px;font-size:17px}
-    .form-card{padding:20px 18px;border-radius:18px}
-    .stat{padding:18px 14px}
+    .view-head p{font-size:15px;margin-top:5px}
+    .form-row{gap:16px;margin-bottom:18px}
+    .form-field{margin-bottom:18px}
+    .form-field input,.form-field select,.form-field textarea{padding:15px 16px;font-size:16px;border-radius:12px}
+    .field select,.field input{padding:16px;font-size:16px}
+    .btn-add{padding:16px 24px;font-size:16px;width:100%;margin-top:10px}
+    .btn-primary{padding:17px;font-size:17px}
+    .form-card{padding:22px 20px;border-radius:18px;margin-bottom:18px}
+    .stat{padding:20px 16px}
     .stat .num{font-size:34px}
     .stat .lab{font-size:13px}
-    .person-row{padding:15px 16px}
+    .person-row{padding:16px;margin-bottom:12px}
     .person-row .who b{font-size:16px}
-    .filtro-btn{padding:10px 16px;font-size:14px}
-    th,td{padding:13px 12px;font-size:14px}
-    .node-head{padding:14px 12px}
-    .helper{font-size:13px}
+    .filtro-btn{padding:11px 18px;font-size:14px}
+    th,td{padding:14px 12px;font-size:14px}
+    .node-head{padding:16px 14px}
+    .node{margin-bottom:14px}
+    .helper{font-size:13px;line-height:1.5}
     label{font-size:14px}
   }
   @supports(padding:max(0px)){
@@ -233,9 +238,39 @@
 
   @media(max-width:560px){
     .form-row{grid-template-columns:1fr}
-    .view{padding:16px 13px 50px}
     .hide-sm{display:none}
     .type-switch{flex-direction:column}
+  }
+  /* ===== INICIO REDISEÑADO ===== */
+  .home-hero{background:var(--selva);border-radius:18px;padding:20px 22px;margin-bottom:16px;color:#fff}
+  .home-hero .lab{color:#9db8ab;font-size:13.5px;margin-bottom:6px}
+  .home-hero .big-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .home-hero .big{font-size:38px;font-weight:800;line-height:1}
+  .home-hero .sub{color:#7fc4a0;font-size:14px}
+  .home-hero .track{height:8px;background:rgba(255,255,255,.15);border-radius:5px;margin-top:14px;overflow:hidden}
+  .home-hero .track .fill{height:100%;background:var(--tierra-claro);border-radius:5px;transition:width .5s}
+  .home-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .home-stat{background:var(--blanco);border-radius:15px;padding:16px;border:1px solid var(--linea)}
+  .home-stat .ti{font-size:22px}
+  .home-stat .n{font-size:27px;font-weight:800;color:var(--tinta);margin-top:7px;line-height:1}
+  .home-stat .l{font-size:12.5px;color:var(--gris);margin-top:3px}
+  .home-cta{width:100%;background:var(--tierra);color:#fff;border-radius:15px;padding:17px;font-size:16.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:22px}
+  .home-cta .ti{font-size:21px}
+  .home-section-lab{font-size:13px;color:var(--gris);font-weight:700;margin-bottom:11px}
+  .home-quick{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+  .home-qbtn{background:var(--blanco);border-radius:15px;padding:17px 15px;border:1px solid var(--linea);display:flex;flex-direction:column;gap:9px;text-align:left;color:var(--tinta)}
+  .home-qbtn .ti{font-size:24px;color:var(--selva)}
+  .home-qbtn span.t{font-size:14.5px;font-weight:700}
+
+  /* ===== NAV INFERIOR CON ÍCONOS ===== */
+  .bottomnav{display:none}
+  @media(max-width:680px){
+    .tabs{display:none!important}
+    .bottomnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--blanco);border-top:1px solid var(--linea);justify-content:space-around;padding:8px 0 calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 14px rgba(0,0,0,.06)}
+    .navbtn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;color:var(--gris);flex:1;padding:2px 0}
+    .navbtn .ti{font-size:23px}
+    .navbtn span{font-size:11px;font-weight:600}
+    .navbtn.active{color:var(--tierra)}
   }
 </style>
 </head>
@@ -267,26 +302,17 @@
   </div>
 
   <div class="tabs" id="tabs"></div>
+  <div class="bottomnav" id="bottomnav"></div>
 
-  <!-- DASHBOARD -->
+  <!-- INICIO / PANEL -->
   <div class="view" id="view-dash">
-    <div class="view-head"><h2 id="dashTitle">Tablero de avance</h2><p id="dashSub">Cómo viene la red de contactos.</p></div>
-    <div class="stat-grid" id="statGrid"></div>
-    <div class="progress-card">
-      <h3>Avance real de votos</h3>
-      <div class="meta-lab" id="metaLab">—</div>
-      <div class="bar-track">
-        <div class="bar-fill pos" id="metaBarPos" style="width:0%"></div>
-        <div class="bar-fill proy" id="metaBarProy" style="width:0%"></div>
-        <div class="bar-fill conf" id="metaBarConf" style="width:0%"></div>
-      </div>
-      <div class="bar-labels"><span id="metaNow">0</span><span id="metaGoal">meta</span></div>
-      <div class="legend">
-        <span><i style="background:var(--verde-ok)"></i>Firmes</span>
-        <span><i style="background:var(--tierra)"></i>Proyección</span>
-        <span><i style="background:var(--arena-2);border:1px solid var(--linea)"></i>Cargados</span>
-      </div>
-    </div>
+    <div id="homeHero"></div>
+    <div class="home-stats" id="homeStats"></div>
+    <button class="home-cta" onclick="goTab('cargar')">
+      <span class="ti ti-user-plus" aria-hidden="true"></span> Cargar persona
+    </button>
+    <div class="home-section-lab">Accesos rápidos</div>
+    <div class="home-quick" id="homeQuick"></div>
     <div id="refTableWrap">
       <h3 style="font-size:15px;color:var(--selva);margin:24px 0 12px">Ranking de referentes</h3>
       <table id="refTable"><thead><tr>
@@ -873,17 +899,59 @@ let editRefId=null;
 
 function buildTabs(){
   const esCoord = current.role==='admin'||current.coord;
-  const tabs = esCoord
-    ? [['dash','Tablero'],['cargar','Cargar'],['lista','Lista'],['piramide','Pirámide'],['agenda','Agenda'],['diad','Día D'],['mapa','Mapa'],['referentes','Referentes']]
-    : [['cargar','Cargar'],['lista','Mi lista'],['piramide','Mi red'],['agenda','Agenda'],['diad','Día D'],['dash','Mi avance']];
+  // [id, label corto, ícono tabler]
+  const all = esCoord
+    ? [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Lista','ti-list'],['piramide','Pirámide','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Día D','ti-car'],['mapa','Mapa','ti-map-2'],['referentes','Referentes','ti-users']]
+    : [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Mi lista','ti-list'],['piramide','Mi red','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Día D','ti-car']];
+  window._tabs=all;
+  // barra superior (desktop): todas las pestañas
   const c=document.getElementById('tabs');c.innerHTML='';
-  tabs.forEach((t,i)=>{
+  all.forEach((t,i)=>{
     const b=document.createElement('button');
-    b.className='tab'+(i===0?' active':'');b.textContent=t[1];
-    b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');showView(t[0]);};
+    b.className='tab'+(i===0?' active':'');b.textContent=t[1];b.dataset.tab=t[0];
+    b.onclick=()=>goTab(t[0]);
     c.appendChild(b);
   });
-  showView(tabs[0][0]);
+  // nav inferior (celular): las 5 principales + "Más"
+  const nav=document.getElementById('bottomnav');nav.innerHTML='';
+  const principales=all.slice(0,4);
+  principales.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='navbtn'+(i===0?' active':'');b.dataset.tab=t[0];
+    b.innerHTML=`<span class="ti ${t[2]}" aria-hidden="true"></span><span>${t[1]}</span>`;
+    b.onclick=()=>goTab(t[0]);
+    nav.appendChild(b);
+  });
+  // botón "Más" para el resto
+  if(all.length>4){
+    const b=document.createElement('button');
+    b.className='navbtn';b.dataset.tab='__mas';
+    b.innerHTML='<span class="ti ti-dots" aria-hidden="true"></span><span>Más</span>';
+    b.onclick=()=>abrirMas();
+    nav.appendChild(b);
+  }
+  goTab('dash');
+}
+function goTab(v){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===v));
+  document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('active',x.dataset.tab===v));
+  showView(v);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function abrirMas(){
+  const all=window._tabs||[];
+  const resto=all.slice(4);
+  if(!resto.length)return;
+  const cont=document.createElement('div');
+  cont.id='masSheet';
+  cont.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end';
+  cont.onclick=e=>{if(e.target===cont)cont.remove();};
+  cont.innerHTML=`<div style="background:var(--blanco);width:100%;border-radius:20px 20px 0 0;padding:18px 18px calc(24px + env(safe-area-inset-bottom))">
+    <div style="width:40px;height:4px;background:var(--linea);border-radius:3px;margin:0 auto 16px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      ${resto.map(t=>`<button onclick="document.getElementById('masSheet').remove();goTab('${t[0]}')" style="background:var(--arena);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;color:var(--tinta)"><span class="ti ${t[2]}" style="font-size:24px;color:var(--selva)" aria-hidden="true"></span><span style="font-size:14.5px;font-weight:700">${t[1]}</span></button>`).join('')}
+    </div></div>`;
+  document.body.appendChild(cont);
 }
 function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');}
 
@@ -911,21 +979,30 @@ async function onDni(){
   clearAlert();
   const dni=normDni(document.getElementById('fDni').value);
   const box=document.getElementById('padronBox');
-  if(dni.length<7){box.className='padron-box';return;}
+  const fn=document.getElementById('fNombre'), fa=document.getElementById('fApellido');
+  if(dni.length<7){
+    box.className='padron-box';
+    // si los datos venían del padrón y borran el DNI, limpiarlos para no guardar algo viejo
+    if(window._datosDePadron){fn.value='';fa.value='';window._datosDePadron=false;}
+    return;
+  }
   box.className='padron-box show';
   box.innerHTML='Buscando en el padrón...';
   const m=await padronPorDniDB(dni);
   // por si el usuario siguió tipeando, revalidar
   if(normDni(document.getElementById('fDni').value)!==dni)return;
   if(m){
-    const fn=document.getElementById('fNombre'), fa=document.getElementById('fApellido');
-    if(fn && !fn.value.trim()) fn.value=m.nombres;
-    if(fa && !fa.value.trim()) fa.value=m.apellido;
+    // el padrón es la fuente oficial: SIEMPRE actualiza nombre y apellido al del DNI
+    fn.value=m.nombres;
+    fa.value=m.apellido;
+    window._datosDePadron=true;  // marca que estos datos vienen del padrón
     box.className='padron-box show';
     box.innerHTML=`✔ <b>Encontrado en el padrón:</b> ${m.apellido}, ${m.nombres} · Mesa ${m.mesa} · ${m.circuito} · Clase ${m.clase}${m.domicilio?'<br><span style="font-size:11.5px">📍 '+m.domicilio+'</span>':''}`;
   }else{
+    // DNI no figura: si los campos venían del padrón anterior, limpiarlos para no confundir
+    if(window._datosDePadron){fn.value='';fa.value='';window._datosDePadron=false;}
     box.className='padron-box show';
-    box.innerHTML=`Este DNI no figura en el padrón de Puerto Iguazú (circuito 80). Se guarda igual.`;
+    box.innerHTML=`Este DNI no figura en el padrón de Puerto Iguazú (circuito 80). Completá nombre y apellido a mano. Se guarda igual.`;
   }
 }
 // Buscar en el padrón por nombre/apellido y sugerir
@@ -1024,37 +1101,42 @@ function calidadRef(refId){
 }
 
 function renderDash(){
+  if(!document.getElementById('homeHero'))return;
   const isAdmin=current.role==='admin'||current.coord;
   const mine = isAdmin?REGISTROS:REGISTROS.filter(r=>r.ref===current.id);
   const {pos,conf,proy,firmes}=votosDe(mine);
-  const meta = isAdmin?REFERENTES.reduce((s,r)=>s+r.meta,0):(REFERENTES.find(r=>r.id===current.id)?.meta||100);
+  const meta = isAdmin?REFERENTES.reduce((s,r)=>s+(r.meta||0),0):(REFERENTES.find(r=>r.id===current.id)?.meta||100);
+  const pct=meta?Math.min(100,Math.round(proy/meta*100)):0;
+  const contactos=mine.filter(p=>p.tipo==='persona'||p.tipo==='conf').length;
 
-  document.getElementById('dashTitle').textContent=isAdmin?'Tablero general':'Mi avance';
-  document.getElementById('dashSub').textContent=isAdmin?'Los números reales de la campaña, sin humo.':'Tu progreso real.';
+  // HERO: coordinación ve lo global, referente ve lo suyo
+  document.getElementById('homeHero').innerHTML=`
+    <div class="home-hero">
+      <div class="lab">${isAdmin?'Votos proyectados — toda la campaña':'Tus votos proyectados'}</div>
+      <div class="big-row"><span class="big">${proy.toLocaleString('es-AR')}</span><span class="sub">de ${meta.toLocaleString('es-AR')} ${isAdmin?'meta total':'tu meta'}</span></div>
+      <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+    </div>`;
 
-  document.getElementById('statGrid').innerHTML = `
-    <div class="stat"><div class="num">${pos}</div><div class="lab">Votos cargados</div></div>
-    <div class="stat" style="border:2px solid var(--tierra)"><div class="num" style="color:var(--tierra)">${proy}</div><div class="lab">Proyección realista</div></div>
-    <div class="stat"><div class="num" style="color:var(--verde-ok)">${firmes}</div><div class="lab">Firmes (DNI+confirm.)</div></div>
-    <div class="stat"><div class="num">${Math.round(proy/meta*100)}%</div><div class="lab">Avance real de meta</div></div>`;
+  // STATS
+  document.getElementById('homeStats').innerHTML=`
+    <div class="home-stat"><span class="ti ti-users" style="color:var(--azul)" aria-hidden="true"></span><div class="n">${contactos.toLocaleString('es-AR')}</div><div class="l">contactos cargados</div></div>
+    <div class="home-stat"><span class="ti ti-shield-check" style="color:var(--verde-ok)" aria-hidden="true"></span><div class="n">${firmes.toLocaleString('es-AR')}</div><div class="l">votos firmes</div></div>`;
 
-  // barra: cargado (claro) / proyección (naranja) / firmes (verde)
-  document.getElementById('metaBarPos').style.width=Math.min(100,Math.round(pos/meta*100))+'%';
-  document.getElementById('metaBarConf').style.width=Math.min(100,Math.round(firmes/meta*100))+'%';
-  const proyBar=document.getElementById('metaBarProy');
-  if(proyBar)proyBar.style.width=Math.min(100,Math.round(proy/meta*100))+'%';
-  document.getElementById('metaNow').textContent=`${firmes} firmes · ${proy} proyectados · ${pos} cargados`;
-  document.getElementById('metaGoal').textContent='meta: '+meta;
-  document.getElementById('metaLab').textContent=isAdmin
-    ? `Meta total: ${meta}. La proyección descuenta el humo: pondera cada voto por su evidencia real.`
-    : `Tu objetivo: ${meta}. El número naranja es lo que de verdad podés contar.`;
+  // ACCESOS RÁPIDOS según rol
+  const quick = isAdmin
+    ? [['piramide','Pirámide','ti-binary-tree'],['diad','Día D','ti-car'],['referentes','Referentes','ti-users'],['lista','Lista completa','ti-list']]
+    : [['piramide','Mi red','ti-binary-tree'],['diad','Día D','ti-car'],['lista','Mi lista','ti-list'],['agenda','Agenda','ti-calendar']];
+  document.getElementById('homeQuick').innerHTML=quick.map(q=>
+    `<button class="home-qbtn" onclick="goTab('${q[0]}')"><span class="ti ${q[2]}" aria-hidden="true"></span><span class="t">${q[1]}</span></button>`
+  ).join('');
 
+  // ranking solo coordinación
   document.getElementById('refTableWrap').style.display=isAdmin?'block':'none';
   if(isAdmin){
     const rows=REFERENTES.map(r=>{const v=votosDe(REGISTROS.filter(x=>x.ref===r.id));const q=calidadRef(r.id);return {...r,...v,q};}).sort((a,b)=>b.proy-a.proy);
     const tb=document.querySelector('#refTable tbody');tb.innerHTML='';
     rows.forEach(r=>{
-      const p=Math.round(r.proy/r.meta*100);
+      const p=r.meta?Math.round(r.proy/r.meta*100):0;
       let sem='s-gris'; if(p===0)sem='s-gris';else if(p<33)sem='s-rojo';else if(p<66)sem='s-amar';else sem='s-verde';
       const qCol=r.q.nivel==='bueno'?'var(--verde-ok)':r.q.nivel==='regular'?'var(--amarillo)':r.q.nivel==='vacio'?'#c3c3c3':'var(--rojo)';
       const qTxt=r.q.n?`${r.q.pctDni}% DNI`:'—';
@@ -1125,6 +1207,8 @@ async function tryAdd(){
   document.getElementById('fConfVotos').value='';
   ['fNombre','fApellido','fDni','fTel'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('padronBox').className='padron-box';
+  window._datosDePadron=false;
+  document.getElementById('padronSug').style.display='none';
   softOk=false; renderAll();
 }
 function warn(a,m){a.className='alert dup-soft show';a.innerHTML=m;}

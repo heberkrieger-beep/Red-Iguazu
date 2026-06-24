@@ -1,6 +1,6 @@
 // Service worker mínimo para que Red Iguazú sea instalable como app.
 // No cachea datos sensibles (el padrón y registros vienen siempre frescos de la base).
-const CACHE = 'red-iguazu-v1';
+const CACHE = 'red-iguazu-v3';
 const ASSETS = ['./index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
