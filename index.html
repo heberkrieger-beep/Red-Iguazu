@@ -48,7 +48,7 @@
     .tabs{top:auto;bottom:0;position:fixed;left:0;right:0;border-top:1px solid var(--linea);border-bottom:none;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(0,0,0,.06);justify-content:space-around}
     .tab{padding:12px 10px;font-size:13px;border-bottom:none;border-top:3px solid transparent;flex:1;text-align:center;min-width:0}
     .tab.active{border-top-color:var(--tierra);border-bottom-color:transparent}
-    .view{padding:20px 18px 100px}  /* espacio para la barra de tabs abajo */
+    .view{padding:20px 18px 130px}  /* espacio extra para que la barra de abajo no tape nada */
     .view-head{margin-bottom:20px}
     .view-head h2{font-size:25px}
     .view-head p{font-size:15px;margin-top:5px}
@@ -74,16 +74,16 @@
   html,body{max-width:100%;overflow-x:hidden}
 
   #login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--selva),var(--selva-2));padding:24px}
-  .login-card{background:var(--blanco);border-radius:20px;padding:40px 34px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .login-card{background:var(--blanco);border-radius:22px;padding:40px 30px;width:100%;max-width:430px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
   .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
   .brand-dot{width:38px;height:38px;border-radius:11px;background:radial-gradient(circle at 30% 30%,var(--tierra-claro),var(--tierra));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
   .brand-name{font-size:21px;font-weight:800;color:var(--selva)}
-  .login-sub{color:var(--gris);font-size:13.5px;margin:14px 0 26px;line-height:1.5}
-  .field{margin-bottom:16px}
-  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--selva);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em}
-  .field select,.field input{width:100%;padding:12px 14px;border:1.5px solid var(--linea);border-radius:11px;font-size:15px;background:var(--arena);color:var(--tinta);transition:border .15s}
+  .login-sub{color:var(--gris);font-size:14.5px;margin:14px 0 28px;line-height:1.5}
+  .field{margin-bottom:20px}
+  .field label{display:block;font-size:13.5px;font-weight:700;color:var(--selva);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+  .field select,.field input{width:100%;padding:16px 16px;border:1.5px solid var(--linea);border-radius:13px;font-size:16.5px;background:var(--arena);color:var(--tinta);transition:border .15s}
   .field select:focus,.field input:focus{outline:none;border-color:var(--tierra)}
-  .btn-primary{width:100%;padding:13px;background:var(--tierra);color:#fff;border-radius:11px;font-size:15.5px;font-weight:700;margin-top:8px;transition:background .15s}
+  .btn-primary{width:100%;padding:17px;background:var(--tierra);color:#fff;border-radius:13px;font-size:17px;font-weight:700;margin-top:10px;transition:background .15s}
   .btn-primary:hover{background:#9c3e1a}
   .login-hint{font-size:11.5px;color:var(--gris);text-align:center;margin-top:18px;line-height:1.5}
 
@@ -191,6 +191,7 @@
   .tag.conf{background:#e7f4ec;color:var(--verde-ok)}
   .tag.prom{background:#fdf4e3;color:#8a6a1c}
   .tag.cont{background:#eceff1;color:#5a6b73}
+  .tag.porconv{background:#fbe9e6;color:#c0432f}
 
   /* piramide */
   .tree{margin-top:4px}
@@ -270,10 +271,11 @@
     .navbtn span{font-size:11px;font-weight:600}
     .navbtn.active{color:var(--tierra)}
     .navbtn{align-items:flex-end}
-    .navcenter{position:relative;justify-content:flex-end}
-    .navcenter .navfab{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--tierra);color:#fff;margin-bottom:3px;box-shadow:0 4px 12px rgba(181,73,31,.4);border:3px solid var(--blanco);transform:translateY(-18px)}
-    .navcenter .navfab .ti{font-size:27px}
-    .navcenter span:last-child{color:var(--tierra);font-weight:700;transform:translateY(-14px)}
+    .navbtn{align-items:center;justify-content:flex-end}
+    .navcenter{position:relative;justify-content:center;align-items:center}
+    .navcenter .navfab{display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:50%;background:var(--tierra);color:#fff;box-shadow:0 4px 14px rgba(181,73,31,.45);border:4px solid var(--blanco);position:absolute;top:-28px;left:50%;transform:translateX(-50%)}
+    .navcenter .navfab .ti{font-size:28px}
+    .navcenter span:last-child{color:var(--tierra);font-weight:700;margin-top:26px}
   }
   /* ===== FILAS COMPACTAS DE LISTA ===== */
   .prow{background:var(--blanco);border:1px solid var(--linea);border-radius:12px;margin-bottom:8px;overflow:hidden}
@@ -317,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v8</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v12</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -330,11 +332,12 @@
 
   <!-- INICIO / PANEL -->
   <div class="view" id="view-dash">
-    <div id="homeHero"></div>
-    <div class="home-stats" id="homeStats"></div>
     <button class="home-cta" onclick="goTab('cargar')">
       <span class="ti ti-user-plus" aria-hidden="true"></span> Cargar persona
     </button>
+    <div id="homeHero"></div>
+    <div class="home-stats" id="homeStats"></div>
+    <div id="homeAviso" style="display:none;background:#faedd5;border-radius:12px;padding:12px 14px;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer"></div>
     <div class="home-section-lab">Accesos rápidos</div>
     <div class="home-quick" id="homeQuick"></div>
     <div id="refTableWrap">
@@ -393,7 +396,7 @@
           <datalist id="barriosList"></datalist>
         </div>
         <div class="form-field"><label>Estado</label>
-          <select id="fEstado"><option value="cont">Contactado</option><option value="prom">Prometido</option><option value="conf">Confirmado</option></select>
+          <select id="fEstado"><option value="porconv">Por convencer</option><option value="cont">Contactado</option><option value="prom">Prometió</option><option value="conf">Confirmado</option></select>
         </div>
       </div>
 
@@ -409,7 +412,7 @@
   <!-- PIRAMIDE -->
   <div class="view" id="view-piramide">
     <div class="view-head"><h2>Pirámide de la red</h2><p>Quién trae a quién. Tocá un nombre para ver su gente.</p></div>
-    <button onclick="cargarRegistrosDB();cargarReferentesDB();toast('Actualizado',true)" style="background:var(--arena-2);color:var(--tinta);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;margin-bottom:14px">🔄 Actualizar desde la base</button>
+    <button onclick="cargarReferentesDB().then(()=>cargarRegistrosDB());toast('Actualizado',true)" style="background:var(--arena-2);color:var(--tinta);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;margin-bottom:14px">🔄 Actualizar desde la base</button>
     <div class="tree" id="tree"></div>
   </div>
 
@@ -445,6 +448,7 @@
         style="width:100%;padding:13px 15px;border:1.5px solid var(--linea);border-radius:12px;font-size:15px;background:var(--blanco);box-shadow:var(--sombra)">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
         <button class="filtro-btn active" data-f="todos" onclick="setFiltro('todos')">Todos</button>
+        <button class="filtro-btn" data-f="porconv" onclick="setFiltro('porconv')">🔴 Por convencer</button>
         <button class="filtro-btn" data-f="votante" onclick="setFiltro('votante')">Votantes</button>
         <button class="filtro-btn" data-f="conf" onclick="setFiltro('conf')">De confianza</button>
         <button class="filtro-btn" data-f="dups" onclick="setFiltro('dups')">⚠ Repetidos</button>
@@ -626,8 +630,11 @@ function iniciarSesion(){
   if(btn){btn.textContent='Entrar'; btn.disabled=false;}
   document.getElementById('pass').value='';
   buildTabs(); renderAll();
-  cargarRegistrosDB(); // traer lo que ya está guardado en la base
-  cargarReferentesDB(); // traer los referentes reales
+  // primero los referentes (para poder mostrar bien quién cargó cada registro),
+  // después el resto
+  cargarReferentesDB().then(()=>{
+    cargarRegistrosDB();
+  });
   cargarAutosDB();      // traer los autos del día D
   cargarEventosDB();    // traer la agenda
   cargarBarriosDB();    // traer los barrios
@@ -636,11 +643,13 @@ function iniciarSesion(){
 /* ============ CAPA DE BASE DE DATOS — REGISTROS ============ */
 // Convierte una fila de la base (columnas SQL) al formato que usa la app
 function filaABApp(r){
+  // el nombre del referente se busca por su id en REFERENTES (no del que está mirando)
+  const refUser=REFERENTES.find(u=>u.id===r.ref_id);
   return {
     id:r.id, tipo:r.tipo, nombre:r.nombre, apellido:r.apellido,
     dni:r.dni||'', tel:r.tel||'', barrio:r.barrio||'', estado:r.estado||'cont',
     votosPos:r.votos_pos||1, mesa:r.mesa||'', circuito:r.circuito||'',
-    ref:r.ref_id, refNom:r.ref_nom||current.nombre, padre:r.padre_id||undefined,
+    ref:r.ref_id, refNom:refUser?refUser.nombre:'(sin referente)', padre:r.padre_id||undefined,
     transporte:!!r.transporte, voto:!!r.voto, autoId:r.auto_id||undefined,
     visita:!!r.visita, prioritaria:!!r.prioritaria
   };
@@ -1038,7 +1047,12 @@ async function onDni(){
     fa.value=m.apellido;
     window._datosDePadron=true;  // marca que estos datos vienen del padrón
     box.className='padron-box show';
-    box.innerHTML=`✔ <b>Encontrado en el padrón:</b> ${m.apellido}, ${m.nombres} · Mesa ${m.mesa} · ${m.circuito} · Clase ${m.clase}${m.domicilio?'<br><span style="font-size:11.5px">📍 '+m.domicilio+'</span>':''}`;
+    box.innerHTML=`✔ <b>${m.apellido}, ${m.nombres}</b> — clase ${m.clase}
+      <div style="margin-top:8px;background:var(--azul);color:#fff;border-radius:9px;padding:9px 12px;font-size:13px">
+        <span class="ti ti-building" aria-hidden="true"></span> <b>Vota en:</b> ${m.circuito}<br>
+        <span class="ti ti-clipboard-list" aria-hidden="true"></span> <b>Mesa ${m.mesa}</b>
+      </div>
+      ${m.domicilio?`<div style="font-size:11.5px;margin-top:6px">📍 ${m.domicilio}</div>`:''}`;
   }else{
     // DNI no figura: si los campos venían del padrón anterior, limpiarlos para no confundir
     if(window._datosDePadron){fn.value='';fa.value='';window._datosDePadron=false;}
@@ -1082,13 +1096,15 @@ function elegirDelPadron(e){
 function dniVerificado(p){return p.dni&&_padronCache[normDni(p.dni)]?true:false;}
 
 // PESO POR ESTADO (lo que dice el referente)
-const PESO_ESTADO={cont:0.35,prom:0.55,conf:0.80};
+const PESO_ESTADO={porconv:0,cont:0.35,prom:0.55,conf:0.80};
 // La evidencia ajusta hacia arriba o abajo ese peso:
 //  - DNI verificado en padrón: +0.15 (oro)
 //  - tiene DNI pero sin verificar: +0.05
 //  - tiene teléfono: +0.05
 //  - es solo un número sin nombre (hijo fantasma): se trata como humo (0.15)
 function fuerzaVoto(p){
+  // "Por convencer" no cuenta nada en la proyección hasta que prometa
+  if(p.estado==='porconv')return 0;
   let base=PESO_ESTADO[p.estado]??0.45;
   if(dniVerificado(p))base+=0.15;
   else if(p.dni)base+=0.05;
@@ -1150,18 +1166,68 @@ function renderDash(){
   const pct=meta?Math.min(100,Math.round(proy/meta*100)):0;
   const contactos=mine.filter(p=>p.tipo==='persona'||p.tipo==='conf').length;
 
-  // HERO: coordinación ve lo global, referente ve lo suyo
-  document.getElementById('homeHero').innerHTML=`
-    <div class="home-hero">
-      <div class="lab">${isAdmin?'Votos proyectados — toda la campaña':'Tus votos proyectados'}</div>
-      <div class="big-row"><span class="big">${proy.toLocaleString('es-AR')}</span><span class="sub">de ${meta.toLocaleString('es-AR')} ${isAdmin?'meta total':'tu meta'}</span></div>
-      <div class="track"><div class="fill" style="width:${pct}%"></div></div>
-    </div>`;
+  // HERO
+  if(isAdmin){
+    document.getElementById('homeHero').innerHTML=`
+      <div class="home-hero">
+        <div class="lab">Votos proyectados — toda la campaña</div>
+        <div class="big-row"><span class="big">${proy.toLocaleString('es-AR')}</span><span class="sub">de ${meta.toLocaleString('es-AR')} meta total</span></div>
+        <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }else{
+    // REFERENTE: meta en escalones fijos de 20
+    const ESCALON=20;
+    const escalonActual=Math.floor(proy/ESCALON)*ESCALON;
+    const proxMeta=escalonActual+ESCALON;
+    const faltan=proxMeta-proy;
+    const pctEsc=Math.round((proy-escalonActual)/ESCALON*100);
+    const totalEscalones=Math.ceil(meta/ESCALON);
+    const escalonNro=Math.floor(proy/ESCALON)+1;
+    const pips=Array.from({length:totalEscalones},(_,i)=>
+      `<span style="flex:1;height:5px;border-radius:3px;background:${i<Math.floor(proy/ESCALON)?'var(--tierra-claro)':'rgba(255,255,255,.2)'}"></span>`
+    ).join('');
+    document.getElementById('homeHero').innerHTML=`
+      <div class="home-hero">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span class="lab">Tu próxima meta</span>
+          <span style="color:var(--tierra-claro);font-size:13.5px;font-weight:700">${faltan>0?'faltan '+faltan:'¡meta cumplida!'}</span>
+        </div>
+        <div class="big-row"><span class="big">${proy}</span><span class="sub">de ${proxMeta} votos</span></div>
+        <div class="track"><div class="fill" style="width:${pctEsc}%"></div></div>
+        <div style="display:flex;gap:5px;margin-top:9px">${pips}</div>
+        <div style="font-size:11.5px;color:#9db8ab;margin-top:8px">Meta ${escalonNro} de ${totalEscalones} · objetivo final: ${meta}</div>
+      </div>`;
+  }
 
-  // STATS
+  // STATS: ranking (solo referente) + firmes
+  let posRank='';
+  if(!isAdmin){
+    const orden=REFERENTES.map(r=>({id:r.id,proy:votosDe(REGISTROS.filter(x=>x.ref===r.id)).proy})).sort((a,b)=>b.proy-a.proy);
+    const pos=orden.findIndex(r=>r.id===current.id)+1;
+    posRank=`<div class="home-stat"><span class="ti ti-trophy" style="color:#ba7517" aria-hidden="true"></span><div class="n">${pos>0?pos+'º':'—'}</div><div class="l">de ${REFERENTES.length} referentes</div></div>`;
+  }else{
+    posRank=`<div class="home-stat"><span class="ti ti-users" style="color:var(--azul)" aria-hidden="true"></span><div class="n">${contactos.toLocaleString('es-AR')}</div><div class="l">contactos cargados</div></div>`;
+  }
   document.getElementById('homeStats').innerHTML=`
-    <div class="home-stat"><span class="ti ti-users" style="color:var(--azul)" aria-hidden="true"></span><div class="n">${contactos.toLocaleString('es-AR')}</div><div class="l">contactos cargados</div></div>
+    ${posRank}
     <div class="home-stat"><span class="ti ti-shield-check" style="color:var(--verde-ok)" aria-hidden="true"></span><div class="n">${firmes.toLocaleString('es-AR')}</div><div class="l">votos firmes</div></div>`;
+
+  // AVISO datos incompletos (solo referente, discreto)
+  const avisoEl=document.getElementById('homeAviso');
+  if(avisoEl){
+    const sinTel=mine.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&!p.tel).length;
+    const sinDni=mine.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&!p.dni).length;
+    if(!isAdmin && (sinTel>0||sinDni>0)){
+      const msgs=[];
+      if(sinDni>0)msgs.push(`${sinDni} sin DNI`);
+      if(sinTel>0)msgs.push(`${sinTel} sin teléfono`);
+      avisoEl.style.display='flex';
+      avisoEl.innerHTML=`<span class="ti ti-alert-circle" style="font-size:20px;color:var(--tierra)" aria-hidden="true"></span>
+        <span style="font-size:13px;color:#854f0b;flex:1">${msgs.join(' · ')} — completá para mejorar tus datos</span>
+        <span class="ti ti-chevron-right" style="font-size:18px;color:var(--tierra)" aria-hidden="true"></span>`;
+      avisoEl.onclick=()=>goTab('lista');
+    }else{avisoEl.style.display='none';}
+  }
 
   // ACCESOS RÁPIDOS según rol
   const quick = isAdmin
@@ -1199,8 +1265,8 @@ function esFrio(refId){
 }
 
 function norm(s){return (s||'').trim().toLowerCase().replace(/\s+/g,' ');}
-function estLabel(e){return e==='conf'?'Confirmado':e==='prom'?'Prometido':'Contactado';}
-function estClass(e){return e==='conf'?'conf':e==='prom'?'prom':'cont';}
+function estLabel(e){return e==='conf'?'Confirmado':e==='prom'?'Prometió':e==='porconv'?'Por convencer':'Contactado';}
+function estClass(e){return e==='conf'?'conf':e==='prom'?'prom':e==='porconv'?'porconv':'cont';}
 function normDni(s){return (s||'').replace(/\D/g,'');}
 
 async function tryAdd(){
@@ -1375,7 +1441,7 @@ function abrirEdit(id){
     </div>
     <div class="form-row">
       <div class="form-field"><label>Barrio</label><input id="eBarrio" list="barriosList" value="${p.barrio||''}"></div>
-      <div class="form-field"><label>Estado</label><select id="eEstado"><option value="cont"${p.estado==='cont'?' selected':''}>Contactado</option><option value="prom"${p.estado==='prom'?' selected':''}>Prometido</option><option value="conf"${p.estado==='conf'?' selected':''}>Confirmado</option></select></div>
+      <div class="form-field"><label>Estado</label><select id="eEstado"><option value="porconv"${p.estado==='porconv'?' selected':''}>Por convencer</option><option value="cont"${p.estado==='cont'?' selected':''}>Contactado</option><option value="prom"${p.estado==='prom'?' selected':''}>Prometió</option><option value="conf"${p.estado==='conf'?' selected':''}>Confirmado</option></select></div>
     </div>
     ${esConf?`<div class="form-field"><label>¿A cuánta gente trae?</label><input id="eVotos" type="number" min="1" value="${p.votosPos}"><div class="helper">Subilo o bajalo según lo que confirmes. Ya tiene ${REGISTROS.filter(x=>x.padre===p.id).length} nombre(s) cargado(s).</div></div>`:''}`;
   document.getElementById('modalBg').style.display='flex';
@@ -1415,20 +1481,56 @@ async function borrarRegistro(){
   if(okDB)toast('Borrado ✓', true);
 }
 function cerrarModal(){document.getElementById('modalBg').style.display='none';editId=null;if(typeof restoreModalButtons==='function'&&editRefId!==null)restoreModalButtons();}
-async function addHijo(confId){
+function addHijo(confId){
   const c=REGISTROS.find(x=>x.id===confId); if(!c)return;
-  const nom=prompt(`Nombre y apellido de alguien de la gente de ${c.nombre} ${c.apellido}:`);
-  if(!nom||!nom.trim())return;
-  const parts=nom.trim().split(' ');
-  const nombre=parts[0]; const apellido=parts.slice(1).join(' ')||'';
-  const nuevo={tipo:'persona',nombre,apellido,dni:'',tel:'',votosPos:1,barrio:c.barrio,estado:'prom',ref:c.ref,refNom:c.refNom,padre:confId};
+  const m=document.createElement('div');
+  m.id='hijoModal';
+  m.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+  m.onclick=e=>{if(e.target===m)m.remove();};
+  m.innerHTML=`<div style="background:var(--blanco);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom))">
+    <div style="width:40px;height:4px;background:var(--linea);border-radius:3px;margin:0 auto 16px"></div>
+    <h3 style="font-size:17px;color:var(--selva);margin-bottom:4px">Agregar a la gente de ${c.nombre}</h3>
+    <p style="font-size:13px;color:var(--gris);margin-bottom:16px">Cargá un nombre. Si tenés el DNI, lo ubicamos en el padrón.</p>
+    <div class="form-row">
+      <div class="form-field"><label>Nombre <span class="req">*</span></label><input id="hNombre" placeholder="Juan" autocomplete="off"></div>
+      <div class="form-field"><label>Apellido</label><input id="hApellido" placeholder="Pérez" autocomplete="off"></div>
+    </div>
+    <div class="form-field"><label>DNI <span class="opt">(opcional)</span></label><input id="hDni" placeholder="si lo tenés" oninput="onDniHijo()"><div id="hDniBox" class="padron-box"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button onclick="document.getElementById('hijoModal').remove()" style="flex:1;background:var(--arena-2);color:var(--tinta);border-radius:12px;padding:14px;font-weight:700">Cancelar</button>
+      <button onclick="guardarHijo('${confId}')" style="flex:2;background:var(--tierra);color:#fff;border-radius:12px;padding:14px;font-weight:700">Guardar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('hNombre').focus(),100);
+}
+async function onDniHijo(){
+  const dni=normDni(document.getElementById('hDni').value);
+  const box=document.getElementById('hDniBox');
+  const fn=document.getElementById('hNombre'), fa=document.getElementById('hApellido');
+  if(dni.length<7){box.className='padron-box';return;}
+  box.className='padron-box show';box.innerHTML='Buscando...';
+  const m=await padronPorDniDB(dni);
+  if(normDni(document.getElementById('hDni').value)!==dni)return;
+  if(m){fn.value=m.nombres;fa.value=m.apellido;box.className='padron-box show';box.innerHTML=`✔ <b>${m.apellido}, ${m.nombres}</b> · Mesa ${m.mesa}`;}
+  else{box.className='padron-box show';box.innerHTML='No figura en el padrón. Se guarda igual.';}
+}
+async function guardarHijo(confId){
+  const c=REGISTROS.find(x=>x.id===confId); if(!c)return;
+  const nombre=document.getElementById('hNombre').value.trim();
+  const apellido=document.getElementById('hApellido').value.trim();
+  const dni=normDni(document.getElementById('hDni').value);
+  if(!nombre){alert('Poné al menos el nombre.');return;}
+  const pad=dni?(_padronCache[dni]||await padronPorDniDB(dni)):null;
+  const nuevo={tipo:'persona',nombre,apellido,dni,tel:'',votosPos:1,barrio:c.barrio,estado:'prom',ref:c.ref,refNom:c.refNom,padre:confId,
+    mesa:pad?pad.mesa:'',circuito:pad?pad.circuito:''};
   const guardado=await guardarRegistroDB(nuevo);
-  if(!guardado){toast('No se pudo guardar el nombre.');return;}
+  if(!guardado){toast('No se pudo guardar.');return;}
   guardado.refNom=c.refNom;
   REGISTROS.unshift(guardado);
-  // si ya hay más nombres que el estimado, subir el total y guardarlo
   const nHijos=REGISTROS.filter(x=>x.padre===confId).length;
   if(nHijos>c.votosPos){c.votosPos=nHijos;await actualizarRegistroDB(c.id,{votos_pos:c.votosPos});}
+  document.getElementById('hijoModal').remove();
   toast('Nombre agregado ✓', true);
   renderAll();
 }
@@ -1532,6 +1634,7 @@ function renderLista(){
   let list=base.filter(p=>{
     if(filtroLista==='votante'&&p.tipo!=='persona')return false;
     if(filtroLista==='conf'&&p.tipo!=='conf')return false;
+    if(filtroLista==='porconv'&&p.estado!=='porconv')return false;
     if(filtroLista==='dups'&&dupCount[claveDup(p)]<2)return false;
     if(!q)return true;
     return [p.nombre,p.apellido,p.dni,p.barrio,p.refNom].some(v=>norm(v||'').includes(q));
@@ -1551,7 +1654,7 @@ function renderLista(){
       p.visita?'<span class="mk" style="background:var(--tierra)" title="visitar"></span>':'',
       p.transporte?'<span class="mk" style="background:var(--azul)" title="transporte"></span>':''
     ].filter(Boolean).join('');
-    const sub=`${p.barrio||'sin barrio'}${esCoord&&p.refNom?' · '+p.refNom:''}`;
+    const sub=`${p.mesa?'Mesa '+p.mesa+' · ':''}${p.barrio||'sin barrio'}${esCoord&&p.refNom?' · '+p.refNom:''}`;
     return `<div class="prow ${p.prioritaria?'prio':''}">
       <div class="prow-main" onclick="toggleRow('${p.id}')">
         <div class="prow-info">
@@ -1565,6 +1668,11 @@ function renderLista(){
         </div>
       </div>
       <div class="prow-actions" id="act-${p.id}">
+        <div style="grid-column:1/-1;display:flex;gap:8px;margin-bottom:4px">
+          <button onclick="setEstado('${p.id}','prom')" style="flex:1;background:${p.estado==='prom'?'#8a6a1c':'#fdf4e3'};color:${p.estado==='prom'?'#fff':'#8a6a1c'};border-radius:9px;padding:11px;font-size:13px;font-weight:700">Prometió</button>
+          <button onclick="setEstado('${p.id}','conf')" style="flex:1;background:${p.estado==='conf'?'var(--verde-ok)':'#e7f4ec'};color:${p.estado==='conf'?'#fff':'var(--verde-ok)'};border-radius:9px;padding:11px;font-size:13px;font-weight:700">Confirmó ✓</button>
+          <button onclick="setEstado('${p.id}','porconv')" style="flex:1;background:${p.estado==='porconv'?'var(--rojo)':'#fbe9e6'};color:${p.estado==='porconv'?'#fff':'var(--rojo)'};border-radius:9px;padding:11px;font-size:13px;font-weight:700">Por convencer</button>
+        </div>
         <button class="act ${p.transporte?'on-azul':''}" onclick="toggleTransporte('${p.id}')"><span class="ti ti-car" aria-hidden="true"></span>Transporte</button>
         <button class="act ${p.visita?'on-tierra':''}" onclick="toggleMarca('${p.id}','visita')"><span class="ti ti-map-pin" aria-hidden="true"></span>Visitar</button>
         <button class="act ${p.prioritaria?'on-rojo':''}" onclick="toggleMarca('${p.id}','prioritaria')"><span class="ti ti-flag" aria-hidden="true"></span>Urgente</button>
@@ -1573,6 +1681,12 @@ function renderLista(){
       </div>
     </div>`;
   }).join('');
+}
+async function setEstado(id,estado){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  p.estado=estado;renderLista();keepRowOpen(id);renderDash();
+  await actualizarRegistroDB(id,{estado});
+  toast(estado==='conf'?'¡Confirmado! ✓':estado==='prom'?'Marcado: prometió':'Marcado: por convencer',true);
 }
 function toggleRow(id){
   const a=document.getElementById('act-'+id);if(!a)return;
@@ -1857,7 +1971,7 @@ function renderControl(){
   cont.innerHTML=list.map(p=>`
     <div class="person-row" style="${p.voto?'background:#e7f4ec;border-color:var(--verde-ok)':''}">
       <div class="who"><div><b>${p.nombre} ${p.apellido}</b>${p.transporte?'<span class="badge" style="background:var(--azul)">🚗 transporte</span>':''}</div>
-        <div class="meta">${p.barrio}${esCoord?' · '+p.refNom:''}${p.tel?' · '+p.tel:''}</div></div>
+        <div class="meta">${p.mesa?`<b style="color:var(--azul)">Mesa ${p.mesa}</b> · `:''}${p.barrio}${esCoord?' · '+p.refNom:''}${p.tel?' · '+p.tel:''}</div></div>
       <button onclick="toggleVoto('${p.id}')" style="padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:700;${p.voto?'background:var(--verde-ok);color:#fff':'background:var(--arena-2);color:var(--tinta)'}">${p.voto?'✓ Ya votó':'Marcar votó'}</button>
     </div>`).join('');
 }
