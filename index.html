@@ -271,7 +271,33 @@
     .navbtn .ti{font-size:23px}
     .navbtn span{font-size:11px;font-weight:600}
     .navbtn.active{color:var(--tierra)}
+    .navbtn{align-items:flex-end}
+    .navcenter{position:relative;justify-content:flex-end}
+    .navcenter .navfab{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:50%;background:var(--tierra);color:#fff;margin-bottom:3px;box-shadow:0 4px 12px rgba(181,73,31,.4);border:3px solid var(--blanco);transform:translateY(-18px)}
+    .navcenter .navfab .ti{font-size:27px}
+    .navcenter span:last-child{color:var(--tierra);font-weight:700;transform:translateY(-14px)}
   }
+  /* ===== FILAS COMPACTAS DE LISTA ===== */
+  .prow{background:var(--blanco);border:1px solid var(--linea);border-radius:12px;margin-bottom:8px;overflow:hidden}
+  .prow.prio{border-left:4px solid var(--rojo)}
+  .prow.expanded{border-color:var(--selva)}
+  .prow-main{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;cursor:pointer}
+  .prow-info{min-width:0;flex:1}
+  .prow-name{font-size:15px;font-weight:700;color:var(--tinta);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .prow-sub{font-size:12.5px;color:var(--gris);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .prow-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .dots{display:flex;gap:3px}
+  .mk{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .prow-caret{font-size:18px;color:var(--gris);transition:transform .2s}
+  .prow.expanded .prow-caret{transform:rotate(180deg)}
+  .prow-actions{display:none;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 14px 14px}
+  .prow-actions.open{display:grid}
+  .act{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--arena);border:1px solid var(--linea);border-radius:10px;padding:11px 6px;font-size:12px;font-weight:600;color:var(--tinta)}
+  .act .ti{font-size:19px;color:var(--selva)}
+  .act.on-azul{background:var(--azul);color:#fff;border-color:var(--azul)}.act.on-azul .ti{color:#fff}
+  .act.on-tierra{background:var(--tierra);color:#fff;border-color:var(--tierra)}.act.on-tierra .ti{color:#fff}
+  .act.on-rojo{background:var(--rojo);color:#fff;border-color:var(--rojo)}.act.on-rojo .ti{color:#fff}
+  .dup-flag{font-size:9.5px;background:var(--amarillo);color:#6b4e0a;padding:1px 6px;border-radius:5px;font-weight:700;margin-left:5px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -912,24 +938,32 @@ function buildTabs(){
     b.onclick=()=>goTab(t[0]);
     c.appendChild(b);
   });
-  // nav inferior (celular): las 5 principales + "Más"
+  // nav inferior (celular): Inicio · Lista · CARGAR (centro) · Agenda · Más
   const nav=document.getElementById('bottomnav');nav.innerHTML='';
-  const principales=all.slice(0,4);
-  principales.forEach((t,i)=>{
+  const slots=[
+    {tab:'dash',label:'Inicio',icon:'ti-home'},
+    {tab:'lista',label:esCoord?'Lista':'Mi lista',icon:'ti-list'},
+    {tab:'cargar',label:'Cargar',icon:'ti-plus',center:true},
+    {tab:'agenda',label:'Agenda',icon:'ti-calendar'},
+    {tab:'__mas',label:'Más',icon:'ti-dots',mas:true},
+  ];
+  slots.forEach(s=>{
     const b=document.createElement('button');
-    b.className='navbtn'+(i===0?' active':'');b.dataset.tab=t[0];
-    b.innerHTML=`<span class="ti ${t[2]}" aria-hidden="true"></span><span>${t[1]}</span>`;
-    b.onclick=()=>goTab(t[0]);
+    if(s.center){
+      b.className='navbtn navcenter';b.dataset.tab=s.tab;
+      b.innerHTML=`<span class="navfab"><span class="ti ${s.icon}" aria-hidden="true"></span></span><span>${s.label}</span>`;
+      b.onclick=()=>goTab(s.tab);
+    }else if(s.mas){
+      b.className='navbtn';b.dataset.tab='__mas';
+      b.innerHTML=`<span class="ti ${s.icon}" aria-hidden="true"></span><span>${s.label}</span>`;
+      b.onclick=()=>abrirMas();
+    }else{
+      b.className='navbtn'+(s.tab==='dash'?' active':'');b.dataset.tab=s.tab;
+      b.innerHTML=`<span class="ti ${s.icon}" aria-hidden="true"></span><span>${s.label}</span>`;
+      b.onclick=()=>goTab(s.tab);
+    }
     nav.appendChild(b);
   });
-  // botón "Más" para el resto
-  if(all.length>4){
-    const b=document.createElement('button');
-    b.className='navbtn';b.dataset.tab='__mas';
-    b.innerHTML='<span class="ti ti-dots" aria-hidden="true"></span><span>Más</span>';
-    b.onclick=()=>abrirMas();
-    nav.appendChild(b);
-  }
   goTab('dash');
 }
 function goTab(v){
@@ -940,7 +974,8 @@ function goTab(v){
 }
 function abrirMas(){
   const all=window._tabs||[];
-  const resto=all.slice(4);
+  const enNav=['dash','lista','cargar','agenda']; // los que ya están en la barra
+  const resto=all.filter(t=>!enNav.includes(t[0]));
   if(!resto.length)return;
   const cont=document.createElement('div');
   cont.id='masSheet';
@@ -948,6 +983,7 @@ function abrirMas(){
   cont.onclick=e=>{if(e.target===cont)cont.remove();};
   cont.innerHTML=`<div style="background:var(--blanco);width:100%;border-radius:20px 20px 0 0;padding:18px 18px calc(24px + env(safe-area-inset-bottom))">
     <div style="width:40px;height:4px;background:var(--linea);border-radius:3px;margin:0 auto 16px"></div>
+    <div style="font-size:13px;color:var(--gris);font-weight:700;margin-bottom:12px">Más secciones</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
       ${resto.map(t=>`<button onclick="document.getElementById('masSheet').remove();goTab('${t[0]}')" style="background:var(--arena);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;color:var(--tinta)"><span class="ti ${t[2]}" style="font-size:24px;color:var(--selva)" aria-hidden="true"></span><span style="font-size:14.5px;font-weight:700">${t[1]}</span></button>`).join('')}
     </div></div>`;
@@ -1484,38 +1520,54 @@ function renderLista(){
   if(!list.length){cont.innerHTML='<div class="empty">Nada para mostrar con este filtro o búsqueda.</div>';return;}
   cont.innerHTML=list.map(p=>{
     const esDup=dupCount[claveDup(p)]>1;
-    const badge=p.tipo==='conf'?`<span class="badge badge-conf">trae ${p.votosPos}</span>`:`<span class="badge badge-vot">votante</span>`;
+    const badge=p.tipo==='conf'?`<span class="badge badge-conf">trae ${p.votosPos}</span>`:'';
     const padre=p.padre?REGISTROS.find(x=>x.id===p.padre):null;
-    const ev=nivelEvidencia(p);
-    const marcas=[
-      p.prioritaria?'<span style="color:var(--rojo);font-weight:700">⚡ urgente</span>':'',
-      p.visita?'<span style="color:var(--tierra);font-weight:700">📍 visitar</span>':'',
-      p.transporte?'<span style="color:var(--azul);font-weight:700">🚗 transporte</span>':''
-    ].filter(Boolean).join(' · ');
-    const sub=`${p.barrio}${padre?` · gente de ${padre.nombre}`:''}${esCoord?' · '+p.refNom:''} · <span style="color:${ev.col};font-weight:700">${ev.n}</span>${marcas?' · '+marcas:''}`;
-    return `<div class="person-row ${esDup?'dup':''}" style="${p.prioritaria?'border-left:4px solid var(--rojo)':''}"><div class="who">
-        <div><b>${p.nombre} ${p.apellido}</b>${badge}${esDup?'<span class="dup-flag">REPETIDO</span>':''}</div>
-        <div class="meta">${sub}</div></div>
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-        <span class="tag ${estClass(p.estado)}">${estLabel(p.estado)}</span>
-        <button onclick="toggleMarca('${p.id}','prioritaria')" title="Urgente / prioritaria" style="background:${p.prioritaria?'var(--rojo)':'var(--arena-2)'};color:${p.prioritaria?'#fff':'inherit'};border-radius:8px;width:30px;height:30px;font-size:14px">⚡</button>
-        <button onclick="toggleMarca('${p.id}','visita')" title="Pendiente de visita" style="background:${p.visita?'var(--tierra)':'var(--arena-2)'};color:${p.visita?'#fff':'inherit'};border-radius:8px;width:30px;height:30px;font-size:14px">📍</button>
-        <button onclick="toggleTransporte('${p.id}')" title="Necesita transporte" style="background:${p.transporte?'var(--azul)':'var(--arena-2)'};color:${p.transporte?'#fff':'inherit'};border-radius:8px;width:30px;height:30px;font-size:14px">🚗</button>
-        <button onclick="agendarVisitaA('${p.id}')" title="Agendar visita" style="background:var(--selva);color:#fff;border-radius:8px;height:30px;font-size:12px;font-weight:700;padding:0 10px">📅 Visita</button>
-        <button onclick="abrirEdit('${p.id}')" title="Editar" style="background:var(--arena-2);border-radius:8px;width:30px;height:30px;font-size:14px">✏️</button>
-      </div></div>`;
+    // puntitos de marca, chiquitos
+    const dots=[
+      p.prioritaria?'<span class="mk" style="background:var(--rojo)" title="urgente"></span>':'',
+      p.visita?'<span class="mk" style="background:var(--tierra)" title="visitar"></span>':'',
+      p.transporte?'<span class="mk" style="background:var(--azul)" title="transporte"></span>':''
+    ].filter(Boolean).join('');
+    const sub=`${p.barrio||'sin barrio'}${esCoord&&p.refNom?' · '+p.refNom:''}`;
+    return `<div class="prow ${p.prioritaria?'prio':''}">
+      <div class="prow-main" onclick="toggleRow('${p.id}')">
+        <div class="prow-info">
+          <div class="prow-name">${p.nombre} ${p.apellido} ${badge}${esDup?'<span class="dup-flag">REP</span>':''}</div>
+          <div class="prow-sub">${sub}</div>
+        </div>
+        <div class="prow-right">
+          <span class="dots">${dots}</span>
+          <span class="tag ${estClass(p.estado)}">${estLabel(p.estado)}</span>
+          <span class="ti ti-chevron-down prow-caret" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="prow-actions" id="act-${p.id}">
+        <button class="act ${p.transporte?'on-azul':''}" onclick="toggleTransporte('${p.id}')"><span class="ti ti-car" aria-hidden="true"></span>Transporte</button>
+        <button class="act ${p.visita?'on-tierra':''}" onclick="toggleMarca('${p.id}','visita')"><span class="ti ti-map-pin" aria-hidden="true"></span>Visitar</button>
+        <button class="act ${p.prioritaria?'on-rojo':''}" onclick="toggleMarca('${p.id}','prioritaria')"><span class="ti ti-flag" aria-hidden="true"></span>Urgente</button>
+        <button class="act" onclick="agendarVisitaA('${p.id}')"><span class="ti ti-calendar-plus" aria-hidden="true"></span>Agendar</button>
+        <button class="act" onclick="abrirEdit('${p.id}')"><span class="ti ti-edit" aria-hidden="true"></span>Editar</button>
+      </div>
+    </div>`;
   }).join('');
+}
+function toggleRow(id){
+  const a=document.getElementById('act-'+id);if(!a)return;
+  const open=a.classList.contains('open');
+  document.querySelectorAll('.prow-actions.open').forEach(x=>{x.classList.remove('open');x.closest('.prow').classList.remove('expanded');});
+  if(!open){a.classList.add('open');a.closest('.prow').classList.add('expanded');}
 }
 async function toggleMarca(id,campo){
   const p=REGISTROS.find(x=>x.id===id);if(!p)return;
-  p[campo]=!p[campo];renderLista();
+  p[campo]=!p[campo];renderLista();keepRowOpen(id);
   await actualizarRegistroDB(id,{[campo]:p[campo]});
 }
 async function toggleTransporte(id){
   const p=REGISTROS.find(x=>x.id===id);if(!p)return;
-  p.transporte=!p.transporte;renderLista();renderDiaD();
+  p.transporte=!p.transporte;renderLista();renderDiaD();keepRowOpen(id);
   await actualizarRegistroDB(id,{transporte:p.transporte});
 }
+function keepRowOpen(id){const a=document.getElementById('act-'+id);if(a){a.classList.add('open');a.closest('.prow').classList.add('expanded');}}
 // Llevar a la agenda con los datos de la persona precargados
 function agendarVisitaA(id){
   const p=REGISTROS.find(x=>x.id===id);if(!p)return;
