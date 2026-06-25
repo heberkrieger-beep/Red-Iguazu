@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v16</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v17</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -343,7 +343,7 @@
     <div id="refTableWrap">
       <h3 style="font-size:15px;color:var(--selva);margin:24px 0 12px">Ranking de referentes</h3>
       <table id="refTable"><thead><tr>
-        <th>Referente</th><th class="hide-sm">Zona</th><th>Avance</th><th>Proyec./Cargados</th><th>Reuniones</th><th class="hide-sm">Calidad datos</th>
+        <th>Referente</th><th class="hide-sm">Zona</th><th>Avance</th><th>Proyec./Cargados</th><th>Actividad</th><th class="hide-sm">Calidad datos</th>
       </tr></thead><tbody></tbody></table>
     </div>
   </div>
@@ -564,24 +564,7 @@
     </div>
   </div>
 
-  <!-- REUNIONES (solo coordinación) -->
-  <div class="view" id="view-reuniones">
-    <div class="view-head"><h2>Reuniones</h2><p>Registrá las reuniones de cada referente. Mide quién labura, más allá de los votos.</p></div>
-    <div class="form-card" style="margin-bottom:20px">
-      <h3 style="font-size:15px;color:var(--selva);margin-bottom:14px">➕ Registrar reunión</h3>
-      <div class="form-field full"><label>Referente <span class="req">*</span></label><select id="ruRef"></select></div>
-      <div class="form-row">
-        <div class="form-field"><label>Fecha</label><input id="ruFecha" type="date"></div>
-        <div class="form-field"><label>Cuánta gente fue</label><input id="ruAsist" type="number" min="0" placeholder="0"></div>
-      </div>
-      <div class="form-field full"><label>Lugar</label><input id="ruLugar" placeholder="Casa de Fulano, SUM del barrio..."></div>
-      <div class="form-field full"><label>Nota <span class="opt">(opcional)</span></label><input id="ruNota" placeholder="de qué se habló, quién más vino..."></div>
-      <button class="btn-add" onclick="agregarReunion()">Guardar reunión</button>
-    </div>
-    <h3 style="font-size:15px;color:var(--selva);margin:0 0 12px">Reuniones registradas</h3>
-    <div id="reunionesList"></div>
   </div>
-</div>
 
 <!-- MODAL EDITAR -->
 <div id="modalBg" style="display:none;position:fixed;inset:0;background:rgba(15,61,46,.45);z-index:200;align-items:center;justify-content:center;padding:20px">
@@ -667,7 +650,6 @@ function iniciarSesion(){
   cargarAutosDB();      // traer los autos del día D
   cargarEventosDB();    // traer la agenda
   cargarBarriosDB();    // traer los barrios
-  cargarReunionesDB();  // traer las reuniones
 }
 
 /* ============ CAPA DE BASE DE DATOS — REGISTROS ============ */
@@ -756,7 +738,7 @@ async function borrarReunion(id){
   REUNIONES=REUNIONES.filter(r=>r.id!==id);renderReuniones();renderDash();
   if(sb)await sb.from('reuniones').delete().eq('id',id);
 }
-function reunionesDe(refId){return REUNIONES.filter(r=>r.ref===refId).length;}
+function reunionesDe(refId){return EVENTOS.filter(e=>e.ref===refId).length;}
 function renderReuniones(){
   const sel=document.getElementById('ruRef');
   if(sel){
@@ -831,7 +813,7 @@ function toast(msg, ok){
   t.textContent=msg; t.style.display='block';
   clearTimeout(window._toastT); window._toastT=setTimeout(()=>{t.style.display='none'},3500);
 }
-function renderAll(){renderDash();renderRecent();renderTree();renderAgenda();renderMapa();renderReferentes();renderReuniones();refreshUserSelect();refreshBarrios();renderLista();renderDiaD();}
+function renderAll(){renderDash();renderRecent();renderTree();renderAgenda();renderMapa();renderReferentes();refreshUserSelect();refreshBarrios();renderLista();renderDiaD();}
 function logout(){current=null;document.getElementById('app').style.display='none';document.getElementById('login').style.display='flex';}
 function refreshUserSelect(){
   // llenar el selector "¿de quién es?" en Cargar (solo para coordinación)
@@ -1034,7 +1016,7 @@ function buildTabs(){
   const esCoord = current.role==='admin'||current.coord;
   // [id, label corto, ícono tabler]
   const all = esCoord
-    ? [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Lista','ti-list'],['piramide','Pirámide','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Día D','ti-car'],['mapa','Mapa','ti-map-2'],['referentes','Referentes','ti-users'],['reuniones','Reuniones','ti-clipboard-text']]
+    ? [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Lista','ti-list'],['piramide','Pirámide','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Día D','ti-car'],['mapa','Mapa','ti-map-2'],['referentes','Referentes','ti-users']]
     : [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Mi lista','ti-list'],['piramide','Mi red','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Día D','ti-car']];
   window._tabs=all;
   // barra superior (desktop): todas las pestañas
@@ -1346,7 +1328,7 @@ function renderDash(){
         <td class="hide-sm">${r.zona}</td>
         <td><span class="mini-bar"><i style="width:${Math.min(100,p)}%"></i></span>${p}%</td>
         <td><span class="semaforo ${sem}"></span>${r.proy}<span style="color:var(--gris);font-size:11px">/${r.pos}</span></td>
-        <td><b style="color:${reus>0?'var(--selva)':'var(--gris)'}">${reus}</b> <span style="font-size:11px;color:var(--gris)">reunión${reus===1?'':'es'}</span></td>
+        <td><b style="color:${reus>0?'var(--selva)':'var(--gris)'}">${reus}</b> <span style="font-size:11px;color:var(--gris)">en agenda</span></td>
         <td class="hide-sm"><span class="semaforo" style="background:${qCol}"></span><span style="font-size:11.5px">${qTxt}</span></td></tr>`;
     });
   }
