@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v17</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v19</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -340,6 +340,9 @@
     <div id="homeAviso" style="display:none;background:#faedd5;border-radius:12px;padding:12px 14px;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer"></div>
     <div class="home-section-lab">Accesos rápidos</div>
     <div class="home-quick" id="homeQuick"></div>
+    <a id="homeTableroPC" href="dashboard.html" target="_blank" style="display:none;margin-top:12px;background:var(--selva);color:#fff;border-radius:15px;padding:16px;text-decoration:none;align-items:center;justify-content:center;gap:9px;font-weight:700;font-size:15px">
+      <span class="ti ti-device-desktop-analytics" aria-hidden="true"></span> Abrir tablero de campaña (PC)
+    </a>
     <div id="refTableWrap">
       <h3 style="font-size:15px;color:var(--selva);margin:24px 0 12px">Ranking de referentes</h3>
       <table id="refTable"><thead><tr>
@@ -525,6 +528,10 @@
   <!-- REFERENTES (solo coordinación) -->
   <div class="view" id="view-referentes">
     <div class="view-head"><h2>Referentes</h2><p>Dar de alta, editar y administrar tu red de referentes.</p></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+      <button onclick="exportarContactos()" style="background:var(--selva);color:#fff;border-radius:11px;padding:12px 18px;font-size:13.5px;font-weight:700"><span class="ti ti-download" aria-hidden="true"></span> Descargar contactos (Excel)</button>
+      <button onclick="exportarReferentes()" style="background:var(--arena-2);color:var(--tinta);border-radius:11px;padding:12px 18px;font-size:13.5px;font-weight:700"><span class="ti ti-download" aria-hidden="true"></span> Descargar resumen de referentes</button>
+    </div>
     <div class="form-card" style="margin-bottom:24px">
       <h3 style="font-size:15px;color:var(--selva);margin-bottom:14px">➕ Nuevo referente</h3>
       <div class="form-row">
@@ -739,6 +746,35 @@ async function borrarReunion(id){
   if(sb)await sb.from('reuniones').delete().eq('id',id);
 }
 function reunionesDe(refId){return EVENTOS.filter(e=>e.ref===refId).length;}
+function descargarCSV(nombre, filas){
+  const csv = filas.map(f=>f.map(c=>{
+    const s=(c==null?'':String(c));
+    return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+  }).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=nombre+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Descargado ✓',true);
+}
+function exportarContactos(){
+  const filas=[['Nombre','Apellido','DNI','Telefono','Tipo','Estado','Barrio','Mesa','Circuito','Referente','Transporte','Voto','Trae votos']];
+  REGISTROS.forEach(p=>{
+    filas.push([p.nombre,p.apellido,p.dni||'',p.tel||'',p.tipo==='conf'?'Confianza':'Votante',estLabel(p.estado),p.barrio||'',p.mesa||'',p.circuito||'',p.refNom||'',p.transporte?'Si':'',p.voto?'Si':'',p.tipo==='conf'?p.votosPos:'']);
+  });
+  descargarCSV('contactos_red_iguazu', filas);
+}
+function exportarReferentes(){
+  const filas=[['Referente','Usuario','Zona','Categoria','Estado','Votos proyectados','Votos cargados','Firmes','Contactos','Actividades en agenda']];
+  REFERENTES.forEach(r=>{
+    const suGente=REGISTROS.filter(x=>x.ref===r.id);
+    const v=votosDe(suGente);
+    filas.push([r.nombre,r.usuario,r.zona||'',r.cat||'',r.estado||'',v.proy,v.pos,v.firmes,suGente.filter(p=>p.tipo==='persona'||p.tipo==='conf').length,reunionesDe(r.id)]);
+  });
+  descargarCSV('referentes_red_iguazu', filas);
+}
 function renderReuniones(){
   const sel=document.getElementById('ruRef');
   if(sel){
@@ -1312,6 +1348,10 @@ function renderDash(){
     `<button class="home-qbtn" onclick="goTab('${q[0]}')"><span class="ti ${q[2]}" aria-hidden="true"></span><span class="t">${q[1]}</span></button>`
   ).join('');
 
+  // botón Tablero PC (solo coordinación) — abre el dashboard en pestaña nueva
+  const tabPC=document.getElementById('homeTableroPC');
+  if(tabPC)tabPC.style.display=isAdmin?'flex':'none';
+
   // ranking solo coordinación
   document.getElementById('refTableWrap').style.display=isAdmin?'block':'none';
   if(isAdmin){
@@ -1697,6 +1737,7 @@ function renderAgenda(){
     const d=new Date(e.fecha+'T00:00');
     const tEt = e.tipo==='visita'?'et-visita':e.tipo==='reunion'?'et-reunion':'et-acto';
     const tNm = e.tipo==='visita'?'Visita':e.tipo==='reunion'?'Reunión':'Acto';
+    const puedeBorrar = isAdmin || e.ref===current.id;
     return `<div class="ev">
       <div class="ev-date"><div class="d">${d.getDate()}</div><div class="m">${MESES[d.getMonth()]}</div></div>
       <div class="ev-body">
@@ -1704,8 +1745,21 @@ function renderAgenda(){
           <div class="ti">${e.titulo}</div><span class="ev-type ${tEt}">${tNm}</span>
         </div>
         <div class="me"><b>${e.turno||e.hora||'—'}</b> · ${e.lugar||'—'}${e.nota?'<br>'+e.nota:''}${isAdmin?'<br><span style="color:var(--tierra)">'+e.refNom+'</span>':''}</div>
-      </div></div>`;
+      </div>
+      ${puedeBorrar?`<button onclick="borrarEvento('${e.id}')" title="Cancelar turno" style="align-self:flex-start;background:var(--arena-2);border-radius:8px;width:32px;height:32px;font-size:14px;flex-shrink:0">🗑</button>`:''}
+    </div>`;
   }).join('');
+}
+async function borrarEvento(id){
+  const e=EVENTOS.find(x=>x.id===id);if(!e)return;
+  if(!confirm(`¿Cancelar "${e.titulo}"? El turno queda libre para reservar de nuevo.`))return;
+  EVENTOS=EVENTOS.filter(x=>x.id!==id);
+  renderAgenda();renderTurnos();renderDash();
+  if(sb){
+    const {error}=await sb.from('eventos').delete().eq('id',id);
+    if(error)toast('Error al cancelar: '+error.message);
+    else toast('Turno cancelado ✓',true);
+  }
 }
 
 /* ---- LISTA + BUSCADOR + REPETIDOS ---- */

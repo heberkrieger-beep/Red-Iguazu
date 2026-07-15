@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red Iguazú — Tablero de campaña</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --selva:#0f3d2e; --selva-2:#16573f; --tierra:#b5491f; --tierra-claro:#e2733f;
+    --arena:#f5f1e8; --arena-2:#ece5d6; --tinta:#1c2a23; --gris:#6b756f; --linea:#d8d0bf;
+    --verde-ok:#2e8b57; --amarillo:#e0a92e; --rojo:#c0432f; --azul:#2c5f7c; --blanco:#fffdf8;
+    --sombra:0 1px 3px rgba(15,61,46,.08), 0 8px 24px rgba(15,61,46,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--arena);color:var(--tinta);-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-weight:800;letter-spacing:-.02em}
+  .wrap{max-width:1400px;margin:0 auto;padding:0 28px 60px}
+
+  /* topbar */
+  .top{background:var(--selva);color:#fff;padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+  .top .brand{display:flex;align-items:center;gap:12px}
+  .top .dot{width:38px;height:38px;border-radius:11px;background:var(--tierra);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px}
+  .top .brand h1{font-size:19px}
+  .top .brand .sub{font-size:12.5px;color:#9db8ab}
+  .top .actions{display:flex;gap:10px;align-items:center}
+  .top .btn{background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:10px;padding:9px 15px;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .top .btn:hover{background:rgba(255,255,255,.2)}
+  .top .btn.prim{background:var(--tierra)}
+
+  .loading{text-align:center;padding:80px 20px;color:var(--gris)}
+  .spinner{width:36px;height:36px;border:3px solid var(--arena-2);border-top-color:var(--tierra);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* KPIs */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin:28px 0}
+  .kpi{background:var(--blanco);border:1px solid var(--linea);border-radius:16px;padding:20px;box-shadow:var(--sombra)}
+  .kpi .ti{font-size:22px}
+  .kpi .n{font-size:38px;font-weight:800;line-height:1;margin:10px 0 4px}
+  .kpi .l{font-size:13px;color:var(--gris)}
+  .kpi.hero{background:var(--selva);color:#fff;border:none}
+  .kpi.hero .l{color:#9db8ab}
+  .kpi.hero .track{height:7px;background:rgba(255,255,255,.15);border-radius:4px;margin-top:12px;overflow:hidden}
+  .kpi.hero .track i{display:block;height:100%;background:var(--tierra-claro);border-radius:4px}
+
+  /* grid de paneles */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+  .panel{background:var(--blanco);border:1px solid var(--linea);border-radius:16px;padding:22px;box-shadow:var(--sombra)}
+  .panel h2{font-size:15px;color:var(--selva);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+  .panel h2 .ti{font-size:18px;color:var(--tierra)}
+  .chart-box{position:relative;height:280px}
+
+  /* tabla */
+  .panel.full{grid-column:1/-1}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;padding:11px 12px;background:var(--selva);color:#fff;font-weight:600;font-size:12.5px;cursor:pointer;user-select:none;white-space:nowrap}
+  th:first-child{border-radius:8px 0 0 8px}th:last-child{border-radius:0 8px 8px 0}
+  th:hover{background:var(--selva-2)}
+  th .arr{opacity:.5;font-size:10px}
+  td{padding:11px 12px;border-bottom:1px solid var(--arena-2)}
+  tr:hover td{background:var(--arena)}
+  .ref-nm{font-weight:700}
+  .bar{display:inline-block;width:70px;height:7px;background:var(--arena-2);border-radius:4px;overflow:hidden;vertical-align:middle;margin-right:7px}
+  .bar i{display:block;height:100%;background:var(--tierra);border-radius:4px}
+  .dot-sem{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11.5px;font-weight:700}
+
+  .subgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .mini{background:var(--arena);border-radius:12px;padding:14px}
+  .mini .n{font-size:24px;font-weight:800}
+  .mini .l{font-size:12px;color:var(--gris)}
+
+  @media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <div id="gate" style="position:fixed;inset:0;z-index:999;background:linear-gradient(150deg,var(--selva),var(--selva-2));display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="background:var(--blanco);border-radius:22px;padding:40px 34px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="width:38px;height:38px;border-radius:11px;background:var(--tierra);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px">R</div>
+        <div style="font-size:21px;font-weight:800;color:var(--selva)">Red Iguazú</div>
+      </div>
+      <p style="color:var(--gris);font-size:14px;margin:12px 0 26px">Tablero de campaña. Acceso solo para coordinación.</p>
+      <div style="margin-bottom:16px"><label style="display:block;font-size:12.5px;font-weight:700;color:var(--selva);margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em">Usuario</label><input id="gUsuario" autocomplete="off" style="width:100%;padding:14px;border:1.5px solid var(--linea);border-radius:12px;font-size:16px;background:var(--arena)"></div>
+      <div style="margin-bottom:16px"><label style="display:block;font-size:12.5px;font-weight:700;color:var(--selva);margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em">Clave</label><input id="gClave" type="password" style="width:100%;padding:14px;border:1.5px solid var(--linea);border-radius:12px;font-size:16px;background:var(--arena)"></div>
+      <div id="gError" style="display:none;background:#fbe9e6;color:var(--rojo);padding:10px 13px;border-radius:10px;font-size:13px;margin-bottom:14px"></div>
+      <button id="gBtn" onclick="entrarDash()" style="width:100%;padding:15px;background:var(--tierra);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer">Entrar</button>
+    </div>
+  </div>
+  <div class="top">
+    <div class="brand">
+      <div class="dot">R</div>
+      <div><h1>Red Iguazú</h1><div class="sub">Tablero de campaña · Puerto Iguazú</div></div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="cargarTodo()"><span class="ti ti-refresh"></span> Actualizar</button>
+      <button class="btn prim" onclick="exportar()"><span class="ti ti-download"></span> Exportar contactos</button>
+      <button class="btn" onclick="salirDash()"><span class="ti ti-logout"></span> Salir</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div id="loading" class="loading"><div class="spinner"></div>Cargando datos de la campaña...</div>
+    <div id="app" style="display:none">
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="grid">
+        <div class="panel">
+          <h2><span class="ti ti-chart-pie"></span> Embudo de votos</h2>
+          <div class="chart-box"><canvas id="chartEmbudo"></canvas></div>
+        </div>
+        <div class="panel">
+          <h2><span class="ti ti-map-pin"></span> Votos proyectados por barrio</h2>
+          <div class="chart-box"><canvas id="chartBarrio"></canvas></div>
+        </div>
+      </div>
+
+      <div class="panel full" style="margin-bottom:20px">
+        <h2><span class="ti ti-chart-bar"></span> Votos proyectados por referente</h2>
+        <div class="chart-box" style="height:320px"><canvas id="chartRef"></canvas></div>
+      </div>
+
+      <div class="panel full">
+        <h2><span class="ti ti-users"></span> Referentes — clic en el encabezado para ordenar</h2>
+        <table id="tablaRef">
+          <thead><tr>
+            <th data-k="nombre">Referente <span class="arr"></span></th>
+            <th data-k="zona">Zona <span class="arr"></span></th>
+            <th data-k="proy">Proyectados <span class="arr">▼</span></th>
+            <th data-k="pos">Cargados <span class="arr"></span></th>
+            <th data-k="firmes">Firmes <span class="arr"></span></th>
+            <th data-k="porconv">Por convencer <span class="arr"></span></th>
+            <th data-k="pctDni">% con DNI <span class="arr"></span></th>
+            <th data-k="actividad">Actividad <span class="arr"></span></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+const SUPABASE_URL='https://qgogamniszilcefqvtcq.supabase.co';
+const SUPABASE_KEY='sb_publishable_RtlHSBqEDAi-aCfF6ZzKAg_RHg968Cr';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let REG=[], REF=[], EV=[];
+const PESO={porconv:0,cont:0.35,prom:0.55,conf:0.80};
+let charts={};
+
+function fuerza(p){
+  if(p.estado==='porconv')return 0;
+  let b=PESO[p.estado]??0.45;
+  if(p.dni)b+=0.05; if(p.tel)b+=0.05;
+  return Math.min(0.97,b);
+}
+function votos(list){
+  let pos=0,proy=0,firmes=0;
+  list.forEach(p=>{
+    const v=p.tipo==='conf'?(p.votos_pos||1):1;
+    pos+=v; proy+=v*fuerza(p);
+    if(p.estado==='conf'&&p.dni)firmes+=v;
+  });
+  return {pos,proy:Math.round(proy),firmes};
+}
+
+async function cargarTodo(){
+  document.getElementById('loading').style.display='block';
+  document.getElementById('app').style.display='none';
+  try{
+    const [r1,r2,r3]=await Promise.all([
+      sb.from('registros').select('*'),
+      sb.from('usuarios').select('*'),
+      sb.from('eventos').select('*')
+    ]);
+    REG=r1.data||[]; REF=r2.data||[]; EV=r3.data||[];
+    render();
+    document.getElementById('loading').style.display='none';
+    document.getElementById('app').style.display='block';
+  }catch(e){
+    document.getElementById('loading').innerHTML='No se pudieron cargar los datos. Revisá la conexión y probá Actualizar.';
+    console.error(e);
+  }
+}
+
+function render(){
+  const V=votos(REG);
+  const meta=REF.reduce((s,r)=>s+(r.meta||0),0)||1;
+  const pct=Math.min(100,Math.round(V.proy/meta*100));
+  const contactos=REG.filter(p=>p.tipo==='persona'||p.tipo==='conf').length;
+  const porConv=REG.filter(p=>p.estado==='porconv').length;
+
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi hero">
+      <div class="l">Votos proyectados</div>
+      <div class="n">${V.proy.toLocaleString('es-AR')}</div>
+      <div class="l">de ${meta.toLocaleString('es-AR')} · ${pct}% de la meta</div>
+      <div class="track"><i style="width:${pct}%"></i></div>
+    </div>
+    <div class="kpi"><span class="ti ti-shield-check" style="color:var(--verde-ok)"></span><div class="n">${V.firmes.toLocaleString('es-AR')}</div><div class="l">votos firmes</div></div>
+    <div class="kpi"><span class="ti ti-user-plus" style="color:var(--azul)"></span><div class="n">${contactos.toLocaleString('es-AR')}</div><div class="l">contactos cargados</div></div>
+    <div class="kpi"><span class="ti ti-alert-circle" style="color:var(--rojo)"></span><div class="n">${porConv.toLocaleString('es-AR')}</div><div class="l">por convencer</div></div>
+    <div class="kpi"><span class="ti ti-users" style="color:var(--tierra)"></span><div class="n">${REF.filter(r=>r.estado!=='inactivo').length}</div><div class="l">referentes activos</div></div>`;
+
+  renderEmbudo(); renderBarrio(); renderRefChart(); renderTabla();
+}
+
+function renderEmbudo(){
+  const c={porconv:0,cont:0,prom:0,conf:0};
+  REG.forEach(p=>{const v=p.tipo==='conf'?(p.votos_pos||1):1; if(c[p.estado]!=null)c[p.estado]+=v;});
+  dib('chartEmbudo','doughnut',{
+    labels:['Por convencer','Contactado','Prometió','Confirmado'],
+    datasets:[{data:[c.porconv,c.cont,c.prom,c.conf],backgroundColor:['#c0432f','#8a949a','#e0a92e','#2e8b57'],borderWidth:0}]
+  },{plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:14}}}});
+}
+
+function renderBarrio(){
+  const m={};
+  REG.forEach(p=>{const b=p.barrio||'Sin barrio'; m[b]=(m[b]||0)+ (p.tipo==='conf'?(p.votos_pos||1):1)*fuerza(p);});
+  const top=Object.entries(m).map(([k,v])=>[k,Math.round(v)]).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  dib('chartBarrio','bar',{
+    labels:top.map(x=>x[0]),
+    datasets:[{data:top.map(x=>x[1]),backgroundColor:'#2c5f7c',borderRadius:6}]
+  },{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{display:false}}}});
+}
+
+function renderRefChart(){
+  const rows=REF.filter(r=>r.estado!=='inactivo').map(r=>{
+    const v=votos(REG.filter(x=>x.ref_id===r.id));
+    return {nombre:r.nombre,proy:v.proy};
+  }).sort((a,b)=>b.proy-a.proy);
+  dib('chartRef','bar',{
+    labels:rows.map(r=>r.nombre),
+    datasets:[{data:rows.map(r=>r.proy),backgroundColor:'#b5491f',borderRadius:6}]
+  },{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{display:false},beginAtZero:true}}});
+}
+
+function dib(id,type,data,opts){
+  if(charts[id])charts[id].destroy();
+  charts[id]=new Chart(document.getElementById(id),{type,data,options:{responsive:true,maintainAspectRatio:false,...opts}});
+}
+
+let sortK='proy', sortDir=-1;
+function refRows(){
+  return REF.filter(r=>r.estado!=='inactivo').map(r=>{
+    const g=REG.filter(x=>x.ref_id===r.id);
+    const v=votos(g);
+    const conDni=g.filter(p=>p.dni).length;
+    const total=g.length||1;
+    return {
+      nombre:r.nombre, zona:r.zona||'', ...v,
+      porconv:g.filter(p=>p.estado==='porconv').length,
+      pctDni:Math.round(conDni/total*100),
+      actividad:EV.filter(e=>e.ref_id===r.id).length,
+      meta:r.meta||100
+    };
+  });
+}
+function renderTabla(){
+  const rows=refRows().sort((a,b)=>{
+    let x=a[sortK],y=b[sortK];
+    if(typeof x==='string')return sortDir*x.localeCompare(y);
+    return sortDir*(x-y);
+  });
+  const tb=document.querySelector('#tablaRef tbody');
+  tb.innerHTML=rows.map(r=>{
+    const p=Math.min(100,Math.round(r.proy/r.meta*100));
+    const dniCol=r.pctDni>=66?'var(--verde-ok)':r.pctDni>=33?'var(--amarillo)':'var(--rojo)';
+    return `<tr>
+      <td class="ref-nm">${r.nombre}</td>
+      <td>${r.zona}</td>
+      <td><span class="bar"><i style="width:${p}%"></i></span><b>${r.proy}</b></td>
+      <td>${r.pos}</td>
+      <td>${r.firmes}</td>
+      <td>${r.porconv>0?`<span class="pill" style="background:#fbe9e6;color:var(--rojo)">${r.porconv}</span>`:'—'}</td>
+      <td><span class="dot-sem" style="background:${dniCol}"></span>${r.pctDni}%</td>
+      <td>${r.actividad}</td>
+    </tr>`;
+  }).join('');
+  document.querySelectorAll('#tablaRef th').forEach(th=>{
+    const a=th.querySelector('.arr');
+    a.textContent = th.dataset.k===sortK ? (sortDir<0?'▼':'▲') : '';
+  });
+}
+document.querySelectorAll('#tablaRef th').forEach(th=>{
+  th.onclick=()=>{
+    const k=th.dataset.k;
+    if(k===sortK)sortDir*=-1; else{sortK=k;sortDir=(k==='nombre'||k==='zona')?1:-1;}
+    renderTabla();
+  };
+});
+
+function exportar(){
+  const filas=[['Nombre','Apellido','DNI','Telefono','Tipo','Estado','Barrio','Mesa','Circuito','Transporte','Voto']];
+  REG.forEach(p=>filas.push([p.nombre,p.apellido,p.dni||'',p.tel||'',p.tipo==='conf'?'Confianza':'Votante',p.estado,p.barrio||'',p.mesa||'',p.circuito||'',p.transporte?'Si':'',p.voto?'Si':'']));
+  const csv=filas.map(f=>f.map(c=>{const s=(c==null?'':String(c));return /[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}).join(',')).join('\r\n');
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='contactos_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+
+function salirDash(){
+  localStorage.removeItem(GATE_KEY);
+  location.reload();
+}
+// ==== ACCESO CON CLAVE (mismo login que la app, solo coordinación) ====
+const GATE_KEY='ri_dash_acceso';
+const GATE_DIAS=7; // recuerda el acceso 7 días en esta compu
+
+function accesoValido(){
+  try{
+    const g=JSON.parse(localStorage.getItem(GATE_KEY)||'null');
+    if(!g)return false;
+    if(Date.now()>g.exp)return false;
+    return true;
+  }catch(e){return false;}
+}
+async function entrarDash(){
+  const usuario=(document.getElementById('gUsuario').value||'').trim().toLowerCase();
+  const clave=document.getElementById('gClave').value||'';
+  const err=document.getElementById('gError'); const btn=document.getElementById('gBtn');
+  err.style.display='none';
+  if(!usuario||!clave){err.textContent='Poné usuario y clave.';err.style.display='block';return;}
+  btn.textContent='Entrando...'; btn.disabled=true;
+  try{
+    const {data,error}=await sb.rpc('login_usuario',{p_usuario:usuario,p_clave:clave});
+    if(error)throw error;
+    if(!data||!data.length){err.textContent='Usuario o clave incorrectos.';err.style.display='block';btn.textContent='Entrar';btn.disabled=false;return;}
+    const u=data[0];
+    // solo coordinación entra al tablero
+    if(!(u.rol==='coordinacion'||u.coord)){err.textContent='Este tablero es solo para coordinación.';err.style.display='block';btn.textContent='Entrar';btn.disabled=false;return;}
+    localStorage.setItem(GATE_KEY,JSON.stringify({exp:Date.now()+GATE_DIAS*86400000,nombre:u.nombre}));
+    document.getElementById('gate').style.display='none';
+    cargarTodo();
+  }catch(e){
+    console.error(e); err.textContent='Error al entrar: '+(e.message||e);err.style.display='block';btn.textContent='Entrar';btn.disabled=false;
+  }
+}
+document.getElementById('gClave').addEventListener('keydown',e=>{if(e.key==='Enter')entrarDash();});
+document.getElementById('gUsuario').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('gClave').focus();});
+
+// al abrir: si ya tiene acceso válido en esta compu, entra directo; si no, muestra la clave
+if(accesoValido()){
+  document.getElementById('gate').style.display='none';
+  cargarTodo();
+}
+</script>
+</body>
+</html>
