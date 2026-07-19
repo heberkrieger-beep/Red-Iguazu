@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Red Iguazú — Conductor</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--selva:#0f3d2e;--tierra:#b5491f;--arena:#f5f1e8;--arena-2:#ece5d6;--tinta:#1c2a23;--gris:#6b756f;--linea:#d8d0bf;--verde-ok:#2e8b57;--rojo:#c0432f;--azul:#2c5f7c;--blanco:#fffdf8}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--arena);color:var(--tinta)}
+  button{border:none;cursor:pointer;font-family:inherit}
+  .top{background:var(--selva);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:50}
+  .top .t1{font-size:17px;font-weight:800}
+  .top .t2{font-size:12.5px;color:#9db8ab;margin-top:2px}
+  .wrap{padding:16px;max-width:560px;margin:0 auto;padding-bottom:40px}
+  .gps{width:100%;border-radius:16px;padding:18px;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px}
+  .gps.off{background:var(--tierra);color:#fff}
+  .gps.on{background:var(--verde-ok);color:#fff}
+  .gps-note{font-size:12px;color:var(--gris);text-align:center;margin-bottom:16px;line-height:1.45}
+  .card{background:var(--blanco);border:1px solid var(--linea);border-radius:16px;padding:15px;margin-bottom:12px;box-shadow:0 1px 3px rgba(15,61,46,.07)}
+  .card.done{opacity:.55;background:#eef4ef}
+  .nm{font-size:16.5px;font-weight:800}
+  .dir{font-size:13px;color:var(--gris);margin:5px 0 3px;line-height:1.4}
+  .mesa{font-size:12px;color:var(--azul);font-weight:700;margin-bottom:10px}
+  .fila{display:flex;gap:8px;flex-wrap:wrap}
+  .b{flex:1;min-width:100px;padding:13px 8px;border-radius:11px;font-size:13.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+  .b .ti{font-size:17px}
+  .b-nav{background:var(--azul);color:#fff}
+  .b-wa{background:#e9f7ef;color:#128C4A}
+  .b-abordo{background:var(--arena-2);color:var(--tinta)}
+  .b-abordo.on{background:var(--azul);color:#fff}
+  .b-voto{background:var(--arena-2);color:var(--tinta)}
+  .b-voto.on{background:var(--verde-ok);color:#fff}
+  .empty{text-align:center;color:var(--gris);padding:40px 20px;font-size:14px}
+  .resumen{display:flex;gap:10px;margin-bottom:16px}
+  .r{flex:1;background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:11px;text-align:center}
+  .r .n{font-size:22px;font-weight:800}
+  .r .l{font-size:11px;color:var(--gris)}
+  .refresh{width:100%;background:var(--arena-2);color:var(--tinta);border-radius:11px;padding:12px;font-size:13px;font-weight:700;margin-bottom:16px}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="t1" id="tConductor">Cargando...</div>
+    <div class="t2" id="tAuto"></div>
+  </div>
+  <div class="wrap">
+    <button class="gps off" id="btnGps" onclick="toggleGps()"><span class="ti ti-broadcast"></span> Compartir mi ubicación</button>
+    <div class="gps-note">Dejá el celular <b>en el soporte del auto, enchufado y con la pantalla prendida</b> (como usás Google Maps). Así la coordinación ve dónde estás.</div>
+    <div class="resumen" id="resumen"></div>
+    <button class="refresh" onclick="cargar()">🔄 Actualizar lista</button>
+    <div id="lista"><div class="empty">Cargando pasajeros...</div></div>
+  </div>
+
+<script>
+const SUPABASE_URL='https://qgogamniszilcefqvtcq.supabase.co';
+const SUPABASE_KEY='sb_publishable_RtlHSBqEDAi-aCfF6ZzKAg_RHg968Cr';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const AUTO_ID=new URLSearchParams(location.search).get('a');
+
+let AUTO=null, PAS=[], DOMS={};
+
+function waLink(tel){
+  let n=(tel||'').replace(/\D/g,'');
+  if(n.length<8)return null;
+  if(n.startsWith('0'))n=n.slice(1);
+  const m=n.match(/^(\d{2,4})15(\d{6,8})$/); if(m)n=m[1]+m[2];
+  if(n.startsWith('549')){}else if(n.startsWith('54'))n='549'+n.slice(2);else n='549'+n;
+  return 'https://wa.me/'+n;
+}
+
+async function cargar(){
+  if(!AUTO_ID){document.getElementById('lista').innerHTML='<div class="empty">Link inválido. Pedile a coordinación que te lo reenvíe.</div>';return;}
+  const {data:autos}=await sb.from('autos').select('*').eq('id',AUTO_ID);
+  if(!autos||!autos.length){document.getElementById('lista').innerHTML='<div class="empty">No se encontró el auto. Pedí el link de nuevo.</div>';return;}
+  AUTO=autos[0];
+  document.getElementById('tConductor').textContent='🚗 '+AUTO.conductor;
+  document.getElementById('tAuto').textContent=[AUTO.modelo,AUTO.dominio,AUTO.barrio?('zona '+AUTO.barrio):''].filter(Boolean).join(' · ')||'Tu viaje del día D';
+  const {data:pas}=await sb.from('registros').select('*').eq('auto_id',AUTO_ID).order('barrio');
+  PAS=pas||[];
+  // buscar domicilios oficiales en el padrón (por DNI)
+  const dnis=PAS.map(p=>String(p.dni||'').replace(/\D/g,'')).filter(d=>d.length>=7);
+  DOMS={};
+  for(let i=0;i<dnis.length;i+=100){
+    const {data:pd}=await sb.from('padron').select('dni,domicilio').in('dni',dnis.slice(i,i+100));
+    (pd||[]).forEach(r=>DOMS[r.dni]=r.domicilio);
+  }
+  render();
+}
+
+function render(){
+  const l=document.getElementById('lista');
+  const pend=PAS.filter(p=>!p.voto);
+  document.getElementById('resumen').innerHTML=`
+    <div class="r"><div class="n">${PAS.length}</div><div class="l">pasajeros</div></div>
+    <div class="r"><div class="n" style="color:var(--azul)">${PAS.filter(p=>p.abordo&&!p.voto).length}</div><div class="l">a bordo</div></div>
+    <div class="r"><div class="n" style="color:var(--verde-ok)">${PAS.filter(p=>p.voto).length}</div><div class="l">ya votaron</div></div>`;
+  if(!PAS.length){l.innerHTML='<div class="empty">Todavía no te asignaron pasajeros.<br>Tocá "Actualizar lista" en un rato.</div>';return;}
+  const orden=[...PAS].sort((a,b)=>(a.voto?1:0)-(b.voto?1:0));
+  l.innerHTML=orden.map(p=>{
+    const dom=DOMS[String(p.dni||'').replace(/\D/g,'')]||'';
+    const destino=encodeURIComponent((dom||p.barrio||'')+', Puerto Iguazú, Misiones');
+    const wa=waLink(p.tel);
+    return `<div class="card ${p.voto?'done':''}">
+      <div class="nm">${p.nombre} ${p.apellido}</div>
+      <div class="dir">📍 ${dom||('Barrio '+(p.barrio||'—')+' (sin dirección del padrón)')}</div>
+      ${p.mesa?`<div class="mesa">Vota en mesa ${p.mesa}${p.circuito?' · '+p.circuito:''}</div>`:'<div style="margin-bottom:10px"></div>'}
+      <div class="fila">
+        <button class="b b-nav" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${destino}','_blank')"><span class="ti ti-map-pin"></span>Cómo llegar</button>
+        ${wa?`<button class="b b-wa" onclick="window.open('${wa}','_blank')"><span class="ti ti-brand-whatsapp"></span>WhatsApp</button>`:''}
+      </div>
+      <div class="fila" style="margin-top:8px">
+        <button class="b b-abordo ${p.abordo&&!p.voto?'on':''}" onclick="marcar('${p.id}','abordo')"><span class="ti ti-user-check"></span>${p.abordo?'A bordo ✓':'Subió al auto'}</button>
+        <button class="b b-voto ${p.voto?'on':''}" onclick="marcar('${p.id}','voto')"><span class="ti ti-checkbox"></span>${p.voto?'Votó ✓':'Ya votó'}</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function marcar(id,campo){
+  const p=PAS.find(x=>x.id===id);if(!p)return;
+  p[campo]=!p[campo];
+  if(campo==='voto'&&p.voto)p.abordo=false; // votó → bajó
+  render();
+  const up={};up[campo]=p[campo];
+  if(campo==='voto')up.abordo=p.abordo;
+  await sb.from('registros').update(up).eq('id',id);
+}
+
+// ==== GPS ====
+let watchId=null, lastSend=0, wakeLock=null;
+async function pedirWakeLock(){
+  try{wakeLock=await navigator.wakeLock.request('screen');}catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(watchId&&document.visibilityState==='visible')pedirWakeLock();});
+function toggleGps(){
+  const btn=document.getElementById('btnGps');
+  if(watchId){
+    navigator.geolocation.clearWatch(watchId);watchId=null;
+    if(wakeLock){wakeLock.release();wakeLock=null;}
+    btn.className='gps off';btn.innerHTML='<span class="ti ti-broadcast"></span> Compartir mi ubicación';
+    return;
+  }
+  if(!navigator.geolocation){alert('Este celular no permite ubicación desde el navegador.');return;}
+  watchId=navigator.geolocation.watchPosition(async pos=>{
+    const t=Date.now();
+    if(t-lastSend<10000)return; // mandar cada 10 segundos como mucho
+    lastSend=t;
+    await sb.from('autos').update({lat:pos.coords.latitude,lng:pos.coords.longitude,pos_ts:new Date().toISOString()}).eq('id',AUTO_ID);
+  },err=>{
+    alert('No pudimos leer tu ubicación. Fijate que el GPS esté prendido y que el navegador tenga permiso.');
+    toggleGps();
+  },{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
+  pedirWakeLock();
+  btn.className='gps on';btn.innerHTML='<span class="ti ti-broadcast"></span> Compartiendo ubicación ✓ (tocá para cortar)';
+}
+
+cargar();
+setInterval(()=>{if(document.visibilityState==='visible')cargar();},45000); // refresco suave
+</script>
+</body>
+</html>

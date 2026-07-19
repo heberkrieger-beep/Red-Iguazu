@@ -1,6 +1,6 @@
 // Service worker mínimo para Red Iguazú.
 // La app (HTML) SIEMPRE se baja fresca de la red; solo guardamos íconos para que sea instalable.
-const CACHE = 'red-iguazu-v19';
+const CACHE = 'red-iguazu-v25';
 const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

@@ -119,8 +119,34 @@
       </div>
 
       <div class="panel full" style="margin-bottom:20px">
+        <h2><span class="ti ti-trending-up"></span> Ritmo de campaña
+          <span style="margin-left:auto;font-weight:600;font-size:12.5px;color:var(--gris);display:flex;align-items:center;gap:8px">Fecha de la elección:
+            <input type="date" id="fechaEleccion" onchange="setFechaEleccion(this.value)" style="padding:7px 10px;border:1.5px solid var(--linea);border-radius:9px;font-size:13px;background:var(--arena);font-family:inherit">
+          </span>
+        </h2>
+        <div id="ritmoResumen" class="subgrid" style="margin-bottom:16px"></div>
+        <div class="chart-box" style="height:260px"><canvas id="chartRitmo"></canvas></div>
+      </div>
+
+      <div class="panel full" style="margin-bottom:20px">
         <h2><span class="ti ti-chart-bar"></span> Votos proyectados por referente</h2>
         <div class="chart-box" style="height:320px"><canvas id="chartRef"></canvas></div>
+      </div>
+
+      <div class="panel full" style="margin-bottom:20px">
+        <h2><span class="ti ti-map-search"></span> Cobertura territorial — dónde sos fuerte y dónde estás ciego</h2>
+        <p style="font-size:12.5px;color:var(--gris);margin:-8px 0 14px">Electores del padrón por barrio (deducido del domicilio oficial, ~63% clasificable) vs. tus contactos. Los barrios grandes con poca cobertura son tu oportunidad.</p>
+        <table id="tablaCob">
+          <thead><tr><th>Barrio</th><th>Electores (padrón)</th><th>Tus contactos</th><th>Penetración</th><th>Lectura</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="panel full" style="margin-bottom:20px">
+        <h2><span class="ti ti-cake"></span> Edades — tu red vs. el electorado</h2>
+        <p style="font-size:12.5px;color:var(--gris);margin:-8px 0 14px">Compara la edad de tus contactos (con DNI del padrón) contra los 43 mil electores de Iguazú. Si las barras naranjas no acompañan a las verdes, tenés un sesgo de edad.</p>
+        <div id="edadesTakeaway" style="margin-bottom:14px"></div>
+        <div class="chart-box" style="height:280px"><canvas id="chartEdades"></canvas></div>
       </div>
 
       <div class="panel full">
@@ -206,7 +232,7 @@ function render(){
     <div class="kpi"><span class="ti ti-alert-circle" style="color:var(--rojo)"></span><div class="n">${porConv.toLocaleString('es-AR')}</div><div class="l">por convencer</div></div>
     <div class="kpi"><span class="ti ti-users" style="color:var(--tierra)"></span><div class="n">${REF.filter(r=>r.estado!=='inactivo').length}</div><div class="l">referentes activos</div></div>`;
 
-  renderEmbudo(); renderBarrio(); renderRefChart(); renderTabla();
+  renderEmbudo(); renderBarrio(); renderRefChart(); renderRitmo(); renderCobertura(); renderEdades(); renderTabla();
 }
 
 function renderEmbudo(){
@@ -239,11 +265,191 @@ function renderRefChart(){
   },{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{display:false},beginAtZero:true}}});
 }
 
+// ==== RITMO DE CAMPAÑA ====
+function setFechaEleccion(v){localStorage.setItem('ri_fecha_eleccion',v);renderRitmo();}
+function renderRitmo(){
+  const inp=document.getElementById('fechaEleccion');
+  const guardada=localStorage.getItem('ri_fecha_eleccion')||'';
+  if(guardada&&!inp.value)inp.value=guardada;
+  const fechaEl=inp.value;
+
+  const V=votos(REG);
+  const meta=REF.reduce((s,r)=>s+(r.meta||0),0)||1;
+  const falta=Math.max(0,meta-V.proy);
+
+  // votos cargados por semana (últimas 10 semanas), usando la fecha de carga real
+  const ahora=new Date();
+  const semanas=[]; // [{ini, fin, label, votos}]
+  for(let i=9;i>=0;i--){
+    const fin=new Date(ahora); fin.setDate(fin.getDate()-i*7);
+    const ini=new Date(fin); ini.setDate(ini.getDate()-7);
+    semanas.push({ini,fin,label:fin.getDate()+'/'+(fin.getMonth()+1),votos:0});
+  }
+  REG.forEach(p=>{
+    if(!p.creado_en)return;
+    const f=new Date(p.creado_en);
+    const v=p.tipo==='conf'?(p.votos_pos||1):1;
+    for(const s of semanas){if(f>s.ini&&f<=s.fin){s.votos+=v;break;}}
+  });
+  const ritmoActual=Math.round(semanas.slice(-4).reduce((a,s)=>a+s.votos,0)/4); // promedio últimas 4 semanas
+
+  let resumen='';
+  let ritmoNecesario=null;
+  if(fechaEl){
+    const dias=Math.ceil((new Date(fechaEl+'T00:00')-ahora)/86400000);
+    const semRest=Math.max(0.5,dias/7);
+    ritmoNecesario=Math.ceil(falta/semRest);
+    const proyeccionFinal=V.proy+Math.round(ritmoActual*semRest*(V.pos?V.proy/V.pos:0.5));
+    const llega=proyeccionFinal>=meta;
+    resumen=`
+      <div class="mini"><div class="n">${dias>0?dias:0}</div><div class="l">días para la elección</div></div>
+      <div class="mini"><div class="n" style="color:var(--tierra)">${ritmoNecesario.toLocaleString('es-AR')}</div><div class="l">votos/semana que necesitás</div></div>
+      <div class="mini"><div class="n" style="color:${ritmoActual>=ritmoNecesario?'var(--verde-ok)':'var(--rojo)'}">${ritmoActual.toLocaleString('es-AR')}</div><div class="l">tu ritmo actual (cargados/sem)</div></div>
+      <div class="mini" style="grid-column:1/-1;background:${llega?'#e7f4ec':'#fbe9e6'}">
+        <div class="l" style="color:${llega?'var(--verde-ok)':'var(--rojo)'};font-weight:700;font-size:13px">
+          ${llega?'✓ A este ritmo, llegás: proyección estimada ~'+proyeccionFinal.toLocaleString('es-AR')+' para la elección.':'⚠ A este ritmo NO llegás: proyección estimada ~'+proyeccionFinal.toLocaleString('es-AR')+' de '+meta.toLocaleString('es-AR')+'. Hay que acelerar la carga o sumar referentes.'}
+        </div>
+      </div>`;
+  }else{
+    resumen=`<div class="mini" style="grid-column:1/-1"><div class="l">Elegí la <b>fecha de la elección</b> arriba a la derecha para calcular el ritmo que necesitás.</div></div>
+      <div class="mini"><div class="n">${ritmoActual.toLocaleString('es-AR')}</div><div class="l">tu ritmo actual (votos cargados/semana, prom. últimas 4)</div></div>
+      <div class="mini"><div class="n">${falta.toLocaleString('es-AR')}</div><div class="l">votos proyectados que te faltan para la meta</div></div>`;
+  }
+  document.getElementById('ritmoResumen').innerHTML=resumen;
+
+  const ds=[{label:'Votos cargados por semana',data:semanas.map(s=>s.votos),backgroundColor:'#0f3d2e',borderRadius:6}];
+  const opts={plugins:{legend:{display:!!ritmoNecesario,position:'bottom',labels:{font:{size:12}}}},scales:{x:{grid:{display:false}},y:{grid:{display:false},beginAtZero:true}}};
+  if(ritmoNecesario){
+    ds.push({label:'Ritmo necesario',data:semanas.map(()=>ritmoNecesario),type:'line',borderColor:'#c0432f',borderDash:[6,5],pointRadius:0,borderWidth:2});
+  }
+  dib('chartRitmo','bar',{labels:semanas.map(s=>s.label),datasets:ds},opts);
+}
+
 function dib(id,type,data,opts){
   if(charts[id])charts[id].destroy();
   charts[id]=new Chart(document.getElementById(id),{type,data,options:{responsive:true,maintainAspectRatio:false,...opts}});
 }
 
+// ==== COBERTURA TERRITORIAL ====
+const ELECTORES_BARRIO={"Villa Alta": 4911, "Belén": 2417, "1º de Mayo": 2392, "Santa Rosa": 1794, "Villa Nueva": 1685, "Las Leñas": 1380, "Villa 14": 1248, "Malvinas": 1234, "Villa Florida": 1177, "Las Orquídeas": 1115, "Unión": 958, "Centro": 803, "Itá": 771, "Obrero": 763, "Primavera": 761, "Almirante Brown": 684, "2000 Hectáreas": 680, "300 Viviendas": 467, "155 Viviendas": 394, "120 Viviendas": 370, "Santa María": 209, "San Cayetano": 199, "Zona Portuaria": 179, "1000 Viviendas": 171, "IPRODHA": 162, "73 Viviendas": 141, "Calle Río Paraná": 102, "Cdte. Andresito": 81, "Selva Yryapú": 45, "San Lorenzo": 16, "Lote 14": 11, "Lote 7": 7, "Lote 8": 5, "Lote B": 1};
+const BARRIO_KEYS=[
+ [/2000\s*(HECTAREAS|HAS|HTAS)|B\.?\s*2000/, "2000 Hectáreas"],
+ [/600\s*(HECTAREAS|HAS)|SELVA\s*(Y|I)R(Y|I)APU/, "Selva Yryapú"],
+ [/1000\s*(VIVIENDAS|VDAS|VIV)|LAS\s*CALANDRIAS/, "1000 Viviendas"],
+ [/300\s*(VIVIENDAS|VDAS|VIV)/, "300 Viviendas"],
+ [/120\s*(VIVIENDAS|VDAS|VIV)/, "120 Viviendas"],
+ [/155\s*(VIVIENDAS|VDAS|VIV)/, "155 Viviendas"],
+ [/73\s*(VIVIENDAS|VDAS|VIV)/, "73 Viviendas"],
+ [/ORQUIDEA/, "Las Orquídeas"],
+ [/VILLA\s*ALTA|VA?\.?\s*ALTA/, "Villa Alta"],
+ [/VILLA\s*NUEVA|VA\.?\s*NUEVA/, "Villa Nueva"],
+ [/VILLA\s*14|VA\.?\s*14\b/, "Villa 14"],
+ [/STA\.?\s*ROSA|SANTA\s*ROSA/, "Santa Rosa"],
+ [/SANTA\s*M(ARIA)?\.?\s*DEL?\s*IGUAZU/, "Santa María"],
+ [/SAN\s*CAYETANO/, "San Cayetano"],
+ [/LAS\s*LE(Ñ|N)AS/, "Las Leñas"],
+ [/1\s*(RO|º|°)?\s*(DE\s*)?MAYO|PRIMERO\s*DE\s*MAYO/, "1º de Mayo"],
+ [/PRIMAVERA/, "Primavera"],
+ [/FLORIDA/, "Villa Florida"],
+ [/BEL(E|É)N/, "Belén"],
+ [/UNI(O|Ó)N/, "Unión"],
+ [/(Ñ|N)AND(U|Ú)/, "Ñandú"],
+ [/COSTA\s*NORTE/, "Costa Norte"],
+ [/COSTA\s*BRAVA/, "Costa Brava"],
+ [/ITA(EMBE)?\b|B\s*ITA\b/, "Itá"],
+ [/YACU(Y|I)\b/, "Yacuy"],
+ [/INTEGRACI(O|Ó)N/, "Integración"],
+ [/BRASILERA/, "Brasilera"],
+ [/EX\s*COMBATIENTES/, "Ex Combatientes"],
+ [/DON\s*BOSCO/, "Don Bosco"],
+ [/LAS\s*AMERICAS/, "Las Américas"],
+ [/OBRERO/, "Obrero"],
+ [/RAMON\s*MERCADO/, "Ramón Mercado"],
+ [/A(LTE|LMIRANTE)?\.?\s*BROWN/, "Almirante Brown"],
+ [/MALVINAS/, "Malvinas"],
+ [/COM(ANDANTE)?\.?\s*ANDRESITO/, "Cdte. Andresito"],
+ [/Z(ONA)?\.?\s*PORTUARIA/, "Zona Portuaria"],
+ [/LOTE\s*A\b/, "Lote A"],
+ [/LOTE\s*B\b/, "Lote B"],
+ [/LOTE\s*7\b/, "Lote 7"],
+ [/LOTE\s*8\b/, "Lote 8"],
+ [/LOTE\s*14\b/, "Lote 14"],
+ [/LOTE\s*47\b/, "Lote 47"],
+ [/RIO\s*PARANA/, "Calle Río Paraná"],
+ [/SAN\s*LORENZO/, "San Lorenzo"],
+ [/IPRODHA/, "IPRODHA"],
+ [/\bCENTRO\b/, "Centro"]
+];
+function normTxt(s){return (s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function barrioCanon(txt){
+  const d=normTxt(txt);
+  for(const [rx,b] of BARRIO_KEYS){ if(rx.test(d)) return b; }
+  return null;
+}
+function renderCobertura(){
+  const tb=document.querySelector('#tablaCob tbody');if(!tb)return;
+  // contar tus contactos por barrio canónico (matcheando lo que cargó cada referente)
+  const mios={};
+  REG.forEach(p=>{
+    const b=barrioCanon(p.barrio||'');
+    if(b)mios[b]=(mios[b]||0)+1;
+  });
+  const filas=Object.entries(ELECTORES_BARRIO).map(([b,e])=>{
+    const c=mios[b]||0;
+    return {b,e,c,pct:e?c/e*100:0};
+  }).sort((a,x)=>x.e-a.e).slice(0,20);
+  tb.innerHTML=filas.map(f=>{
+    const pctTxt=f.pct<0.1&&f.c>0?'<0,1':f.pct.toFixed(1).replace('.',',');
+    let lectura,col;
+    if(f.c===0){lectura='⚠ Estás ciego acá';col='var(--rojo)';}
+    else if(f.pct<1){lectura='Muy poca presencia';col='var(--rojo)';}
+    else if(f.pct<3){lectura='Presencia baja';col='var(--amarillo)';}
+    else{lectura='✓ Territorio trabajado';col='var(--verde-ok)';}
+    return `<tr><td class="ref-nm">${f.b}</td><td>${f.e.toLocaleString('es-AR')}</td><td>${f.c}</td><td><b style="color:${col}">${f.c?pctTxt+'%':'0%'}</b></td><td style="color:${col};font-weight:600;font-size:12.5px">${lectura}</td></tr>`;
+  }).join('');
+}
+// ==== EDADES: tu red vs electorado ====
+const EDADES_PADRON={"16-24": 4842, "25-34": 10683, "35-44": 9715, "45-54": 7402, "55-64": 5080, "65+": 5770};
+const ANIO_ACTUAL=2026;
+const BUCKETS_EDAD=[['16-24',16,24],['25-34',25,34],['35-44',35,44],['45-54',45,54],['55-64',55,64],['65+',65,200]];
+async function renderEdades(){
+  const cont=document.getElementById('edadesTakeaway');if(!cont)return;
+  // DNIs de tus contactos
+  const dnis=[...new Set(REG.map(p=>String(p.dni||'').replace(/\D/g,'')).filter(d=>d.length>=7))];
+  if(!dnis.length){cont.innerHTML='<div style="font-size:13px;color:var(--gris)">Cargá contactos con DNI para comparar edades.</div>';return;}
+  // buscar la clase (año de nacimiento) de esos DNIs en el padrón, en tandas
+  const clases={};
+  for(let i=0;i<dnis.length;i+=200){
+    const chunk=dnis.slice(i,i+200);
+    const {data}=await sb.from('padron').select('dni,clase').in('dni',chunk);
+    (data||[]).forEach(r=>clases[r.dni]=parseInt(r.clase));
+  }
+  const cMios={};BUCKETS_EDAD.forEach(b=>cMios[b[0]]=0);
+  let n=0;
+  Object.values(clases).forEach(cl=>{
+    const edad=ANIO_ACTUAL-cl;
+    for(const [nom,a,b] of BUCKETS_EDAD){if(edad>=a&&edad<=b){cMios[nom]++;n++;break;}}
+  });
+  if(!n){cont.innerHTML='<div style="font-size:13px;color:var(--gris)">Ninguno de tus contactos con DNI figura en el padrón todavía.</div>';return;}
+  const totPad=Object.values(EDADES_PADRON).reduce((a,x)=>a+x,0);
+  const pctPad=BUCKETS_EDAD.map(b=>+(EDADES_PADRON[b[0]]/totPad*100).toFixed(1));
+  const pctMio=BUCKETS_EDAD.map(b=>+(cMios[b[0]]/n*100).toFixed(1));
+  // lectura: voto joven (<35)
+  const jovenPad=pctPad[0]+pctPad[1], jovenMio=pctMio[0]+pctMio[1];
+  const dif=jovenMio-jovenPad;
+  let msg,bg,colr;
+  if(dif<-10){msg=`⚠ <b>Tu red está envejecida:</b> el ${jovenPad.toFixed(0)}% del electorado tiene menos de 35, pero solo el ${jovenMio.toFixed(0)}% de tu red. Te está faltando el voto joven — sumá referentes jóvenes.`;bg='#fbe9e6';colr='var(--rojo)';}
+  else if(dif<-4){msg=`Tu red es algo más grande que el electorado (menores de 35: ${jovenMio.toFixed(0)}% tuyo vs ${jovenPad.toFixed(0)}% real). Hay espacio para crecer entre los jóvenes.`;bg='#faf3e6';colr='#8a6a1c';}
+  else{msg=`✓ Tu red refleja bien la edad del electorado (menores de 35: ${jovenMio.toFixed(0)}% tuyo vs ${jovenPad.toFixed(0)}% real).`;bg='#e7f4ec';colr='var(--verde-ok)';}
+  cont.innerHTML=`<div style="background:${bg};border-radius:12px;padding:12px 16px;font-size:13.5px;color:${colr}">${msg} <span style="color:var(--gris)">(sobre ${n} contactos con DNI verificado)</span></div>`;
+  dib('chartEdades','bar',{
+    labels:BUCKETS_EDAD.map(b=>b[0]),
+    datasets:[
+      {label:'Electorado de Iguazú (%)',data:pctPad,backgroundColor:'#0f3d2e',borderRadius:6},
+      {label:'Tu red (%)',data:pctMio,backgroundColor:'#e2733f',borderRadius:6}
+    ]
+  },{plugins:{legend:{position:'bottom',labels:{font:{size:12}}}},scales:{x:{grid:{display:false}},y:{grid:{display:false},beginAtZero:true,ticks:{callback:v=>v+'%'}}}});
+}
 let sortK='proy', sortDir=-1;
 function refRows(){
   return REF.filter(r=>r.estado!=='inactivo').map(r=>{

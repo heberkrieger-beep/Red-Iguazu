@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v19</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v25</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -471,7 +471,7 @@
 
   <!-- DÍA D -->
   <div class="view" id="view-diad">
-    <div class="view-head"><h2>Día D — Movilización</h2><p>Organizá los autos y controlá quién ya votó. En vivo el día de la elección.</p></div>
+    <div class="view-head"><h2>🚗 Comando de campaña</h2><p>Tu sala de operaciones del día de la elección: transporte, mapa en vivo, escuelas y control de voto.</p></div>
 
     <div class="stat-grid" id="diadStats"></div>
 
@@ -479,6 +479,7 @@
       <button class="filtro-btn active" data-d="transporte" onclick="setDiadTab('transporte')"><span class="ti ti-car" aria-hidden="true"></span> Transporte</button>
       <button class="filtro-btn" data-d="escuela" onclick="setDiadTab('escuela')"><span class="ti ti-building" aria-hidden="true"></span> Por escuela</button>
       <button class="filtro-btn" data-d="control" onclick="setDiadTab('control')"><span class="ti ti-checkbox" aria-hidden="true"></span> Control</button>
+      <button class="filtro-btn" data-d="vivo" onclick="setDiadTab('vivo')"><span class="ti ti-map-pin" aria-hidden="true"></span> En vivo</button>
     </div>
 
     <!-- TRANSPORTE -->
@@ -516,6 +517,13 @@
         style="width:100%;padding:12px 15px;border:1.5px solid var(--linea);border-radius:12px;font-size:15px;background:var(--blanco);box-shadow:var(--sombra);margin-bottom:14px">
       <div id="controlList" class="chip-list"></div>
     </div>
+
+    <!-- EN VIVO (mapa GPS de autos) -->
+    <div id="diad-vivo" style="display:none">
+      <div class="note" style="margin-top:0;margin-bottom:14px">Los autos que estén <b>compartiendo ubicación</b> desde su link de conductor aparecen acá. El mapa se actualiza solo cada 20 segundos.</div>
+      <div id="mapaVivo" style="height:420px;border-radius:16px;border:1px solid var(--linea);background:var(--arena-2)"></div>
+      <div id="vivoLista" style="margin-top:14px"></div>
+    </div>
   </div>
 
   <!-- MAPA -->
@@ -526,6 +534,27 @@
   </div>
 
   <!-- REFERENTES (solo coordinación) -->
+  <!-- FISCALES (solo coordinación) -->
+  <div class="view" id="view-fiscales">
+    <div class="view-head"><h2>Fiscales de mesa</h2><p>Armá tu red de fiscales. Buscalos por DNI: la app propone su propia mesa (donde votan ellos), y podés cambiarla si hace falta.</p></div>
+    <div id="fiscalesResumen" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"></div>
+    <div class="form-card" style="margin-bottom:20px">
+      <h3 style="font-size:15px;color:var(--selva);margin-bottom:14px">🛡 Nuevo fiscal</h3>
+      <div class="form-field full"><label>DNI <span class="opt">(lo busca en el padrón)</span></label><input id="nfDni" placeholder="DNI del fiscal" oninput="onDniFiscal()" autocomplete="off"><div id="nfDniBox" class="padron-box"></div></div>
+      <div class="form-row">
+        <div class="form-field"><label>Nombre <span class="req">*</span></label><input id="nfNombre" placeholder="Nombre y apellido" autocomplete="off"></div>
+        <div class="form-field"><label>Teléfono</label><input id="nfTel" placeholder="3757-..."></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Mesa que fiscaliza <span class="req">*</span></label><input id="nfMesa" placeholder="ej: 2664" inputmode="numeric"><div class="helper" id="nfMesaHint" style="display:none"></div></div>
+        <div class="form-field" style="display:flex;align-items:flex-end"><label style="display:flex;align-items:center;gap:9px;font-size:14.5px;cursor:pointer;padding-bottom:12px"><input type="checkbox" id="nfConf" style="width:19px;height:19px"> Confirmó que va</label></div>
+      </div>
+      <button class="btn-add" onclick="guardarFiscalForm()">Guardar fiscal</button>
+    </div>
+    <h3 style="font-size:15px;color:var(--selva);margin:0 0 12px">Fiscales cargados</h3>
+    <div id="fiscalesLista"></div>
+  </div>
+
   <div class="view" id="view-referentes">
     <div class="view-head"><h2>Referentes</h2><p>Dar de alta, editar y administrar tu red de referentes.</p></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
@@ -657,6 +686,7 @@ function iniciarSesion(){
   cargarAutosDB();      // traer los autos del día D
   cargarEventosDB();    // traer la agenda
   cargarBarriosDB();    // traer los barrios
+  cargarFiscalesDB();   // traer los fiscales de mesa
 }
 
 /* ============ CAPA DE BASE DE DATOS — REGISTROS ============ */
@@ -669,7 +699,7 @@ function filaABApp(r){
     dni:r.dni||'', tel:r.tel||'', barrio:r.barrio||'', estado:r.estado||'cont',
     votosPos:r.votos_pos||1, mesa:r.mesa||'', circuito:r.circuito||'',
     ref:r.ref_id, refNom:refUser?refUser.nombre:'(sin referente)', padre:r.padre_id||undefined,
-    transporte:!!r.transporte, voto:!!r.voto, autoId:r.auto_id||undefined,
+    transporte:!!r.transporte, voto:!!r.voto, abordo:!!r.abordo, autoId:r.auto_id||undefined,
     visita:!!r.visita, prioritaria:!!r.prioritaria
   };
 }
@@ -746,6 +776,146 @@ async function borrarReunion(id){
   if(sb)await sb.from('reuniones').delete().eq('id',id);
 }
 function reunionesDe(refId){return EVENTOS.filter(e=>e.ref===refId).length;}
+// ==== FISCALES DE MESA ====
+let FISCALES=[]; // [{id, mesa, nombre, tel, confirmado}]
+async function cargarFiscalesDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('fiscales').select('*').order('mesa');
+    if(error)throw error;
+    if(data){FISCALES=data.map(f=>({id:f.id,mesa:f.mesa,nombre:f.nombre,tel:f.tel||'',confirmado:!!f.confirmado}));renderFiscales();renderDiaD();}
+  }catch(e){console.error('fiscales:',e);}
+}
+function fiscalDe(mesa){return FISCALES.find(f=>String(f.mesa)===String(mesa));}
+// buscar al fiscal en el padrón: autocompleta nombre y PROPONE SU PROPIA MESA
+async function onDniFiscal(){
+  const dni=normDni(document.getElementById('nfDni').value);
+  const box=document.getElementById('nfDniBox');
+  const hint=document.getElementById('nfMesaHint');
+  if(dni.length<7){box.className='padron-box';return;}
+  box.className='padron-box show';box.innerHTML='Buscando en el padrón...';
+  const m=await padronPorDniDB(dni);
+  if(normDni(document.getElementById('nfDni').value)!==dni)return;
+  if(m){
+    document.getElementById('nfNombre').value=m.nombres+' '+m.apellido;
+    document.getElementById('nfMesa').value=m.mesa;
+    box.className='padron-box show';
+    box.innerHTML=`✔ <b>${m.apellido}, ${m.nombres}</b> · vota en la mesa ${m.mesa}`;
+    hint.style.display='block';
+    hint.innerHTML=`Le propusimos <b>su propia mesa (${m.mesa})</b> — es lo más cómodo porque vota ahí. Cambiala si lo necesitás en otra.`;
+  }else{
+    box.className='padron-box show';
+    box.innerHTML='No figura en el padrón de Iguazú. Completá nombre y mesa a mano.';
+    hint.style.display='none';
+  }
+}
+async function guardarFiscalForm(){
+  const nombre=document.getElementById('nfNombre').value.trim();
+  const tel=document.getElementById('nfTel').value.trim();
+  const mesa=document.getElementById('nfMesa').value.trim();
+  const confirmado=document.getElementById('nfConf').checked;
+  if(!nombre){alert('Poné el nombre del fiscal.');return;}
+  if(!mesa){alert('Poné la mesa que va a fiscalizar.');return;}
+  if(!sb){alert('Sin conexión.');return;}
+  const existente=fiscalDe(mesa);
+  if(existente && !confirm(`La mesa ${mesa} ya tiene fiscal (${existente.nombre}). ¿Reemplazarlo?`))return;
+  if(existente){
+    const {error}=await sb.from('fiscales').update({nombre,tel:tel||null,confirmado}).eq('id',existente.id);
+    if(error){toast('Error: '+error.message);return;}
+    existente.nombre=nombre;existente.tel=tel;existente.confirmado=confirmado;
+  }else{
+    const {data,error}=await sb.from('fiscales').insert({mesa:String(mesa),nombre,tel:tel||null,confirmado}).select().single();
+    if(error){toast('Error: '+error.message);return;}
+    FISCALES.push({id:data.id,mesa:String(mesa),nombre,tel,confirmado});
+  }
+  ['nfDni','nfNombre','nfTel','nfMesa'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nfConf').checked=false;
+  document.getElementById('nfDniBox').className='padron-box';
+  document.getElementById('nfMesaHint').style.display='none';
+  toast('Fiscal guardado ✓',true);
+  renderFiscales();renderEscuela();
+}
+async function toggleConfFiscal(id){
+  const f=FISCALES.find(x=>x.id===id);if(!f)return;
+  f.confirmado=!f.confirmado;renderFiscales();renderEscuela();
+  if(sb)await sb.from('fiscales').update({confirmado:f.confirmado}).eq('id',id);
+}
+function renderFiscales(){
+  const res=document.getElementById('fiscalesResumen');
+  const lista=document.getElementById('fiscalesLista');
+  if(!res||!lista)return;
+  const total=FISCALES.length;
+  const conf=FISCALES.filter(f=>f.confirmado).length;
+  // mesas donde tenés gente cargada pero sin fiscal
+  const mesasConGente=[...new Set(REGISTROS.filter(p=>p.mesa).map(p=>String(p.mesa)))];
+  const sinCubrir=mesasConGente.filter(m=>!fiscalDe(m));
+  res.innerHTML=`
+    <div style="background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:12px 16px;flex:1;min-width:110px"><div style="font-size:22px;font-weight:800">${total}</div><div style="font-size:12px;color:var(--gris)">fiscales cargados</div></div>
+    <div style="background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:12px 16px;flex:1;min-width:110px"><div style="font-size:22px;font-weight:800;color:var(--verde-ok)">${conf}</div><div style="font-size:12px;color:var(--gris)">confirmados</div></div>
+    <div style="background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:12px 16px;flex:1;min-width:110px"><div style="font-size:22px;font-weight:800;color:${sinCubrir.length?'var(--rojo)':'var(--verde-ok)'}">${sinCubrir.length}</div><div style="font-size:12px;color:var(--gris)">mesas tuyas sin fiscal</div></div>`;
+  if(!FISCALES.length){lista.innerHTML='<div class="empty">Todavía no cargaste fiscales. Empezá por las mesas donde tenés más gente.</div>';return;}
+  const orden=[...FISCALES].sort((a,b)=>String(a.mesa).localeCompare(String(b.mesa),undefined,{numeric:true}));
+  lista.innerHTML=orden.map(f=>`
+    <div class="person-row">
+      <div class="who"><div><b>${f.nombre}</b> <span class="badge" style="background:var(--azul)">Mesa ${f.mesa}</span></div>
+        <div class="meta">${f.tel||'sin teléfono'}</div></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${f.tel?`<button onclick="abrirWA('${f.tel}')" title="WhatsApp" style="background:#e9f7ef;border-radius:8px;width:32px;height:32px"><span class="ti ti-brand-whatsapp" style="color:#25D366;font-size:17px" aria-hidden="true"></span></button>`:''}
+        <button onclick="toggleConfFiscal('${f.id}')" style="padding:8px 13px;border-radius:9px;font-size:12px;font-weight:700;${f.confirmado?'background:var(--verde-ok);color:#fff':'background:#faf3e6;color:#8a6a1c'}">${f.confirmado?'✓ Confirmó':'Sin confirmar'}</button>
+        <button onclick="abrirFiscal('${f.mesa}')" style="background:var(--arena-2);border-radius:8px;width:32px;height:32px;font-size:14px">✏️</button>
+      </div>
+    </div>`).join('');
+}
+function abrirFiscal(mesa){
+  const f=fiscalDe(mesa);
+  const m=document.createElement('div');
+  m.id='fiscalModal';
+  m.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+  m.onclick=e=>{if(e.target===m)m.remove();};
+  m.innerHTML=`<div style="background:var(--blanco);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom))">
+    <div style="width:40px;height:4px;background:var(--linea);border-radius:3px;margin:0 auto 16px"></div>
+    <h3 style="font-size:17px;color:var(--selva);margin-bottom:14px">Fiscal de la mesa ${mesa}</h3>
+    <div class="form-field"><label>Nombre <span class="req">*</span></label><input id="fiNombre" value="${f?f.nombre:''}" placeholder="Nombre y apellido" autocomplete="off"></div>
+    <div class="form-field"><label>Teléfono</label><input id="fiTel" value="${f?f.tel:''}" placeholder="3757-..."></div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:14.5px;margin:4px 0 16px;cursor:pointer"><input type="checkbox" id="fiConf" ${f&&f.confirmado?'checked':''} style="width:19px;height:19px"> Confirmó que va</label>
+    <div style="display:flex;gap:10px">
+      ${f?`<button onclick="borrarFiscal('${mesa}')" style="background:#fbe9e6;color:var(--rojo);border-radius:12px;padding:14px;font-weight:700;flex:1">Quitar</button>`:''}
+      <button onclick="document.getElementById('fiscalModal').remove()" style="flex:1;background:var(--arena-2);color:var(--tinta);border-radius:12px;padding:14px;font-weight:700">Cancelar</button>
+      <button onclick="guardarFiscal('${mesa}')" style="flex:2;background:var(--selva);color:#fff;border-radius:12px;padding:14px;font-weight:700">Guardar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('fiNombre').focus(),100);
+}
+async function guardarFiscal(mesa){
+  const nombre=document.getElementById('fiNombre').value.trim();
+  const tel=document.getElementById('fiTel').value.trim();
+  const confirmado=document.getElementById('fiConf').checked;
+  if(!nombre){alert('Poné el nombre del fiscal.');return;}
+  if(!sb){alert('Sin conexión.');return;}
+  const existente=fiscalDe(mesa);
+  if(existente){
+    const {error}=await sb.from('fiscales').update({nombre,tel:tel||null,confirmado}).eq('id',existente.id);
+    if(error){toast('Error: '+error.message);return;}
+    existente.nombre=nombre;existente.tel=tel;existente.confirmado=confirmado;
+  }else{
+    const {data,error}=await sb.from('fiscales').insert({mesa:String(mesa),nombre,tel:tel||null,confirmado}).select().single();
+    if(error){toast('Error: '+error.message);return;}
+    FISCALES.push({id:data.id,mesa:String(mesa),nombre,tel,confirmado});
+  }
+  document.getElementById('fiscalModal').remove();
+  toast('Fiscal guardado ✓',true);
+  renderEscuela();
+}
+async function borrarFiscal(mesa){
+  const f=fiscalDe(mesa);if(!f)return;
+  if(!confirm('¿Quitar al fiscal de la mesa '+mesa+'?'))return;
+  FISCALES=FISCALES.filter(x=>x.id!==f.id);
+  document.getElementById('fiscalModal')?.remove();
+  renderEscuela();
+  if(sb)await sb.from('fiscales').delete().eq('id',f.id);
+  toast('Fiscal quitado',true);
+}
 function descargarCSV(nombre, filas){
   const csv = filas.map(f=>f.map(c=>{
     const s=(c==null?'':String(c));
@@ -801,7 +971,7 @@ async function cargarAutosDB(){
     const {data,error}=await sb.from('autos').select('*').order('creado_en');
     if(error)throw error;
     if(data){
-      AUTOS = data.map(a=>({id:a.id, conductor:a.conductor, cap:a.capacidad||4, barrio:a.barrio||'', tel:a.tel||'', modelo:a.modelo||'', dominio:a.dominio||'', enViaje:!!a.en_viaje}));
+      AUTOS = data.map(a=>({id:a.id, conductor:a.conductor, cap:a.capacidad||4, barrio:a.barrio||'', tel:a.tel||'', modelo:a.modelo||'', dominio:a.dominio||'', enViaje:!!a.en_viaje, lat:a.lat, lng:a.lng, posTs:a.pos_ts}));
       renderDiaD();
     }
   }catch(e){ console.error('cargar autos:', e); }
@@ -849,7 +1019,7 @@ function toast(msg, ok){
   t.textContent=msg; t.style.display='block';
   clearTimeout(window._toastT); window._toastT=setTimeout(()=>{t.style.display='none'},3500);
 }
-function renderAll(){renderDash();renderRecent();renderTree();renderAgenda();renderMapa();renderReferentes();refreshUserSelect();refreshBarrios();renderLista();renderDiaD();}
+function renderAll(){renderDash();renderRecent();renderTree();renderAgenda();renderMapa();renderReferentes();renderFiscales();refreshUserSelect();refreshBarrios();renderLista();renderDiaD();}
 function logout(){current=null;document.getElementById('app').style.display='none';document.getElementById('login').style.display='flex';}
 function refreshUserSelect(){
   // llenar el selector "¿de quién es?" en Cargar (solo para coordinación)
@@ -1052,8 +1222,8 @@ function buildTabs(){
   const esCoord = current.role==='admin'||current.coord;
   // [id, label corto, ícono tabler]
   const all = esCoord
-    ? [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Lista','ti-list'],['piramide','Pirámide','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Día D','ti-car'],['mapa','Mapa','ti-map-2'],['referentes','Referentes','ti-users']]
-    : [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Mi lista','ti-list'],['piramide','Mi red','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Día D','ti-car']];
+    ? [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Lista','ti-list'],['piramide','Pirámide','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Comando','ti-car'],['fiscales','Fiscales','ti-shield'],['mapa','Mapa','ti-map-2'],['referentes','Referentes','ti-users']]
+    : [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Mi lista','ti-list'],['piramide','Mi red','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Comando','ti-car']];
   window._tabs=all;
   // barra superior (desktop): todas las pestañas
   const c=document.getElementById('tabs');c.innerHTML='';
@@ -1157,16 +1327,25 @@ async function onDni(){
     fn.value=m.nombres;
     fa.value=m.apellido;
     window._datosDePadron=true;  // marca que estos datos vienen del padrón
+    // BARRIO AUTOMÁTICO: deducirlo del domicilio oficial (editable por si se mudó)
+    const fb=document.getElementById('fBarrio');
+    const bAuto=barrioDesdeDomicilio(m.domicilio);
+    let barrioMsg='';
+    if(fb && bAuto && (!fb.value.trim() || window._barrioDePadron)){
+      fb.value=bAuto; window._barrioDePadron=true;
+      barrioMsg=`<div style="font-size:11.5px;margin-top:6px;color:var(--verde-ok)">🏘 Barrio detectado: <b>${bAuto}</b> — editalo si se mudó.</div>`;
+    }
     box.className='padron-box show';
     box.innerHTML=`✔ <b>${m.apellido}, ${m.nombres}</b> — clase ${m.clase}
       <div style="margin-top:8px;background:var(--azul);color:#fff;border-radius:9px;padding:9px 12px;font-size:13px">
         <span class="ti ti-building" aria-hidden="true"></span> <b>Vota en:</b> ${m.circuito}<br>
         <span class="ti ti-clipboard-list" aria-hidden="true"></span> <b>Mesa ${m.mesa}</b>
       </div>
-      ${m.domicilio?`<div style="font-size:11.5px;margin-top:6px">📍 ${m.domicilio}</div>`:''}`;
+      ${m.domicilio?`<div style="font-size:11.5px;margin-top:6px">📍 ${m.domicilio}</div>`:''}${barrioMsg}`;
   }else{
     // DNI no figura: si los campos venían del padrón anterior, limpiarlos para no confundir
     if(window._datosDePadron){fn.value='';fa.value='';window._datosDePadron=false;}
+    if(window._barrioDePadron){const fb=document.getElementById('fBarrio');if(fb)fb.value='';window._barrioDePadron=false;}
     box.className='padron-box show';
     box.innerHTML=`Este DNI no figura en el padrón de Puerto Iguazú (circuito 80). Completá nombre y apellido a mano. Se guarda igual.`;
   }
@@ -1342,8 +1521,8 @@ function renderDash(){
 
   // ACCESOS RÁPIDOS según rol
   const quick = isAdmin
-    ? [['piramide','Pirámide','ti-binary-tree'],['diad','Día D','ti-car'],['referentes','Referentes','ti-users'],['lista','Lista completa','ti-list']]
-    : [['piramide','Mi red','ti-binary-tree'],['diad','Día D','ti-car'],['lista','Mi lista','ti-list'],['agenda','Agenda','ti-calendar']];
+    ? [['piramide','Pirámide','ti-binary-tree'],['diad','Comando','ti-car'],['referentes','Referentes','ti-users'],['lista','Lista completa','ti-list']]
+    : [['piramide','Mi red','ti-binary-tree'],['diad','Comando','ti-car'],['lista','Mi lista','ti-list'],['agenda','Agenda','ti-calendar']];
   document.getElementById('homeQuick').innerHTML=quick.map(q=>
     `<button class="home-qbtn" onclick="goTab('${q[0]}')"><span class="ti ${q[2]}" aria-hidden="true"></span><span class="t">${q[1]}</span></button>`
   ).join('');
@@ -1385,6 +1564,74 @@ function norm(s){return (s||'').trim().toLowerCase().replace(/\s+/g,' ');}
 function estLabel(e){return e==='conf'?'Confirmado':e==='prom'?'Prometió':e==='porconv'?'Por convencer':'Contactado';}
 function estClass(e){return e==='conf'?'conf':e==='prom'?'prom':e==='porconv'?'porconv':'cont';}
 function normDni(s){return (s||'').replace(/\D/g,'');}
+// arma el link de WhatsApp normalizando números argentinos (0, 15, +54)
+function waLink(tel){
+  let n=(tel||'').replace(/\D/g,'');
+  if(n.length<8)return null;
+  if(n.startsWith('0'))n=n.slice(1);                 // sacar el 0 de área
+  const m=n.match(/^(\d{2,4})15(\d{6,8})$/);         // sacar el 15 del medio si está
+  if(m)n=m[1]+m[2];
+  if(n.startsWith('549')){/* ya está */}
+  else if(n.startsWith('54'))n='549'+n.slice(2);
+  else n='549'+n;
+  return 'https://wa.me/'+n;
+}
+function abrirWA(tel){const l=waLink(tel);if(l)window.open(l,'_blank');else alert('El teléfono no parece válido.');}
+// ==== deducir el barrio desde el domicilio del padrón ====
+const BARRIO_KEYS=[
+ [/2000\s*(HECTAREAS|HAS|HTAS)|B\.?\s*2000/, "2000 Hectáreas"],
+ [/600\s*(HECTAREAS|HAS)|SELVA\s*(Y|I)R(Y|I)APU/, "Selva Yryapú"],
+ [/1000\s*(VIVIENDAS|VDAS|VIV)|LAS\s*CALANDRIAS/, "1000 Viviendas"],
+ [/300\s*(VIVIENDAS|VDAS|VIV)/, "300 Viviendas"],
+ [/120\s*(VIVIENDAS|VDAS|VIV)/, "120 Viviendas"],
+ [/155\s*(VIVIENDAS|VDAS|VIV)/, "155 Viviendas"],
+ [/73\s*(VIVIENDAS|VDAS|VIV)/, "73 Viviendas"],
+ [/ORQUIDEA/, "Las Orquídeas"],
+ [/VILLA\s*ALTA|VA?\.?\s*ALTA/, "Villa Alta"],
+ [/VILLA\s*NUEVA|VA\.?\s*NUEVA/, "Villa Nueva"],
+ [/VILLA\s*14|VA\.?\s*14\b/, "Villa 14"],
+ [/STA\.?\s*ROSA|SANTA\s*ROSA/, "Santa Rosa"],
+ [/SANTA\s*M(ARIA)?\.?\s*DEL?\s*IGUAZU/, "Santa María"],
+ [/SAN\s*CAYETANO/, "San Cayetano"],
+ [/LAS\s*LE(Ñ|N)AS/, "Las Leñas"],
+ [/1\s*(RO|º|°)?\s*(DE\s*)?MAYO|PRIMERO\s*DE\s*MAYO/, "1º de Mayo"],
+ [/PRIMAVERA/, "Primavera"],
+ [/FLORIDA/, "Villa Florida"],
+ [/BEL(E|É)N/, "Belén"],
+ [/UNI(O|Ó)N/, "Unión"],
+ [/(Ñ|N)AND(U|Ú)/, "Ñandú"],
+ [/COSTA\s*NORTE/, "Costa Norte"],
+ [/COSTA\s*BRAVA/, "Costa Brava"],
+ [/ITA(EMBE)?\b|B\s*ITA\b/, "Itá"],
+ [/YACU(Y|I)\b/, "Yacuy"],
+ [/INTEGRACI(O|Ó)N/, "Integración"],
+ [/BRASILERA/, "Brasilera"],
+ [/EX\s*COMBATIENTES/, "Ex Combatientes"],
+ [/DON\s*BOSCO/, "Don Bosco"],
+ [/LAS\s*AMERICAS/, "Las Américas"],
+ [/OBRERO/, "Obrero"],
+ [/RAMON\s*MERCADO/, "Ramón Mercado"],
+ [/A(LTE|LMIRANTE)?\.?\s*BROWN/, "Almirante Brown"],
+ [/MALVINAS/, "Malvinas"],
+ [/COM(ANDANTE)?\.?\s*ANDRESITO/, "Cdte. Andresito"],
+ [/Z(ONA)?\.?\s*PORTUARIA/, "Zona Portuaria"],
+ [/LOTE\s*A\b/, "Lote A"],
+ [/LOTE\s*B\b/, "Lote B"],
+ [/LOTE\s*7\b/, "Lote 7"],
+ [/LOTE\s*8\b/, "Lote 8"],
+ [/LOTE\s*14\b/, "Lote 14"],
+ [/LOTE\s*47\b/, "Lote 47"],
+ [/RIO\s*PARANA/, "Calle Río Paraná"],
+ [/SAN\s*LORENZO/, "San Lorenzo"],
+ [/IPRODHA/, "IPRODHA"],
+ [/\bCENTRO\b/, "Centro"]
+];
+function normTxt(s){return (s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function barrioDesdeDomicilio(dom){
+  const d=normTxt(dom);
+  for(const [rx,b] of BARRIO_KEYS){ if(rx.test(d)) return b; }
+  return '';
+}
 
 async function tryAdd(){
   const a=document.getElementById('dupAlert');
@@ -1438,6 +1685,7 @@ async function tryAdd(){
   ['fNombre','fApellido','fDni','fTel'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('padronBox').className='padron-box';
   window._datosDePadron=false;
+  window._barrioDePadron=false;
   document.getElementById('padronSug').style.display='none';
   softOk=false; renderAll();
 }
@@ -1858,6 +2106,7 @@ function renderLista(){
         <button class="act ${p.transporte?'on-azul':''}" onclick="toggleTransporte('${p.id}')"><span class="ti ti-car" aria-hidden="true"></span>Transporte</button>
         <button class="act ${p.visita?'on-tierra':''}" onclick="toggleMarca('${p.id}','visita')"><span class="ti ti-map-pin" aria-hidden="true"></span>Visitar</button>
         <button class="act ${p.prioritaria?'on-rojo':''}" onclick="toggleMarca('${p.id}','prioritaria')"><span class="ti ti-flag" aria-hidden="true"></span>Urgente</button>
+        ${p.tel?`<button class="act" style="background:#e9f7ef;border-color:#25D366;color:#128C4A" onclick="abrirWA('${p.tel}')"><span class="ti ti-brand-whatsapp" style="color:#25D366" aria-hidden="true"></span>WhatsApp</button>`:''}
         <button class="act" onclick="agendarVisitaA('${p.id}')"><span class="ti ti-calendar-plus" aria-hidden="true"></span>Agendar</button>
         <button class="act" onclick="abrirEdit('${p.id}')"><span class="ti ti-edit" aria-hidden="true"></span>Editar</button>
       </div>
@@ -1913,8 +2162,71 @@ function setDiadTab(t){
   document.getElementById('diad-transporte').style.display=t==='transporte'?'block':'none';
   document.getElementById('diad-escuela').style.display=t==='escuela'?'block':'none';
   document.getElementById('diad-control').style.display=t==='control'?'block':'none';
+  document.getElementById('diad-vivo').style.display=t==='vivo'?'block':'none';
   if(t==='control')renderControl();
   if(t==='escuela')renderEscuela();
+  if(t==='vivo')iniciarMapaVivo();
+}
+
+// ==== MAPA EN VIVO (GPS de autos) ====
+let _mapaVivo=null,_marcadores={},_vivoTimer=null,_leafletCargado=false;
+function cargarLeaflet(cb){
+  if(_leafletCargado){cb();return;}
+  const css=document.createElement('link');css.rel='stylesheet';css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(css);
+  const js=document.createElement('script');js.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+  js.onload=()=>{_leafletCargado=true;cb();};
+  document.head.appendChild(js);
+}
+function iniciarMapaVivo(){
+  cargarLeaflet(()=>{
+    if(!_mapaVivo){
+      _mapaVivo=L.map('mapaVivo').setView([-25.599,-54.573],13); // Puerto Iguazú
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(_mapaVivo);
+    }
+    actualizarMapaVivo();
+    if(_vivoTimer)clearInterval(_vivoTimer);
+    _vivoTimer=setInterval(()=>{
+      if(diadTab==='vivo'&&document.visibilityState==='visible')actualizarMapaVivo();
+    },20000);
+  });
+}
+async function actualizarMapaVivo(){
+  if(!sb||!_mapaVivo)return;
+  const {data}=await sb.from('autos').select('*');
+  if(!data)return;
+  AUTOS=data.map(a=>({id:a.id,conductor:a.conductor,cap:a.capacidad||4,barrio:a.barrio||'',tel:a.tel||'',modelo:a.modelo||'',dominio:a.dominio||'',enViaje:!!a.en_viaje,lat:a.lat,lng:a.lng,posTs:a.pos_ts}));
+  const ahora=Date.now();
+  const conPos=AUTOS.filter(a=>a.lat&&a.lng);
+  conPos.forEach(a=>{
+    const min=a.posTs?Math.round((ahora-new Date(a.posTs).getTime())/60000):null;
+    const viejo=min!==null&&min>5;
+    const txt=`<b>🚗 ${a.conductor}</b><br>${a.modelo||''} ${a.dominio||''}<br><span style="color:${viejo?'#c0432f':'#2e8b57'}">${min===null?'':viejo?'hace '+min+' min ⚠':'hace '+min+' min ✓'}</span>`;
+    if(_marcadores[a.id]){_marcadores[a.id].setLatLng([a.lat,a.lng]).setPopupContent(txt);}
+    else{_marcadores[a.id]=L.marker([a.lat,a.lng]).addTo(_mapaVivo).bindPopup(txt);}
+  });
+  const lst=document.getElementById('vivoLista');
+  if(lst){
+    if(!conPos.length){lst.innerHTML='<div class="empty">Ningún auto está compartiendo ubicación todavía. Mandales su link de conductor (desde la solapa Transporte) y que toquen "Compartir mi ubicación".</div>';}
+    else{
+      lst.innerHTML=conPos.map(a=>{
+        const min=a.posTs?Math.round((ahora-new Date(a.posTs).getTime())/60000):null;
+        const viejo=min!==null&&min>5;
+        return `<div class="person-row"><div class="who"><div><b>🚗 ${a.conductor}</b> ${a.dominio?'<span class="badge" style="background:var(--tinta)">'+a.dominio+'</span>':''}</div>
+          <div class="meta">${a.modelo||''}${min!==null?' · señal hace '+min+' min '+(viejo?'⚠':'✓'):''}</div></div>
+          <button onclick="_mapaVivo.setView([${a.lat},${a.lng}],15);_marcadores['${a.id}'].openPopup()" style="background:var(--arena-2);border-radius:9px;padding:9px 13px;font-size:12.5px;font-weight:700">Ver en mapa</button></div>`;
+      }).join('');
+    }
+  }
+}
+function linkConductor(id){
+  return location.origin+location.pathname.replace(/index\.html$/,'').replace(/\/$/,'')+'/conductor.html?a='+id;
+}
+function compartirLinkConductor(id){
+  const a=AUTOS.find(x=>x.id===id);if(!a)return;
+  const link=linkConductor(id);
+  const msg=`Hola ${a.conductor}! Este es tu link de conductor para el día de la elección. Abrilo y vas a ver tu lista de pasajeros con las direcciones y el botón "Cómo llegar": ${link}`;
+  if(a.tel){const wl=waLink(a.tel);if(wl){window.open(wl.replace('https://wa.me/','https://wa.me/')+'?text='+encodeURIComponent(msg),'_blank');return;}}
+  navigator.clipboard.writeText(link).then(()=>toast('Link copiado ✓ Pegáselo por WhatsApp',true)).catch(()=>prompt('Copiá el link:',link));
 }
 function necesitanTransporte(){const c=current.role==='admin'||current.coord;return REGISTROS.filter(p=>p.transporte&&(c||p.ref===current.id));}
 function renderDiaD(){
@@ -1938,18 +2250,22 @@ function renderDiaD(){
   document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('active',b.dataset.d===diadTab));
 
   const scope=esCoord?REGISTROS:REGISTROS.filter(p=>p.ref===current.id);
-  const totalTransp=scope.filter(p=>p.transporte).length;
   const autosScope=AUTOS;
-  const capacidadTotal=autosScope.reduce((s,a)=>s+a.cap,0);
   const yaVotaron=scope.filter(p=>p.voto).length;
   const totalGente=scope.filter(p=>p.tipo==='persona'||p.tipo==='conf').length;
   const sinAuto=scope.filter(p=>p.transporte&&!p.voto&&!p.autoId).length;
+  const aBordo=scope.filter(p=>p.abordo&&!p.voto).length;
+  const ahora=Date.now();
+  const autosVivo=autosScope.filter(a=>a.posTs&&(ahora-new Date(a.posTs).getTime())<10*60000).length;
+  const mesasConGente=[...new Set(scope.filter(p=>p.mesa).map(p=>String(p.mesa)))];
+  const mesasCubiertas=mesasConGente.filter(m=>fiscalDe(m)).length;
 
   document.getElementById('diadStats').innerHTML=`
-    <div class="stat"><div class="num">${totalTransp}</div><div class="lab">Necesitan transporte</div></div>
-    <div class="stat"><div class="num">${autosScope.length}</div><div class="lab">Autos · ${capacidadTotal} lugares</div></div>
+    <div class="stat"><div class="num" style="color:var(--verde-ok)">${yaVotaron}<span style="font-size:16px;color:var(--gris)">/${totalGente}</span></div><div class="lab">Ya votaron</div></div>
+    <div class="stat"><div class="num" style="color:var(--azul)">${aBordo}</div><div class="lab">A bordo ahora</div></div>
     <div class="stat" style="${sinAuto>0?'border:2px solid var(--rojo)':''}"><div class="num" style="color:${sinAuto>0?'var(--rojo)':'var(--verde-ok)'}">${sinAuto>0?sinAuto:'OK'}</div><div class="lab">${sinAuto>0?'Sin auto aún':'Todos con auto'}</div></div>
-    <div class="stat"><div class="num" style="color:var(--verde-ok)">${yaVotaron}<span style="font-size:16px;color:var(--gris)">/${totalGente}</span></div><div class="lab">Ya votaron</div></div>`;
+    ${esCoord?`<div class="stat"><div class="num" style="color:${autosVivo>0?'var(--verde-ok)':'var(--gris)'}">${autosVivo}<span style="font-size:16px;color:var(--gris)">/${autosScope.length}</span></div><div class="lab">Autos en vivo 📡</div></div>
+    <div class="stat" style="${mesasCubiertas<mesasConGente.length?'border:2px solid var(--rojo)':''}"><div class="num" style="color:${mesasCubiertas<mesasConGente.length?'var(--rojo)':'var(--verde-ok)'}">${mesasCubiertas}<span style="font-size:16px;color:var(--gris)">/${mesasConGente.length}</span></div><div class="lab">Mesas con fiscal</div></div>`:''}`;
 
   renderMovByRef();
   if(diadTab==='control')renderControl();
@@ -1995,9 +2311,13 @@ function renderEscuela(){
       const mid=esc+'__'+mesa;
       const mAbierta=_escAbierta[mid];
       html+=`<div style="margin:4px 0 8px">
-        <div onclick="toggleEscuela('${mid.replace(/'/g,"\\'")}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--arena);border-radius:10px;cursor:pointer">
+        <div onclick="toggleEscuela('${mid.replace(/'/g,"\\'")}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--arena);border-radius:10px;cursor:pointer;gap:8px;flex-wrap:wrap">
           <span style="font-weight:700;font-size:13.5px;color:var(--tierra)">Mesa ${mesa}</span>
-          <span style="font-size:12.5px;color:var(--gris)">${votaron}/${gente.length} votaron ${mAbierta?'▲':'▼'}</span>
+          ${(()=>{const fi=fiscalDe(mesa);const esC=current.role==='admin'||current.coord;
+            if(fi)return `<span onclick="event.stopPropagation();${esC?`abrirFiscal('${mesa}')`:''}" style="font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:14px;background:${fi.confirmado?'#e7f4ec':'#faf3e6'};color:${fi.confirmado?'var(--verde-ok)':'#8a6a1c'};${esC?'cursor:pointer':''}">🛡 ${fi.nombre}${fi.confirmado?' ✓':' (sin conf.)'}</span>`;
+            if(esC)return `<span onclick="event.stopPropagation();abrirFiscal('${mesa}')" style="font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:14px;background:#fbe9e6;color:var(--rojo);cursor:pointer">🛡 sin fiscal — asignar</span>`;
+            return '';})()}
+          <span style="font-size:12.5px;color:var(--gris);margin-left:auto">${votaron}/${gente.length} votaron ${mAbierta?'▲':'▼'}</span>
         </div>`;
       if(mAbierta){
         html+=gente.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--arena-2);${p.voto?'opacity:.6':''}">
@@ -2074,12 +2394,12 @@ function renderMovByRef(){
       html+=`<div class="node" style="margin-bottom:12px">
         <div class="node-head" onclick="toggleNode(this)"><span class="caret">▶</span>
           <div class="node-ava" style="background:${lleno?'var(--rojo)':'var(--azul)'}">🚗</div>
-          <div class="node-info"><div class="nm">${a.conductor} ${a.barrio?'· '+a.barrio:''}${a.dominio?' <span style="background:var(--tinta);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;letter-spacing:.5px">'+a.dominio+'</span>':''}</div><div class="sb">${a.modelo?'🚗 '+a.modelo+' · ':''}${pend.length}/${a.cap} a bordo${votaron.length?' · '+votaron.length+' ya votaron':''}${a.tel?' · '+a.tel:''}</div></div>
+          <div class="node-info"><div class="nm">${a.conductor} ${a.barrio?'· '+a.barrio:''}${a.dominio?' <span style="background:var(--tinta);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;letter-spacing:.5px">'+a.dominio+'</span>':''}</div><div class="sb">${a.modelo?'🚗 '+a.modelo+' · ':''}${pend.length}/${a.cap} a bordo${votaron.length?' · '+votaron.length+' ya votaron':''}${a.tel?` · <span onclick="event.stopPropagation();abrirWA('${a.tel}')" style="color:#128C4A;font-weight:700;cursor:pointer"><span class="ti ti-brand-whatsapp" aria-hidden="true"></span> ${a.tel}</span>`:''}</div></div>
           <div class="node-votos"><div class="big" style="color:${lleno?'var(--rojo)':'var(--verde-ok)'}">${libre>0?libre:'lleno'}</div><div class="lb">${libre>0?'lugares':''}</div></div>
         </div>
         <div class="node-children">
           ${genteHtml}
-          ${esCoord?`<div class="leaf" style="border:none;padding-top:8px"><button onclick="event.stopPropagation();vaciarAuto('${a.id}')" style="background:#fdf4e3;color:#8a6a1c;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px;margin-right:6px">Mandar todos a la cola</button><button onclick="event.stopPropagation();quitarAuto('${a.id}')" style="background:#fbe9e6;color:var(--rojo);font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px">Eliminar auto</button></div>`:''}
+          ${esCoord?`<div class="leaf" style="border:none;padding-top:8px"><button onclick="event.stopPropagation();compartirLinkConductor('${a.id}')" style="background:#e9f7ef;color:#128C4A;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px;margin-right:6px"><span class="ti ti-brand-whatsapp" aria-hidden="true"></span> Link del conductor</button><button onclick="event.stopPropagation();vaciarAuto('${a.id}')" style="background:#fdf4e3;color:#8a6a1c;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px;margin-right:6px">Mandar todos a la cola</button><button onclick="event.stopPropagation();quitarAuto('${a.id}')" style="background:#fbe9e6;color:var(--rojo);font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px">Eliminar auto</button></div>`:''}
         </div></div>`;
     });
   }
@@ -2156,7 +2476,10 @@ function renderControl(){
     <div class="person-row" style="${p.voto?'background:#e7f4ec;border-color:var(--verde-ok)':''}">
       <div class="who"><div><b>${p.nombre} ${p.apellido}</b>${p.transporte?'<span class="badge" style="background:var(--azul)">🚗 transporte</span>':''}</div>
         <div class="meta">${p.mesa?`<b style="color:var(--azul)">Mesa ${p.mesa}</b> · `:''}${p.barrio}${esCoord?' · '+p.refNom:''}${p.tel?' · '+p.tel:''}</div></div>
-      <button onclick="toggleVoto('${p.id}')" style="padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:700;${p.voto?'background:var(--verde-ok);color:#fff':'background:var(--arena-2);color:var(--tinta)'}">${p.voto?'✓ Ya votó':'Marcar votó'}</button>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${p.tel?`<button onclick="abrirWA('${p.tel}')" title="WhatsApp" style="background:#e9f7ef;border-radius:9px;width:36px;height:36px"><span class="ti ti-brand-whatsapp" style="color:#25D366;font-size:19px" aria-hidden="true"></span></button>`:''}
+        <button onclick="toggleVoto('${p.id}')" style="padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:700;${p.voto?'background:var(--verde-ok);color:#fff':'background:var(--arena-2);color:var(--tinta)'}">${p.voto?'✓ Ya votó':'Marcar votó'}</button>
+      </div>
     </div>`).join('');
 }
 async function toggleVoto(id){const p=REGISTROS.find(x=>x.id===id);if(!p)return;p.voto=!p.voto;renderDiaD();await actualizarRegistroDB(id,{voto:p.voto});}
