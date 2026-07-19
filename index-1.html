@@ -1,0 +1,2569 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red Iguazú — Campaña</title>
+<meta name="theme-color" content="#0f3d2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Red Iguazú">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // === Conexión a tu base de datos Supabase ===
+  const SUPABASE_URL = 'https://qgogamniszilcefqvtcq.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_RtlHSBqEDAi-aCfF6ZzKAg_RHg968Cr';
+  let sb = null;
+  function initSupabase(){
+    try{
+      if(window.supabase && SUPABASE_URL){ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }
+    }catch(e){ console.error('Supabase init:', e); }
+  }
+</script>
+<style>
+  :root{
+    --selva:#0f3d2e;--selva-2:#16573f;--tierra:#b5491f;--tierra-claro:#e2733f;
+    --arena:#f5f1e8;--arena-2:#ece5d6;--tinta:#1c2a23;--gris:#6b756f;--linea:#d8d0bf;
+    --verde-ok:#2e8b57;--amarillo:#e0a92e;--rojo:#c0432f;--blanco:#fffdf8;
+    --azul:#2c5f7c;
+    --sombra:0 1px 3px rgba(15,61,46,.08), 0 8px 24px rgba(15,61,46,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--arena);color:var(--tinta);-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-weight:700;letter-spacing:-.02em}
+  button{font-family:inherit;cursor:pointer;border:none}
+  input,select,textarea{font-family:inherit}
+
+  /* ====== ESCALA "APP GRANDE" EN CELULAR ====== */
+  @media(max-width:680px){
+    html{font-size:17px}
+    .topbar{padding:14px 18px;padding-top:calc(14px + env(safe-area-inset-top))}
+    .topbar .brand-name{font-size:19px}
+    .topbar .brand-dot{width:34px;height:34px;font-size:18px}
+    .whoami{font-size:14px}
+    .tabs{top:auto;bottom:0;position:fixed;left:0;right:0;border-top:1px solid var(--linea);border-bottom:none;padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(0,0,0,.06);justify-content:space-around}
+    .tab{padding:12px 10px;font-size:13px;border-bottom:none;border-top:3px solid transparent;flex:1;text-align:center;min-width:0}
+    .tab.active{border-top-color:var(--tierra);border-bottom-color:transparent}
+    .view{padding:20px 18px 130px}  /* espacio extra para que la barra de abajo no tape nada */
+    .view-head{margin-bottom:20px}
+    .view-head h2{font-size:25px}
+    .view-head p{font-size:15px;margin-top:5px}
+    .form-row{gap:16px;margin-bottom:18px}
+    .form-field{margin-bottom:18px}
+    .form-field input,.form-field select,.form-field textarea{padding:15px 16px;font-size:16px;border-radius:12px}
+    .field select,.field input{padding:16px;font-size:16px}
+    .btn-add{padding:16px 24px;font-size:16px;width:100%;margin-top:10px}
+    .btn-primary{padding:17px;font-size:17px}
+    .form-card{padding:22px 20px;border-radius:18px;margin-bottom:18px}
+    .stat{padding:20px 16px}
+    .stat .num{font-size:34px}
+    .stat .lab{font-size:13px}
+    .person-row{padding:16px;margin-bottom:12px}
+    .person-row .who b{font-size:16px}
+    .filtro-btn{padding:11px 18px;font-size:14px}
+    th,td{padding:14px 12px;font-size:14px}
+    .node-head{padding:16px 14px}
+    .node{margin-bottom:14px}
+    .helper{font-size:13px;line-height:1.5}
+    label{font-size:14px}
+  }
+  html,body{max-width:100%;overflow-x:hidden}
+
+  #login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,var(--selva),var(--selva-2));padding:24px}
+  .login-card{background:var(--blanco);border-radius:22px;padding:40px 30px;width:100%;max-width:430px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .brand-dot{width:38px;height:38px;border-radius:11px;background:radial-gradient(circle at 30% 30%,var(--tierra-claro),var(--tierra));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
+  .brand-name{font-size:21px;font-weight:800;color:var(--selva)}
+  .login-sub{color:var(--gris);font-size:14.5px;margin:14px 0 28px;line-height:1.5}
+  .field{margin-bottom:20px}
+  .field label{display:block;font-size:13.5px;font-weight:700;color:var(--selva);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+  .field select,.field input{width:100%;padding:16px 16px;border:1.5px solid var(--linea);border-radius:13px;font-size:16.5px;background:var(--arena);color:var(--tinta);transition:border .15s}
+  .field select:focus,.field input:focus{outline:none;border-color:var(--tierra)}
+  .btn-primary{width:100%;padding:17px;background:var(--tierra);color:#fff;border-radius:13px;font-size:17px;font-weight:700;margin-top:10px;transition:background .15s}
+  .btn-primary:hover{background:#9c3e1a}
+  .login-hint{font-size:11.5px;color:var(--gris);text-align:center;margin-top:18px;line-height:1.5}
+
+  #app{display:none;min-height:100vh;flex-direction:column}
+  .topbar{background:var(--selva);color:#fff;padding:11px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+  .topbar .brand-name{color:#fff;font-size:17px}
+  .topbar .brand-dot{width:30px;height:30px;border-radius:9px;font-size:16px}
+  .whoami{display:flex;align-items:center;gap:10px;font-size:13px}
+  .whoami .role{background:rgba(255,255,255,.15);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+  .logout{background:rgba(255,255,255,.12);color:#fff;padding:6px 12px;border-radius:8px;font-size:12.5px;font-weight:600}
+
+  .tabs{display:flex;background:var(--blanco);border-bottom:1px solid var(--linea);position:sticky;top:52px;z-index:40;overflow-x:auto}
+  .tab{padding:13px 16px;font-size:13.5px;font-weight:600;color:var(--gris);border-bottom:3px solid transparent;white-space:nowrap;background:none;transition:.15s}
+  .tab.active{color:var(--tierra);border-bottom-color:var(--tierra)}
+  .tab:hover{color:var(--tinta)}
+
+  .view{display:none;padding:20px 18px 60px;max-width:1080px;margin:0 auto;width:100%}
+  .view.active{display:block}
+  .view-head{margin-bottom:18px}
+  .view-head h2{font-size:22px;color:var(--selva)}
+  .view-head p{color:var(--gris);font-size:13.5px;margin-top:3px}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px;margin-bottom:24px}
+  .stat{background:var(--blanco);border-radius:15px;padding:18px;box-shadow:var(--sombra);border:1px solid var(--linea)}
+  .stat .num{font-size:30px;font-weight:800;color:var(--selva);line-height:1}
+  .stat .lab{font-size:12px;color:var(--gris);margin-top:7px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  .stat.accent .num{color:var(--tierra)}
+  .stat.dual{display:flex;gap:12px;align-items:flex-start;grid-column:span 2}  .stat.dual .col{flex:1;min-width:0}
+  .stat.dual .col .num{font-size:24px}
+  .stat.dual .col .lab{font-size:10.5px;white-space:nowrap}
+  .stat.dual .col.conf .num{color:var(--verde-ok)}
+  .stat.dual .divider{width:1px;align-self:stretch;background:var(--linea);flex-shrink:0}
+  @media(max-width:560px){.stat.dual{grid-column:span 1}}
+
+  .progress-card{background:var(--blanco);border-radius:15px;padding:20px;box-shadow:var(--sombra);border:1px solid var(--linea);margin-bottom:20px}
+  .progress-card h3{font-size:15px;color:var(--selva);margin-bottom:4px}
+  .progress-card .meta-lab{font-size:12.5px;color:var(--gris);margin-bottom:16px}
+  .bar-track{height:13px;background:var(--arena-2);border-radius:10px;overflow:hidden;position:relative}
+  .bar-fill{height:100%;border-radius:10px;transition:width .6s;position:absolute;left:0;top:0}
+  .bar-fill.pos{background:#ddd4c0;z-index:1}
+  .bar-fill.proy{background:linear-gradient(90deg,var(--tierra),var(--tierra-claro));z-index:2}
+  .bar-fill.conf{background:var(--verde-ok);z-index:3}
+  .bar-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--gris);margin-top:7px;font-weight:600}
+  .legend{display:flex;gap:16px;font-size:11.5px;color:var(--gris);margin-top:10px;font-weight:600}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:middle}
+
+  table{width:100%;border-collapse:collapse;background:var(--blanco);border-radius:14px;overflow:hidden;box-shadow:var(--sombra)}
+  th{background:var(--selva);color:#fff;text-align:left;padding:11px 13px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  td{padding:11px 13px;border-bottom:1px solid var(--linea);font-size:13.5px}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:var(--arena)}
+  .ref-name{font-weight:600;color:var(--tinta)}
+  .mini-bar{display:inline-block;width:80px;height:8px;background:var(--arena-2);border-radius:6px;overflow:hidden;vertical-align:middle;margin-right:8px}
+  .mini-bar i{display:block;height:100%;background:var(--verde-ok);border-radius:6px}
+  .semaforo{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+  .s-rojo{background:var(--rojo)}.s-amar{background:var(--amarillo)}.s-verde{background:var(--verde-ok)}.s-gris{background:#c3c3c3}
+
+  .form-card{background:var(--blanco);border-radius:16px;padding:22px;box-shadow:var(--sombra);border:1px solid var(--linea);max-width:580px}
+  .type-switch{display:flex;gap:9px;margin-bottom:20px}
+  .type-btn{flex:1;padding:14px 12px;border:1.5px solid var(--linea);border-radius:13px;background:var(--arena);text-align:left;transition:.15s}
+  .type-btn .t{font-size:14.5px;font-weight:700;color:var(--tinta);display:flex;align-items:center;gap:7px}
+  .type-btn .d{font-size:11.5px;color:var(--gris);margin-top:3px;line-height:1.35}
+  .type-btn.active{border-color:var(--tierra);background:#fff;box-shadow:0 0 0 3px rgba(181,73,31,.1)}
+  .type-btn .ico{width:22px;height:22px;border-radius:7px;background:var(--arena-2);display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+  .type-btn.active .ico{background:var(--tierra);color:#fff}
+
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:14px}
+  .form-field{margin-bottom:14px}
+  .form-field.full{grid-column:1/-1}
+  .form-field label{display:block;font-size:12.5px;font-weight:600;color:var(--selva);margin-bottom:6px}
+  .form-field .opt{color:var(--gris);font-weight:400}
+  .form-field input,.form-field select,.form-field textarea{width:100%;padding:11px 13px;border:1.5px solid var(--linea);border-radius:10px;font-size:14.5px;background:var(--arena)}
+  .form-field textarea{min-height:64px;resize:vertical}
+  .form-field input:focus,.form-field select:focus,.form-field textarea:focus{outline:none;border-color:var(--tierra)}
+  .req{color:var(--tierra)}
+  .btn-add{background:var(--selva);color:#fff;padding:12px 22px;border-radius:11px;font-weight:700;font-size:14.5px;margin-top:6px;transition:.15s}
+  .filtro-btn{padding:7px 14px;border-radius:20px;font-size:12.5px;font-weight:600;background:var(--blanco);border:1.5px solid var(--linea);color:var(--gris);cursor:pointer;transition:.12s}
+  .filtro-btn.active{background:var(--selva);color:#fff;border-color:var(--selva)}
+  .person-row.dup{border-color:var(--amarillo);background:#fdfaf0}
+  .dup-flag{font-size:10.5px;background:var(--amarillo);color:#6b4e0a;padding:2px 8px;border-radius:6px;font-weight:700;margin-left:6px}
+  .btn-add:hover{background:var(--selva-2)}
+  .helper{font-size:11.5px;color:var(--gris);margin-top:5px;line-height:1.4}
+
+  .padron-box{background:#eef4f1;border:1.5px dashed var(--azul);border-radius:11px;padding:11px 14px;font-size:12.5px;color:var(--azul);margin-top:-4px;margin-bottom:14px;display:none}
+  .padron-box.show{display:block}
+  .padron-box b{font-weight:700}
+
+  .alert{border-radius:11px;padding:13px 15px;font-size:13.5px;margin-bottom:14px;display:none;line-height:1.45}
+  .alert.show{display:block}
+  .alert.dup-hard{background:#fbe9e6;border:1.5px solid var(--rojo);color:#8a2a1c}
+  .alert.dup-soft{background:#fdf4e3;border:1.5px solid var(--amarillo);color:#8a6a1c}
+  .alert.ok{background:#e7f4ec;border:1.5px solid var(--verde-ok);color:#1c5c38}
+  .alert b{font-weight:700}
+
+  .recent{margin-top:26px}
+  .recent h3{font-size:14px;color:var(--selva);margin-bottom:12px}
+  .chip-list{display:flex;flex-direction:column;gap:8px}
+  .person-row{background:var(--blanco);border:1px solid var(--linea);border-radius:11px;padding:11px 14px;display:flex;justify-content:space-between;align-items:center;font-size:13.5px}
+  .person-row .who b{font-weight:700}
+  .person-row .meta{font-size:11.5px;color:var(--gris);margin-top:2px}
+  .badge{font-size:10.5px;color:#fff;padding:2px 7px;border-radius:6px;margin-left:6px;font-weight:600;letter-spacing:.02em}
+  .badge-conf{background:var(--azul)}
+  .badge-vot{background:var(--gris)}
+  .tag{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600}
+  .tag.conf{background:#e7f4ec;color:var(--verde-ok)}
+  .tag.prom{background:#fdf4e3;color:#8a6a1c}
+  .tag.cont{background:#eceff1;color:#5a6b73}
+  .tag.porconv{background:#fbe9e6;color:#c0432f}
+
+  /* piramide */
+  .tree{margin-top:4px}
+  .node{background:var(--blanco);border:1px solid var(--linea);border-radius:12px;margin-bottom:8px;box-shadow:var(--sombra)}
+  .node-head{padding:13px 15px;display:flex;align-items:center;gap:11px;cursor:pointer}
+  .node-head .caret{font-size:12px;color:var(--gris);transition:transform .2s;width:12px}
+  .node-head.open .caret{transform:rotate(90deg)}
+  .node-ava{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:14px;flex-shrink:0}
+  .lvl-ref .node-ava{background:var(--tierra)}
+  .lvl-conf .node-ava{background:var(--azul)}
+  .node-info{flex:1;min-width:0}
+  .node-info .nm{font-size:14.5px;font-weight:700;color:var(--tinta)}
+  .node-info .sb{font-size:11.5px;color:var(--gris);margin-top:1px}
+  .node-votos{text-align:right;flex-shrink:0}
+  .node-votos .big{font-size:18px;font-weight:800;color:var(--selva);line-height:1}
+  .node-votos .lb{font-size:10px;color:var(--gris);font-weight:600;text-transform:uppercase}
+  .node-children{padding:0 13px 10px 40px;display:none}
+  .node-children.open{display:block}
+  .leaf{padding:8px 12px;border-left:2px solid var(--arena-2);margin-left:4px;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+  .leaf .lnm{color:var(--tinta);font-weight:600}
+  .leaf .lmeta{font-size:11px;color:var(--gris)}
+
+  /* agenda */
+  .agenda-list{display:flex;flex-direction:column;gap:10px}
+  .ev{background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:14px 16px;box-shadow:var(--sombra);display:flex;gap:14px;align-items:flex-start}
+  .ev-date{flex-shrink:0;text-align:center;background:var(--arena);border-radius:10px;padding:8px 12px;min-width:58px}
+  .ev-date .d{font-size:20px;font-weight:800;color:var(--tierra);line-height:1}
+  .ev-date .m{font-size:10.5px;color:var(--gris);font-weight:700;text-transform:uppercase}
+  .ev-body{flex:1}
+  .ev-body .ti{font-size:14.5px;font-weight:700;color:var(--tinta)}
+  .ev-body .me{font-size:12px;color:var(--gris);margin-top:3px;line-height:1.4}
+  .ev-type{font-size:10.5px;padding:2px 8px;border-radius:20px;font-weight:700;color:#fff;letter-spacing:.02em}
+  .et-visita{background:var(--azul)}.et-reunion{background:var(--tierra)}.et-acto{background:var(--selva)}
+
+  .barrio-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+  .barrio-card{background:var(--blanco);border-radius:14px;padding:17px;box-shadow:var(--sombra);border:1px solid var(--linea);position:relative;overflow:hidden}
+  .barrio-card .bname{font-size:15px;font-weight:700;color:var(--selva);margin-bottom:3px}
+  .barrio-card .bcount{font-size:28px;font-weight:800;color:var(--tierra);line-height:1.1}
+  .barrio-card .blab{font-size:11.5px;color:var(--gris);font-weight:600}
+  .heat{position:absolute;right:-20px;bottom:-20px;width:90px;height:90px;border-radius:50%;opacity:.12;background:var(--tierra)}
+
+  .note{font-size:12px;color:var(--gris);margin-top:18px;line-height:1.55;background:var(--arena-2);padding:12px 14px;border-radius:10px;border-left:3px solid var(--tierra)}
+
+  @media(max-width:560px){
+    .form-row{grid-template-columns:1fr}
+    .hide-sm{display:none}
+    .type-switch{flex-direction:column}
+  }
+  /* ===== INICIO REDISEÑADO ===== */
+  .home-hero{background:var(--selva);border-radius:18px;padding:20px 22px;margin-bottom:16px;color:#fff}
+  .home-hero .lab{color:#9db8ab;font-size:13.5px;margin-bottom:6px}
+  .home-hero .big-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .home-hero .big{font-size:38px;font-weight:800;line-height:1}
+  .home-hero .sub{color:#7fc4a0;font-size:14px}
+  .home-hero .track{height:8px;background:rgba(255,255,255,.15);border-radius:5px;margin-top:14px;overflow:hidden}
+  .home-hero .track .fill{height:100%;background:var(--tierra-claro);border-radius:5px;transition:width .5s}
+  .home-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .home-stat{background:var(--blanco);border-radius:15px;padding:16px;border:1px solid var(--linea)}
+  .home-stat .ti{font-size:22px}
+  .home-stat .n{font-size:27px;font-weight:800;color:var(--tinta);margin-top:7px;line-height:1}
+  .home-stat .l{font-size:12.5px;color:var(--gris);margin-top:3px}
+  .home-cta{width:100%;background:var(--tierra);color:#fff;border-radius:15px;padding:17px;font-size:16.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:22px}
+  .home-cta .ti{font-size:21px}
+  .home-section-lab{font-size:13px;color:var(--gris);font-weight:700;margin-bottom:11px}
+  .home-quick{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+  .home-qbtn{background:var(--blanco);border-radius:15px;padding:17px 15px;border:1px solid var(--linea);display:flex;flex-direction:column;gap:9px;text-align:left;color:var(--tinta)}
+  .home-qbtn .ti{font-size:24px;color:var(--selva)}
+  .home-qbtn span.t{font-size:14.5px;font-weight:700}
+
+  /* ===== NAV INFERIOR CON ÍCONOS ===== */
+  .bottomnav{display:none}
+  @media(max-width:680px){
+    .tabs{display:none!important}
+    .bottomnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--blanco);border-top:1px solid var(--linea);justify-content:space-around;padding:8px 0 calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 14px rgba(0,0,0,.06)}
+    .navbtn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;color:var(--gris);flex:1;padding:2px 0}
+    .navbtn .ti{font-size:23px}
+    .navbtn span{font-size:11px;font-weight:600}
+    .navbtn.active{color:var(--tierra)}
+    .navbtn{align-items:flex-end}
+    .navbtn{align-items:center;justify-content:flex-end}
+    .navcenter{position:relative;justify-content:center;align-items:center}
+    .navcenter .navfab{display:flex;align-items:center;justify-content:center;width:54px;height:54px;border-radius:50%;background:var(--tierra);color:#fff;box-shadow:0 4px 14px rgba(181,73,31,.45);border:4px solid var(--blanco);position:absolute;top:-28px;left:50%;transform:translateX(-50%)}
+    .navcenter .navfab .ti{font-size:28px}
+    .navcenter span:last-child{color:var(--tierra);font-weight:700;margin-top:26px}
+  }
+  /* ===== FILAS COMPACTAS DE LISTA ===== */
+  .prow{background:var(--blanco);border:1px solid var(--linea);border-radius:12px;margin-bottom:8px;overflow:hidden}
+  .prow.prio{border-left:4px solid var(--rojo)}
+  .prow.expanded{border-color:var(--selva)}
+  .prow-main{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;cursor:pointer}
+  .prow-info{min-width:0;flex:1}
+  .prow-name{font-size:15px;font-weight:700;color:var(--tinta);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .prow-sub{font-size:12.5px;color:var(--gris);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .prow-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .dots{display:flex;gap:3px}
+  .mk{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .prow-caret{font-size:18px;color:var(--gris);transition:transform .2s}
+  .prow.expanded .prow-caret{transform:rotate(180deg)}
+  .prow-actions{display:none;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 14px 14px}
+  .prow-actions.open{display:grid}
+  .act{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--arena);border:1px solid var(--linea);border-radius:10px;padding:11px 6px;font-size:12px;font-weight:600;color:var(--tinta)}
+  .act .ti{font-size:19px;color:var(--selva)}
+  .act.on-azul{background:var(--azul);color:#fff;border-color:var(--azul)}.act.on-azul .ti{color:#fff}
+  .act.on-tierra{background:var(--tierra);color:#fff;border-color:var(--tierra)}.act.on-tierra .ti{color:#fff}
+  .act.on-rojo{background:var(--rojo);color:#fff;border-color:var(--rojo)}.act.on-rojo .ti{color:#fff}
+  .dup-flag{font-size:9.5px;background:var(--amarillo);color:#6b4e0a;padding:1px 6px;border-radius:5px;font-weight:700;margin-left:5px;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="login-card">
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú</div></div>
+    <p class="login-sub">Plataforma de contactos de campaña. Entrá con tu usuario y clave.</p>
+    <div class="field">
+      <label>Usuario</label>
+      <input type="text" id="inUsuario" placeholder="tu usuario" autocomplete="username" autocapitalize="none">
+    </div>
+    <div class="field"><label>Clave</label><input type="password" id="pass" placeholder="••••••" autocomplete="current-password"></div>
+    <div id="loginError" style="display:none;background:#fbe9e6;border:1.5px solid var(--rojo);color:#8a2a1c;border-radius:10px;padding:10px 13px;font-size:13px;margin-bottom:12px"></div>
+    <button class="btn-primary" id="btnEntrar" onclick="login()">Entrar</button>
+    <p class="login-hint">Tus datos están protegidos. Si olvidaste la clave, pedile a coordinación que te la resetee.</p>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v27</span></div></div>
+    <div class="whoami">
+      <span class="role" id="roleTag">Referente</span>
+      <span class="hide-sm" id="userName">—</span>
+      <button class="logout" onclick="logout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="bottomnav" id="bottomnav"></div>
+
+  <!-- INICIO / PANEL -->
+  <div class="view" id="view-dash">
+    <button class="home-cta" onclick="goTab('cargar')">
+      <span class="ti ti-user-plus" aria-hidden="true"></span> Cargar persona
+    </button>
+    <div id="homeHero"></div>
+    <div class="home-stats" id="homeStats"></div>
+    <div id="homeAviso" style="display:none;background:#faedd5;border-radius:12px;padding:12px 14px;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer"></div>
+    <div class="home-section-lab">Accesos rápidos</div>
+    <div class="home-quick" id="homeQuick"></div>
+    <a id="homeTableroPC" href="dashboard.html" target="_blank" style="display:none;margin-top:12px;background:var(--selva);color:#fff;border-radius:15px;padding:16px;text-decoration:none;align-items:center;justify-content:center;gap:9px;font-weight:700;font-size:15px">
+      <span class="ti ti-device-desktop-analytics" aria-hidden="true"></span> Abrir tablero de campaña (PC)
+    </a>
+    <div id="refTableWrap">
+      <h3 style="font-size:15px;color:var(--selva);margin:24px 0 12px">Ranking de referentes</h3>
+      <table id="refTable"><thead><tr>
+        <th>Referente</th><th class="hide-sm">Zona</th><th>Avance</th><th>Proyec./Cargados</th><th>Actividad</th><th class="hide-sm">Calidad datos</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <!-- CARGAR -->
+  <div class="view" id="view-cargar">
+    <div class="view-head"><h2>Cargar</h2><p>Un votante suelto, o una persona de confianza que trae a su gente.</p></div>
+    <div class="form-card">
+
+      <div class="type-switch">
+        <button class="type-btn active" id="tb-persona" onclick="setTipo('persona')">
+          <span class="t"><span class="ico">👤</span>Votante</span>
+          <span class="d">Una persona individual que vota.</span>
+        </button>
+        <button class="type-btn" id="tb-conf" onclick="setTipo('conf')">
+          <span class="t"><span class="ico">⭐</span>Persona de confianza</span>
+          <span class="d">Alguien que te trae varios votos. Cuelga su gente.</span>
+        </button>
+      </div>
+
+      <div id="dupAlert" class="alert"></div>
+
+      <!-- comunes: nombre/apellido -->
+      <div class="form-row">
+        <div class="form-field"><label>Nombre <span class="req">*</span></label><input id="fNombre" placeholder="Juan" oninput="buscarPadronNombre()" autocomplete="off"></div>
+        <div class="form-field"><label>Apellido <span class="req">*</span></label><input id="fApellido" placeholder="Pérez" oninput="buscarPadronNombre()" autocomplete="off"></div>
+      </div>
+      <div id="padronSug" style="display:none;background:var(--blanco);border:1.5px solid var(--azul);border-radius:11px;margin-bottom:14px;max-height:240px;overflow:auto;box-shadow:var(--sombra)"></div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>DNI <span class="opt">(opcional — solo si lo tenés)</span></label>
+          <input id="fDni" placeholder="dejalo vacío si no lo tenés" oninput="onDni()">
+        </div>
+        <div class="form-field"><label>Teléfono <span class="opt">(opcional)</span></label><input id="fTel" placeholder="3757-..."></div>
+      </div>
+      <div class="padron-box" id="padronBox"></div>
+
+      <!-- solo persona de confianza -->
+      <div id="campos-conf" style="display:none">
+        <div class="form-field full">
+          <label>¿A cuánta gente trae? <span class="req">*</span></label>
+          <input id="fConfVotos" type="number" min="1" placeholder="4" oninput="clearAlert()">
+          <div class="helper">Cuántos votos te suma esta persona (su familia, vecinos, etc.). Después podés cargar los nombres uno por uno.</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field"><label>Barrio / Zona <span class="opt">(escribí si no está en la lista)</span></label>
+          <input id="fBarrio" list="barriosList" placeholder="Centro" autocomplete="off">
+          <datalist id="barriosList"></datalist>
+        </div>
+        <div class="form-field"><label>Estado</label>
+          <select id="fEstado"><option value="porconv">Por convencer</option><option value="cont">Contactado</option><option value="prom">Prometió</option><option value="conf">Confirmado</option></select>
+        </div>
+      </div>
+
+      <div class="form-field full" id="campoRefAsignar" style="display:none">
+        <label>¿De quién es esta persona? <span class="opt">(referente al que se le suma)</span></label>
+        <select id="fRefAsignar"></select>
+        <div class="helper">Por defecto te la asignás a vos. Si la estás cargando en nombre de otro referente, elegilo acá.</div>
+      </div>
+
+      <button class="btn-add" id="btnGuardar" onclick="tryAdd()">Guardar</button>
+    </div>
+
+    <div class="recent">
+      <h3>Lo último que cargaste</h3>
+      <div class="chip-list" id="recentList"></div>
+    </div>
+  </div>
+
+  <!-- PIRAMIDE -->
+  <div class="view" id="view-piramide">
+    <div class="view-head"><h2>Pirámide de la red</h2><p>Quién trae a quién. Tocá un nombre para ver su gente.</p></div>
+    <button onclick="cargarReferentesDB().then(()=>cargarRegistrosDB());toast('Actualizado',true)" style="background:var(--arena-2);color:var(--tinta);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;margin-bottom:14px">🔄 Actualizar desde la base</button>
+    <div class="tree" id="tree"></div>
+  </div>
+
+  <!-- AGENDA -->
+  <div class="view" id="view-agenda">
+    <div class="view-head"><h2>Agenda</h2><p>Reservá un turno. Lunes a sábado, de 10 a 20hs. Si un turno ya está tomado, no aparece.</p></div>
+    <div class="form-card" style="margin-bottom:24px">
+      <div class="form-row">
+        <div class="form-field"><label>Tipo</label>
+          <select id="evTipo"><option value="visita">Visita</option><option value="reunion">Reunión</option><option value="acto">Acto / evento</option></select>
+        </div>
+        <div class="form-field"><label>Fecha <span class="req">*</span></label><input id="evFecha" type="date" onchange="renderTurnos()"></div>
+      </div>
+      <div class="form-field full"><label>Turno <span class="req">*</span></label>
+        <div id="turnoGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px">
+          <div class="empty" style="grid-column:1/-1;padding:10px">Elegí una fecha para ver los turnos libres.</div>
+        </div>
+        <input type="hidden" id="evTurno">
+      </div>
+      <div class="form-field full"><label>Título <span class="req">*</span></label><input id="evTitulo" placeholder="Visita a familia Cuenca"></div>
+      <div class="form-field full"><label>Barrio / Lugar</label><input id="evLugar" list="barriosList" placeholder="Centro" autocomplete="off"></div>
+      <div class="form-field full"><label>Nota <span class="opt">(opcional)</span></label><textarea id="evNota" placeholder="Llevar folletos, confirmar antes por WhatsApp..."></textarea></div>
+      <button class="btn-add" onclick="addEvento()">Reservar turno</button>
+    </div>
+    <div class="agenda-list" id="agendaList"></div>
+  </div>
+
+  <!-- LISTA / BUSCADOR -->
+  <div class="view" id="view-lista">
+    <div class="view-head"><h2 id="listaTitle">Lista completa</h2><p>Buscá por nombre, apellido, DNI o barrio. Los repetidos aparecen marcados.</p></div>
+    <div style="position:sticky;top:96px;z-index:30;background:var(--arena);padding-bottom:10px">
+      <select id="selRefLista" onchange="renderLista()" style="display:none;width:100%;padding:12px 14px;border:1.5px solid var(--selva);border-radius:12px;font-size:14.5px;font-weight:700;background:var(--blanco);color:var(--selva);margin-bottom:10px"></select>
+      <input id="buscador" placeholder="🔍 Buscar nombre, apellido, DNI o barrio..." oninput="renderLista()" autocomplete="off"
+        style="width:100%;padding:13px 15px;border:1.5px solid var(--linea);border-radius:12px;font-size:15px;background:var(--blanco);box-shadow:var(--sombra)">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+        <button class="filtro-btn active" data-f="todos" onclick="setFiltro('todos')">Todos</button>
+        <button class="filtro-btn" data-f="porconv" onclick="setFiltro('porconv')">🔴 Por convencer</button>
+        <button class="filtro-btn" data-f="votante" onclick="setFiltro('votante')">Votantes</button>
+        <button class="filtro-btn" data-f="conf" onclick="setFiltro('conf')">De confianza</button>
+        <button class="filtro-btn" data-f="dups" onclick="setFiltro('dups')">⚠ Repetidos</button>
+      </div>
+    </div>
+    <div id="dupWarn" style="display:none;background:#fdf4e3;border:1.5px solid var(--amarillo);border-radius:11px;padding:12px 15px;font-size:13px;color:#8a6a1c;margin:12px 0"></div>
+    <div id="listaCount" style="font-size:12.5px;color:var(--gris);margin:14px 2px 10px;font-weight:600"></div>
+    <div class="chip-list" id="listaBody"></div>
+  </div>
+
+  <!-- DÍA D -->
+  <div class="view" id="view-diad">
+    <div class="view-head"><h2>🗳 Día de elección</h2><p>Todo lo del domingo en un solo lugar: móviles, mapa en vivo, escuelas, control de voto y fiscales.</p></div>
+
+    <div class="stat-grid" id="diadStats"></div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+      <button class="filtro-btn active" data-d="transporte" onclick="setDiadTab('transporte')"><span class="ti ti-car" aria-hidden="true"></span> Móviles</button>
+      <button class="filtro-btn" data-d="escuela" onclick="setDiadTab('escuela')"><span class="ti ti-building" aria-hidden="true"></span> Por escuela</button>
+      <button class="filtro-btn" data-d="control" onclick="setDiadTab('control')"><span class="ti ti-checkbox" aria-hidden="true"></span> Control</button>
+      <button class="filtro-btn" data-d="vivo" onclick="setDiadTab('vivo')"><span class="ti ti-map-pin" aria-hidden="true"></span> En vivo</button>
+      <button class="filtro-btn" data-d="fiscales" onclick="setDiadTab('fiscales')"><span class="ti ti-shield" aria-hidden="true"></span> Fiscales</button>
+    </div>
+
+    <!-- TRANSPORTE -->
+    <div id="diad-transporte">
+      <div id="repartirWrap"></div>
+      <div class="form-card" style="max-width:none;margin-bottom:20px">
+        <h3 style="font-size:15px;color:var(--selva);margin-bottom:14px">➕ Agregar auto</h3>
+        <div class="form-row">
+          <div class="form-field"><label>Conductor</label><input id="auCond" placeholder="Nombre del conductor"></div>
+          <div class="form-field"><label>Zona que cubre</label><input id="auZona" list="barriosList" placeholder="Centro" autocomplete="off"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Capacidad (pasajeros)</label><input id="auCap" type="number" min="1" value="4"></div>
+          <div class="form-field"><label>Teléfono <span class="opt">(opcional)</span></label><input id="auTel" placeholder="3757-..."></div>
+        </div>
+        <div class="form-row">
+          <div class="form-field"><label>Modelo / color <span class="opt">(opcional)</span></label><input id="auModelo" placeholder="Gol gris, Hilux blanca..."></div>
+          <div class="form-field"><label>Dominio / patente <span class="opt">(opcional)</span></label><input id="auDominio" placeholder="AB123CD" style="text-transform:uppercase"></div>
+        </div>
+        <button class="btn-add" onclick="agregarAuto()">Agregar auto</button>
+        <div class="helper" style="margin-top:8px">El modelo y la patente sirven para que la gente reconozca el auto que la va a buscar.</div>
+      </div>
+      <div id="movByRef"></div>
+    </div>
+
+    <!-- POR ESCUELA -->
+    <div id="diad-escuela" style="display:none">
+      <div class="note" style="border-left-color:var(--azul);margin-top:0;margin-bottom:16px">Tu gente agrupada por <b>dónde vota</b> (escuela y mesa). Tocá una escuela para ver sus mesas, y una mesa para ver los nombres e ir tachando.</div>
+      <div id="escuelaList"></div>
+    </div>
+
+    <!-- CONTROL -->
+    <div id="diad-control" style="display:none">
+      <div class="note" style="border-left-color:var(--verde-ok);margin-top:0;margin-bottom:16px">Tildá a cada persona cuando confirmes que <b>ya votó</b>. El tablero de arriba se actualiza solo.</div>
+      <input id="buscadorDiaD" placeholder="🔍 Buscar persona..." oninput="renderControl()" autocomplete="off"
+        style="width:100%;padding:12px 15px;border:1.5px solid var(--linea);border-radius:12px;font-size:15px;background:var(--blanco);box-shadow:var(--sombra);margin-bottom:14px">
+      <div id="controlList" class="chip-list"></div>
+    </div>
+
+    <!-- EN VIVO (mapa GPS de autos) -->
+    <div id="diad-vivo" style="display:none">
+      <div class="note" style="margin-top:0;margin-bottom:14px">Los autos que estén <b>compartiendo ubicación</b> desde su link de conductor aparecen acá. El mapa se actualiza solo cada 20 segundos.</div>
+      <div id="mapaVivo" style="height:420px;border-radius:16px;border:1px solid var(--linea);background:var(--arena-2)"></div>
+      <div id="vivoLista" style="margin-top:14px"></div>
+    </div>
+
+    <!-- FISCALES (dentro de Día de elección, solo coordinación) -->
+    <div id="diad-fiscales" style="display:none">
+    <div class="view-head"><h2>Fiscales de mesa</h2><p>Armá tu red de fiscales. Buscalos por DNI: la app propone su propia mesa (donde votan ellos), y podés cambiarla si hace falta.</p></div>
+    <div id="fiscalesResumen" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"></div>
+    <div class="form-card" style="margin-bottom:20px">
+      <h3 style="font-size:15px;color:var(--selva);margin-bottom:14px">🛡 Nuevo fiscal</h3>
+      <div class="form-field full"><label>DNI <span class="opt">(lo busca en el padrón)</span></label><input id="nfDni" placeholder="DNI del fiscal" oninput="onDniFiscal()" autocomplete="off"><div id="nfDniBox" class="padron-box"></div></div>
+      <div class="form-row">
+        <div class="form-field"><label>Nombre <span class="req">*</span></label><input id="nfNombre" placeholder="Nombre y apellido" autocomplete="off"></div>
+        <div class="form-field"><label>Teléfono</label><input id="nfTel" placeholder="3757-..."></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Mesa que fiscaliza <span class="req">*</span></label><input id="nfMesa" placeholder="ej: 2664" inputmode="numeric"><div class="helper" id="nfMesaHint" style="display:none"></div></div>
+        <div class="form-field" style="display:flex;align-items:flex-end"><label style="display:flex;align-items:center;gap:9px;font-size:14.5px;cursor:pointer;padding-bottom:12px"><input type="checkbox" id="nfConf" style="width:19px;height:19px"> Confirmó que va</label></div>
+      </div>
+      <button class="btn-add" onclick="guardarFiscalForm()">Guardar fiscal</button>
+    </div>
+    <h3 style="font-size:15px;color:var(--selva);margin:0 0 12px">Fiscales cargados</h3>
+    <div id="fiscalesLista"></div>
+    </div>
+  </div>
+
+  <!-- MAPA -->
+  <div class="view" id="view-mapa">
+    <div class="view-head"><h2>Votos posibles por barrio</h2><p>Dónde está concentrada tu red. Te muestra dónde reforzar.</p></div>
+    <div class="barrio-grid" id="barrioGrid"></div>
+    <div class="note"><b>Próximo paso:</b> con el DNI cargado, cuando subamos el padrón electoral 2023 el sistema busca solo en qué mesa y circuito vota cada persona, y te marca quién está habilitado.</div>
+  </div>
+
+  <!-- REFERENTES (solo coordinación) -->
+  <div class="view" id="view-referentes">
+    <div class="view-head"><h2>Referentes</h2><p>Dar de alta, editar y administrar tu red de referentes.</p></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+      <button onclick="exportarContactos()" style="background:var(--selva);color:#fff;border-radius:11px;padding:12px 18px;font-size:13.5px;font-weight:700"><span class="ti ti-download" aria-hidden="true"></span> Descargar contactos (Excel)</button>
+      <button onclick="exportarReferentes()" style="background:var(--arena-2);color:var(--tinta);border-radius:11px;padding:12px 18px;font-size:13.5px;font-weight:700"><span class="ti ti-download" aria-hidden="true"></span> Descargar resumen de referentes</button>
+    </div>
+    <div class="form-card" style="margin-bottom:24px">
+      <h3 style="font-size:15px;color:var(--selva);margin-bottom:14px">➕ Nuevo referente</h3>
+      <div class="form-row">
+        <div class="form-field"><label>Nombre y apellido <span class="req">*</span></label><input id="nrNombre" placeholder="Juan Pérez"></div>
+        <div class="form-field"><label>Usuario <span class="req">*</span></label><input id="nrUsuario" placeholder="juanp" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Categoría</label>
+          <select id="nrCat"><option value="barrial">Referente Barrial</option><option value="politico">Referente Político</option><option value="sectorial">Referente Sectorial</option></select>
+        </div>
+        <div class="form-field"><label>Zona / Barrio</label><input id="nrZona" list="barriosList" placeholder="Centro" autocomplete="off"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field"><label>Meta de votos</label><input id="nrMeta" type="number" min="1" placeholder="100" value="100"></div>
+        <div class="form-field"><label>Clave inicial <span class="req">*</span></label><input id="nrClave" placeholder="se la pasás por WhatsApp"></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--tinta);font-weight:600;cursor:pointer;margin:4px 0 6px">
+        <input type="checkbox" id="nrCoord" style="width:18px;height:18px;accent-color:var(--tierra)">
+        Darle acceso de coordinación (ve la red de otros referentes)
+      </label>
+      <div class="helper" style="background:#eef4f1;border-left:3px solid var(--azul);padding:9px 12px;border-radius:8px;margin-bottom:12px">🔒 Al crear el referente se genera su usuario y clave en la base. Pasale los datos por WhatsApp para que pueda entrar.</div>
+      <button class="btn-add" onclick="crearReferente()">Crear referente</button>
+    </div>
+    <button onclick="cargarReferentesDB();toast('Actualizado',true)" style="background:var(--arena-2);color:var(--tinta);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;margin-bottom:12px">🔄 Actualizar lista</button>
+    <table id="refAdminTable"><thead><tr>
+      <th>Referente</th><th class="hide-sm">Usuario</th><th>Categoría</th><th class="hide-sm">Zona</th><th>Estado</th><th>Acceso</th><th></th>
+    </tr></thead><tbody></tbody></table>
+
+    <h3 style="font-size:15px;color:var(--selva);margin:30px 0 12px">🏘 Barrios de la campaña</h3>
+    <div class="form-card" style="max-width:none">
+      <div style="display:flex;gap:9px;margin-bottom:14px">
+        <input id="nuevoBarrio" placeholder="Agregar un barrio nuevo" style="flex:1;padding:11px 13px;border:1.5px solid var(--linea);border-radius:10px;font-size:14.5px;background:var(--arena)">
+        <button class="btn-add" style="margin:0" onclick="agregarBarrio()">Agregar</button>
+      </div>
+      <div id="barriosChips" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      <div class="helper" style="margin-top:10px">Estos barrios aparecen como sugerencia al cargar gente y referentes. Tocá la ✕ para quitar uno.</div>
+    </div>
+  </div>
+
+  </div>
+
+<!-- MODAL EDITAR -->
+<div id="modalBg" style="display:none;position:fixed;inset:0;background:rgba(15,61,46,.45);z-index:200;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--blanco);border-radius:18px;padding:24px;width:100%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow:auto">
+    <h3 id="modalTit" style="font-size:18px;color:var(--selva);margin-bottom:16px">Editar</h3>
+    <div id="modalBody"></div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn-add" style="flex:1" onclick="guardarEdit()">Guardar cambios</button>
+      <button onclick="cerrarModal()" style="padding:12px 18px;border-radius:11px;background:var(--arena-2);color:var(--tinta);font-weight:700">Cancelar</button>
+    </div>
+    <button id="btnBorrar" onclick="borrarRegistro()" style="width:100%;margin-top:10px;padding:11px;border-radius:11px;background:#fbe9e6;color:var(--rojo);font-weight:700;font-size:13.5px">🗑 Borrar este registro</button>
+  </div>
+</div>
+
+<script>
+let REFERENTES = []; // se llena desde la tabla usuarios al iniciar sesión
+const CATS={politico:'Político',barrial:'Barrial',sectorial:'Sectorial'};
+const CAT_COLOR={politico:'var(--tierra)',barrial:'var(--azul)',sectorial:'var(--selva)'};
+
+// REGISTROS: tipo 'persona'(votante) o 'conf'(persona de confianza, votosPos = lo que trae)
+// ref = id del referente dueño. padre = (futuro) id de persona de confianza de quien cuelga.
+let REGISTROS = []; // se llena desde la base al iniciar sesión
+
+// padrón simulado: cuando cargás uno de estos DNI, "aparece" en el padrón
+// Padrón de PRUEBA — 3 DNI de ejemplo. El padrón real (76.628 electores) va en la versión final con Supabase.
+const PADRON_DEMO = {
+  '18234567':{apellido:'CERBIN', nombre:'GRACIELA NOEMI', mesa:'1052', circuito:'Iguazú Centro', clase:'1972', domicilio:'AV CENTRO 100'},
+  '16998877':{apellido:'CUENCA', nombre:'ROBERTO', mesa:'1048', circuito:'Iguazú Centro', clase:'1968', domicilio:'BARRIO CENTRO'},
+  '33445566':{apellido:'MOREIRA', nombre:'MATIAS', mesa:'1090', circuito:'Costa Norte', clase:'1989', domicilio:'COSTA NORTE'},
+};
+
+let EVENTOS = []; // se llena desde la tabla eventos al iniciar sesión
+
+let BARRIOS = ['Centro','1º de Mayo','2000 Hectáreas','Las Leñas','Villa Nueva','Ñandú','Costa Norte','1000 Viviendas','Las Orquídeas','San Cayetano','Itá','Yacuy','Integración','Brasilera','Ex Combatientes','Lote A','Lote B','Lote 7','Lote 8','Lote 14','Lote 47','Don Bosco','Santa Rosa','Las Américas','Belén','Obrero','Ramón Mercado','Costa Brava','Calle Río Paraná','Otro'];
+const MESES=['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+let AUTOS=[]; // se llena desde la tabla autos al iniciar sesión
+let current=null, tipoCarga='persona', softOk=false, seq=100;
+
+async function login(){
+  const usuario=(document.getElementById('inUsuario').value||'').trim().toLowerCase();
+  const clave=document.getElementById('pass').value||'';
+  const errBox=document.getElementById('loginError');
+  const btn=document.getElementById('btnEntrar');
+  errBox.style.display='none';
+  if(!usuario||!clave){errBox.textContent='Poné usuario y clave.';errBox.style.display='block';return;}
+
+  if(!sb)initSupabase();
+  if(!sb){errBox.textContent='No se pudo conectar con la base. Revisá tu internet.';errBox.style.display='block';return;}
+
+  btn.textContent='Entrando...'; btn.disabled=true;
+  try{
+    const {data,error}=await sb.rpc('login_usuario',{p_usuario:usuario,p_clave:clave});
+    if(error)throw error;
+    if(!data||!data.length){
+      errBox.textContent='Usuario o clave incorrectos.';errBox.style.display='block';
+      btn.textContent='Entrar'; btn.disabled=false; return;
+    }
+    const u=data[0];
+    current={id:u.id, nombre:u.nombre, usuario:u.usuario,
+             role:u.rol==='coordinacion'?'admin':'ref', coord:!!u.coord};
+    iniciarSesion();
+  }catch(e){
+    console.error(e);
+    errBox.textContent='Error al entrar: '+(e.message||e);errBox.style.display='block';
+    btn.textContent='Entrar'; btn.disabled=false;
+  }
+}
+function iniciarSesion(){
+  const btn=document.getElementById('btnEntrar');
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('userName').textContent=current.nombre;
+  document.getElementById('roleTag').textContent=current.role==='admin'?'Coordinación':(current.coord?'Referente + Coord.':'Referente');
+  document.getElementById('barriosList').innerHTML=BARRIOS.map(b=>`<option value="${b}">`).join('');
+  if(btn){btn.textContent='Entrar'; btn.disabled=false;}
+  document.getElementById('pass').value='';
+  buildTabs(); renderAll();
+  // primero los referentes (para poder mostrar bien quién cargó cada registro),
+  // después el resto
+  cargarReferentesDB().then(()=>{
+    cargarRegistrosDB();
+  });
+  cargarAutosDB();      // traer los autos del día D
+  cargarEventosDB();    // traer la agenda
+  cargarBarriosDB();    // traer los barrios
+  cargarFiscalesDB();   // traer los fiscales de mesa
+}
+
+/* ============ CAPA DE BASE DE DATOS — REGISTROS ============ */
+// Convierte una fila de la base (columnas SQL) al formato que usa la app
+function filaABApp(r){
+  // el nombre del referente se busca por su id en REFERENTES (no del que está mirando)
+  const refUser=REFERENTES.find(u=>u.id===r.ref_id);
+  return {
+    id:r.id, tipo:r.tipo, nombre:r.nombre, apellido:r.apellido,
+    dni:r.dni||'', tel:r.tel||'', barrio:r.barrio||'', estado:r.estado||'cont',
+    votosPos:r.votos_pos||1, mesa:r.mesa||'', circuito:r.circuito||'',
+    ref:r.ref_id, refNom:refUser?refUser.nombre:'(sin referente)', padre:r.padre_id||undefined,
+    transporte:!!r.transporte, voto:!!r.voto, abordo:!!r.abordo, autoId:r.auto_id||undefined,
+    visita:!!r.visita, prioritaria:!!r.prioritaria
+  };
+}
+// Convierte un registro de la app al formato de la base (columnas SQL)
+function appAFila(p){
+  return {
+    tipo:p.tipo, nombre:p.nombre, apellido:p.apellido,
+    dni:p.dni||null, tel:p.tel||null, barrio:p.barrio||null, estado:p.estado||'cont',
+    votos_pos:p.votosPos||1, mesa:p.mesa||null, circuito:p.circuito||null,
+    ref_id:p.ref||current.id, padre_id:p.padre||null,
+    transporte:!!p.transporte, voto:!!p.voto, auto_id:p.autoId||null,
+    visita:!!p.visita, prioritaria:!!p.prioritaria,
+    creado_por:current.id
+  };
+}
+// Leer todos los registros de la base
+async function cargarRegistrosDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('registros').select('*').order('creado_en',{ascending:false});
+    if(error)throw error;
+    if(data){
+      REGISTROS = data.map(filaABApp);
+      renderAll();
+    }
+  }catch(e){ console.error('cargar registros:', e); toast('No se pudieron leer los registros de la base.'); }
+}
+// Leer los referentes (usuarios) de la base
+async function cargarReferentesDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('usuarios').select('id,usuario,nombre,rol,coord,categoria,zona,meta,estado').order('nombre');
+    if(error)throw error;
+    if(data){
+      if(!data.length){toast('La base no devolvió referentes (puede ser un tema de permisos RLS).');}
+      REFERENTES = data.map(u=>({
+        id:u.id, nombre:u.nombre, usuario:u.usuario,
+        cat:u.categoria||'barrial', zona:u.zona||'', estado:u.estado||'activo',
+        meta:u.meta||100, coord:!!u.coord, rol:u.rol
+      }));
+      renderAll();
+    }
+  }catch(e){ console.error('cargar referentes:', e); toast('Error al leer referentes: '+(e.message||e)); }
+}
+// Leer autos del día D
+let REUNIONES=[];
+async function cargarReunionesDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('reuniones').select('*').order('fecha',{ascending:false});
+    if(error)throw error;
+    if(data){REUNIONES=data.map(r=>({id:r.id,ref:r.ref_id,fecha:r.fecha,lugar:r.lugar||'',asistentes:r.asistentes||0,nota:r.nota||''}));renderReuniones();renderDash();}
+  }catch(e){console.error('reuniones:',e);}
+}
+async function agregarReunion(){
+  const ref=document.getElementById('ruRef').value;
+  const fecha=document.getElementById('ruFecha').value;
+  const asist=parseInt(document.getElementById('ruAsist').value)||0;
+  const lugar=document.getElementById('ruLugar').value.trim();
+  const nota=document.getElementById('ruNota').value.trim();
+  if(!ref){alert('Elegí un referente.');return;}
+  if(!fecha){alert('Poné la fecha.');return;}
+  if(!sb){alert('Sin conexión.');return;}
+  const {data,error}=await sb.from('reuniones').insert({ref_id:ref,fecha,lugar:lugar||null,asistentes:asist,nota:nota||null,creado_por:current.id}).select().single();
+  if(error){toast('Error: '+error.message);return;}
+  REUNIONES.unshift({id:data.id,ref,fecha,lugar,asistentes:asist,nota});
+  ['ruFecha','ruAsist','ruLugar','ruNota'].forEach(id=>document.getElementById(id).value='');
+  toast('Reunión registrada ✓',true);
+  renderReuniones();renderDash();
+}
+async function borrarReunion(id){
+  if(!confirm('¿Borrar esta reunión?'))return;
+  REUNIONES=REUNIONES.filter(r=>r.id!==id);renderReuniones();renderDash();
+  if(sb)await sb.from('reuniones').delete().eq('id',id);
+}
+function reunionesDe(refId){return EVENTOS.filter(e=>e.ref===refId).length;}
+// ==== FISCALES DE MESA ====
+let FISCALES=[]; // [{id, mesa, nombre, tel, confirmado}]
+async function cargarFiscalesDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('fiscales').select('*').order('mesa');
+    if(error)throw error;
+    if(data){FISCALES=data.map(f=>({id:f.id,mesa:f.mesa,nombre:f.nombre,tel:f.tel||'',confirmado:!!f.confirmado}));renderFiscales();renderDiaD();}
+  }catch(e){console.error('fiscales:',e);}
+}
+function fiscalDe(mesa){return FISCALES.find(f=>String(f.mesa)===String(mesa));}
+// buscar al fiscal en el padrón: autocompleta nombre y PROPONE SU PROPIA MESA
+async function onDniFiscal(){
+  const dni=normDni(document.getElementById('nfDni').value);
+  const box=document.getElementById('nfDniBox');
+  const hint=document.getElementById('nfMesaHint');
+  if(dni.length<7){box.className='padron-box';return;}
+  box.className='padron-box show';box.innerHTML='Buscando en el padrón...';
+  const m=await padronPorDniDB(dni);
+  if(normDni(document.getElementById('nfDni').value)!==dni)return;
+  if(m){
+    document.getElementById('nfNombre').value=m.nombres+' '+m.apellido;
+    document.getElementById('nfMesa').value=m.mesa;
+    box.className='padron-box show';
+    box.innerHTML=`✔ <b>${m.apellido}, ${m.nombres}</b> · vota en la mesa ${m.mesa}`;
+    hint.style.display='block';
+    hint.innerHTML=`Le propusimos <b>su propia mesa (${m.mesa})</b> — es lo más cómodo porque vota ahí. Cambiala si lo necesitás en otra.`;
+  }else{
+    box.className='padron-box show';
+    box.innerHTML='No figura en el padrón de Iguazú. Completá nombre y mesa a mano.';
+    hint.style.display='none';
+  }
+}
+async function guardarFiscalForm(){
+  const nombre=document.getElementById('nfNombre').value.trim();
+  const tel=document.getElementById('nfTel').value.trim();
+  const mesa=document.getElementById('nfMesa').value.trim();
+  const confirmado=document.getElementById('nfConf').checked;
+  if(!nombre){alert('Poné el nombre del fiscal.');return;}
+  if(!mesa){alert('Poné la mesa que va a fiscalizar.');return;}
+  if(!sb){alert('Sin conexión.');return;}
+  const existente=fiscalDe(mesa);
+  if(existente && !confirm(`La mesa ${mesa} ya tiene fiscal (${existente.nombre}). ¿Reemplazarlo?`))return;
+  if(existente){
+    const {error}=await sb.from('fiscales').update({nombre,tel:tel||null,confirmado}).eq('id',existente.id);
+    if(error){toast('Error: '+error.message);return;}
+    existente.nombre=nombre;existente.tel=tel;existente.confirmado=confirmado;
+  }else{
+    const {data,error}=await sb.from('fiscales').insert({mesa:String(mesa),nombre,tel:tel||null,confirmado}).select().single();
+    if(error){toast('Error: '+error.message);return;}
+    FISCALES.push({id:data.id,mesa:String(mesa),nombre,tel,confirmado});
+  }
+  ['nfDni','nfNombre','nfTel','nfMesa'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nfConf').checked=false;
+  document.getElementById('nfDniBox').className='padron-box';
+  document.getElementById('nfMesaHint').style.display='none';
+  toast('Fiscal guardado ✓',true);
+  renderFiscales();renderEscuela();
+}
+async function toggleConfFiscal(id){
+  const f=FISCALES.find(x=>x.id===id);if(!f)return;
+  f.confirmado=!f.confirmado;renderFiscales();renderEscuela();
+  if(sb)await sb.from('fiscales').update({confirmado:f.confirmado}).eq('id',id);
+}
+function renderFiscales(){
+  const res=document.getElementById('fiscalesResumen');
+  const lista=document.getElementById('fiscalesLista');
+  if(!res||!lista)return;
+  const total=FISCALES.length;
+  const conf=FISCALES.filter(f=>f.confirmado).length;
+  // mesas donde tenés gente cargada pero sin fiscal
+  const mesasConGente=[...new Set(REGISTROS.filter(p=>p.mesa).map(p=>String(p.mesa)))];
+  const sinCubrir=mesasConGente.filter(m=>!fiscalDe(m));
+  res.innerHTML=`
+    <div style="background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:12px 16px;flex:1;min-width:110px"><div style="font-size:22px;font-weight:800">${total}</div><div style="font-size:12px;color:var(--gris)">fiscales cargados</div></div>
+    <div style="background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:12px 16px;flex:1;min-width:110px"><div style="font-size:22px;font-weight:800;color:var(--verde-ok)">${conf}</div><div style="font-size:12px;color:var(--gris)">confirmados</div></div>
+    <div style="background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:12px 16px;flex:1;min-width:110px"><div style="font-size:22px;font-weight:800;color:${sinCubrir.length?'var(--rojo)':'var(--verde-ok)'}">${sinCubrir.length}</div><div style="font-size:12px;color:var(--gris)">mesas tuyas sin fiscal</div></div>`;
+  if(!FISCALES.length){lista.innerHTML='<div class="empty">Todavía no cargaste fiscales. Empezá por las mesas donde tenés más gente.</div>';return;}
+  const orden=[...FISCALES].sort((a,b)=>String(a.mesa).localeCompare(String(b.mesa),undefined,{numeric:true}));
+  lista.innerHTML=orden.map(f=>`
+    <div class="person-row">
+      <div class="who"><div><b>${f.nombre}</b> <span class="badge" style="background:var(--azul)">Mesa ${f.mesa}</span></div>
+        <div class="meta">${f.tel||'sin teléfono'}</div></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${f.tel?`<button onclick="abrirWA('${f.tel}')" title="WhatsApp" style="background:#e9f7ef;border-radius:8px;width:32px;height:32px"><span class="ti ti-brand-whatsapp" style="color:#25D366;font-size:17px" aria-hidden="true"></span></button>`:''}
+        <button onclick="toggleConfFiscal('${f.id}')" style="padding:8px 13px;border-radius:9px;font-size:12px;font-weight:700;${f.confirmado?'background:var(--verde-ok);color:#fff':'background:#faf3e6;color:#8a6a1c'}">${f.confirmado?'✓ Confirmó':'Sin confirmar'}</button>
+        <button onclick="abrirFiscal('${f.mesa}')" style="background:var(--arena-2);border-radius:8px;width:32px;height:32px;font-size:14px">✏️</button>
+      </div>
+    </div>`).join('');
+}
+function abrirFiscal(mesa){
+  const f=fiscalDe(mesa);
+  const m=document.createElement('div');
+  m.id='fiscalModal';
+  m.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+  m.onclick=e=>{if(e.target===m)m.remove();};
+  m.innerHTML=`<div style="background:var(--blanco);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom))">
+    <div style="width:40px;height:4px;background:var(--linea);border-radius:3px;margin:0 auto 16px"></div>
+    <h3 style="font-size:17px;color:var(--selva);margin-bottom:14px">Fiscal de la mesa ${mesa}</h3>
+    <div class="form-field"><label>Nombre <span class="req">*</span></label><input id="fiNombre" value="${f?f.nombre:''}" placeholder="Nombre y apellido" autocomplete="off"></div>
+    <div class="form-field"><label>Teléfono</label><input id="fiTel" value="${f?f.tel:''}" placeholder="3757-..."></div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:14.5px;margin:4px 0 16px;cursor:pointer"><input type="checkbox" id="fiConf" ${f&&f.confirmado?'checked':''} style="width:19px;height:19px"> Confirmó que va</label>
+    <div style="display:flex;gap:10px">
+      ${f?`<button onclick="borrarFiscal('${mesa}')" style="background:#fbe9e6;color:var(--rojo);border-radius:12px;padding:14px;font-weight:700;flex:1">Quitar</button>`:''}
+      <button onclick="document.getElementById('fiscalModal').remove()" style="flex:1;background:var(--arena-2);color:var(--tinta);border-radius:12px;padding:14px;font-weight:700">Cancelar</button>
+      <button onclick="guardarFiscal('${mesa}')" style="flex:2;background:var(--selva);color:#fff;border-radius:12px;padding:14px;font-weight:700">Guardar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('fiNombre').focus(),100);
+}
+async function guardarFiscal(mesa){
+  const nombre=document.getElementById('fiNombre').value.trim();
+  const tel=document.getElementById('fiTel').value.trim();
+  const confirmado=document.getElementById('fiConf').checked;
+  if(!nombre){alert('Poné el nombre del fiscal.');return;}
+  if(!sb){alert('Sin conexión.');return;}
+  const existente=fiscalDe(mesa);
+  if(existente){
+    const {error}=await sb.from('fiscales').update({nombre,tel:tel||null,confirmado}).eq('id',existente.id);
+    if(error){toast('Error: '+error.message);return;}
+    existente.nombre=nombre;existente.tel=tel;existente.confirmado=confirmado;
+  }else{
+    const {data,error}=await sb.from('fiscales').insert({mesa:String(mesa),nombre,tel:tel||null,confirmado}).select().single();
+    if(error){toast('Error: '+error.message);return;}
+    FISCALES.push({id:data.id,mesa:String(mesa),nombre,tel,confirmado});
+  }
+  document.getElementById('fiscalModal').remove();
+  toast('Fiscal guardado ✓',true);
+  renderEscuela();
+}
+async function borrarFiscal(mesa){
+  const f=fiscalDe(mesa);if(!f)return;
+  if(!confirm('¿Quitar al fiscal de la mesa '+mesa+'?'))return;
+  FISCALES=FISCALES.filter(x=>x.id!==f.id);
+  document.getElementById('fiscalModal')?.remove();
+  renderEscuela();
+  if(sb)await sb.from('fiscales').delete().eq('id',f.id);
+  toast('Fiscal quitado',true);
+}
+function descargarCSV(nombre, filas){
+  const csv = filas.map(f=>f.map(c=>{
+    const s=(c==null?'':String(c));
+    return /[",\n;]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;
+  }).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=nombre+'_'+new Date().toISOString().slice(0,10)+'.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('Descargado ✓',true);
+}
+function exportarContactos(){
+  const filas=[['Nombre','Apellido','DNI','Telefono','Tipo','Estado','Barrio','Mesa','Circuito','Referente','Transporte','Voto','Trae votos']];
+  REGISTROS.forEach(p=>{
+    filas.push([p.nombre,p.apellido,p.dni||'',p.tel||'',p.tipo==='conf'?'Confianza':'Votante',estLabel(p.estado),p.barrio||'',p.mesa||'',p.circuito||'',p.refNom||'',p.transporte?'Si':'',p.voto?'Si':'',p.tipo==='conf'?p.votosPos:'']);
+  });
+  descargarCSV('contactos_red_iguazu', filas);
+}
+function exportarReferentes(){
+  const filas=[['Referente','Usuario','Zona','Categoria','Estado','Votos proyectados','Votos cargados','Firmes','Contactos','Actividades en agenda']];
+  REFERENTES.forEach(r=>{
+    const suGente=REGISTROS.filter(x=>x.ref===r.id);
+    const v=votosDe(suGente);
+    filas.push([r.nombre,r.usuario,r.zona||'',r.cat||'',r.estado||'',v.proy,v.pos,v.firmes,suGente.filter(p=>p.tipo==='persona'||p.tipo==='conf').length,reunionesDe(r.id)]);
+  });
+  descargarCSV('referentes_red_iguazu', filas);
+}
+function renderReuniones(){
+  const sel=document.getElementById('ruRef');
+  if(sel){
+    const activos=REFERENTES.filter(r=>r.estado!=='inactivo').sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    const val=sel.value;
+    sel.innerHTML=activos.map(r=>`<option value="${r.id}">${r.nombre}</option>`).join('');
+    if(val)sel.value=val;
+  }
+  const cont=document.getElementById('reunionesList');if(!cont)return;
+  if(!REUNIONES.length){cont.innerHTML='<div class="empty">Todavía no registraste reuniones.</div>';return;}
+  cont.innerHTML=REUNIONES.map(r=>{
+    const ref=REFERENTES.find(u=>u.id===r.ref);
+    const fechaTxt=r.fecha?new Date(r.fecha+'T12:00').toLocaleDateString('es-AR',{day:'numeric',month:'short'}):'';
+    return `<div class="person-row">
+      <div class="who"><div><b>${ref?ref.nombre:'(referente)'}</b> <span class="badge" style="background:var(--azul)">${fechaTxt}</span></div>
+        <div class="meta">${r.lugar||'sin lugar'}${r.asistentes?' · '+r.asistentes+' personas':''}${r.nota?' · '+r.nota:''}</div></div>
+      <button onclick="borrarReunion('${r.id}')" style="background:var(--arena-2);border-radius:8px;width:32px;height:32px;font-size:14px">🗑</button>
+    </div>`;
+  }).join('');
+}
+async function cargarAutosDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('autos').select('*').order('creado_en');
+    if(error)throw error;
+    if(data){
+      AUTOS = data.map(a=>({id:a.id, conductor:a.conductor, cap:a.capacidad||4, barrio:a.barrio||'', tel:a.tel||'', modelo:a.modelo||'', dominio:a.dominio||'', enViaje:!!a.en_viaje, lat:a.lat, lng:a.lng, posTs:a.pos_ts}));
+      renderDiaD();
+    }
+  }catch(e){ console.error('cargar autos:', e); }
+}
+// Leer eventos de la agenda
+async function cargarEventosDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('eventos').select('*').order('fecha');
+    if(error)throw error;
+    if(data){
+      EVENTOS = data.map(e=>({id:e.id, tipo:e.tipo, titulo:e.titulo, fecha:e.fecha, turno:e.turno||'', lugar:e.lugar||'', nota:e.nota||'', ref:e.ref_id, refNom:e.ref_nom||''}));
+      renderAgenda();
+    }
+  }catch(e){ console.error('cargar eventos:', e); }
+}
+// Guardar un registro nuevo en la base; devuelve la fila guardada (con su id real)
+async function guardarRegistroDB(p){
+  if(!sb)return null;
+  const {data,error}=await sb.from('registros').insert(appAFila(p)).select().single();
+  if(error){ console.error('guardar registro:', error); toast('Error al guardar: '+error.message); return null; }
+  return filaABApp(data);
+}
+// Actualizar un registro existente en la base
+async function actualizarRegistroDB(id, cambios){
+  if(!sb)return false;
+  const {error}=await sb.from('registros').update(cambios).eq('id', id);
+  if(error){ console.error('actualizar registro:', error); toast('Error al actualizar: '+error.message); return false; }
+  return true;
+}
+// Borrar un registro de la base
+async function borrarRegistroDB(id){
+  if(!sb)return false;
+  const {error}=await sb.from('registros').delete().eq('id', id);
+  if(error){ console.error('borrar registro:', error); toast('Error al borrar: '+error.message); return false; }
+  return true;
+}
+// Aviso liviano (toast) arriba a la derecha
+function toast(msg, ok){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';
+    t.style.cssText='position:fixed;top:16px;right:16px;z-index:999;background:var(--selva);color:#fff;padding:12px 18px;border-radius:11px;font-size:13.5px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:300px';
+    document.body.appendChild(t);}
+  t.style.background=ok?'var(--verde-ok)':'var(--rojo)';
+  t.textContent=msg; t.style.display='block';
+  clearTimeout(window._toastT); window._toastT=setTimeout(()=>{t.style.display='none'},3500);
+}
+function renderAll(){renderDash();renderRecent();renderTree();renderAgenda();renderMapa();renderReferentes();renderFiscales();refreshUserSelect();refreshBarrios();renderLista();renderDiaD();}
+function logout(){current=null;document.getElementById('app').style.display='none';document.getElementById('login').style.display='flex';}
+function refreshUserSelect(){
+  // llenar el selector "¿de quién es?" en Cargar (solo para coordinación)
+  const campo=document.getElementById('campoRefAsignar');
+  const sel=document.getElementById('fRefAsignar');
+  if(!campo||!sel||!current)return;
+  const esCoord=current.role==='admin'||current.coord;
+  if(!esCoord){campo.style.display='none';return;}
+  campo.style.display='block';
+  const activos=REFERENTES.filter(r=>r.estado!=='inactivo');
+  // poner al usuario actual (Heber) primero, como opción por defecto
+  const yo=activos.find(r=>r.id===current.id);
+  const otros=activos.filter(r=>r.id!==current.id).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const ordenados=yo?[yo,...otros]:otros;
+  sel.innerHTML=ordenados.map(r=>`<option value="${r.id}"${r.id===current.id?' selected':''}>${r.nombre}${r.id===current.id?' (vos)':''}</option>`).join('');
+}
+let BARRIOS_DB=[]; // [{id, nombre}] desde la base
+async function cargarBarriosDB(){
+  if(!sb)return;
+  try{
+    const {data,error}=await sb.from('barrios').select('*').order('orden');
+    if(error)throw error;
+    if(data&&data.length){
+      BARRIOS_DB=data.map(b=>({id:b.id,nombre:b.nombre}));
+      BARRIOS=BARRIOS_DB.map(b=>b.nombre);
+      if(!BARRIOS.includes('Otro'))BARRIOS.push('Otro');
+      refreshBarrios();
+    }
+  }catch(e){ console.error('cargar barrios:', e); }
+}
+function refreshBarrios(){
+  const dl=document.getElementById('barriosList');
+  if(dl)dl.innerHTML=BARRIOS.map(b=>`<option value="${b}">`).join('');
+  const chips=document.getElementById('barriosChips');
+  if(chips)chips.innerHTML=BARRIOS.map((b,i)=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--arena-2);border-radius:20px;padding:5px 12px;font-size:12.5px;font-weight:600;color:var(--tinta)">${b}<button onclick="quitarBarrio('${b.replace(/'/g,"\\'")}')" style="background:none;color:var(--rojo);font-weight:800;font-size:15px;line-height:1;cursor:pointer">×</button></span>`).join('');
+}
+async function agregarBarrio(){
+  const inp=document.getElementById('nuevoBarrio');const b=inp.value.trim();
+  if(!b)return;
+  if(BARRIOS.some(x=>x.toLowerCase()===b.toLowerCase())){alert('Ese barrio ya está en la lista.');return;}
+  const otroIdx=BARRIOS.indexOf('Otro');
+  BARRIOS.splice(otroIdx>=0?otroIdx:BARRIOS.length,0,b);
+  inp.value='';refreshBarrios();
+  // GUARDAR EN LA BASE
+  if(sb){
+    const {data,error}=await sb.from('barrios').insert({nombre:b,orden:BARRIOS.length}).select().single();
+    if(error)toast('Error al guardar el barrio: '+error.message);
+    else{BARRIOS_DB.push({id:data.id,nombre:b});toast('Barrio agregado ✓',true);}
+  }
+}
+async function quitarBarrio(nombre){
+  if(nombre==='Otro')return;
+  if(!confirm(`¿Quitar "${nombre}" de la lista de barrios?`))return;
+  BARRIOS=BARRIOS.filter(x=>x!==nombre);refreshBarrios();
+  // BORRAR EN LA BASE
+  const reg=BARRIOS_DB.find(b=>b.nombre===nombre);
+  if(sb&&reg){
+    const {error}=await sb.from('barrios').delete().eq('id',reg.id);
+    if(error)toast('Error al borrar el barrio: '+error.message);
+    else{BARRIOS_DB=BARRIOS_DB.filter(b=>b.id!==reg.id);toast('Barrio quitado ✓',true);}
+  }
+}
+
+/* ---- GESTIÓN DE REFERENTES (contra la base) ---- */
+async function crearReferente(){
+  const nombre=document.getElementById('nrNombre').value.trim();
+  const usuario=document.getElementById('nrUsuario').value.trim().toLowerCase();
+  const cat=document.getElementById('nrCat').value;
+  const zona=document.getElementById('nrZona').value.trim()||null;
+  const meta=parseInt(document.getElementById('nrMeta').value)||100;
+  const clave=document.getElementById('nrClave').value.trim();
+  const coord=document.getElementById('nrCoord').checked;
+  if(!nombre||!usuario||!clave){alert('Faltan datos: nombre, usuario y clave inicial son obligatorios.');return;}
+  if(REFERENTES.find(r=>r.usuario===usuario)){alert('Ya existe un referente con ese usuario. Elegí otro.');return;}
+  if(!sb){alert('No hay conexión con la base.');return;}
+  const btn=document.querySelector('#view-referentes .btn-add');
+  if(btn){btn.textContent='Creando...';btn.disabled=true;}
+  try{
+    const {data,error}=await sb.rpc('crear_usuario',{
+      p_usuario:usuario, p_clave:clave, p_nombre:nombre,
+      p_rol:coord?'referente':'referente', p_coord:coord,
+      p_categoria:cat, p_zona:zona, p_meta:meta
+    });
+    if(error)throw error;
+    ['nrNombre','nrUsuario','nrZona','nrClave'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('nrMeta').value='100';document.getElementById('nrCoord').checked=false;
+    await cargarReferentesDB();
+    toast('Referente creado ✓', true);
+    alert(`Referente "${nombre}" creado y guardado en la base.\n\nUsuario: ${usuario}\nClave: ${clave}\n\nPasale estos datos por WhatsApp. ${coord?'Tiene acceso de coordinación.':'Acceso de referente.'}`);
+  }catch(e){
+    console.error(e);
+    alert('No se pudo crear: '+(e.message||e)+(/(duplicate|unique)/i.test(e.message||'')?'\n\nEse usuario ya existe.':''));
+  }
+  if(btn){btn.textContent='Crear referente';btn.disabled=false;}
+}
+function renderReferentes(){
+  const tb=document.querySelector('#refAdminTable tbody');if(!tb)return;
+  if(!REFERENTES.length){
+    tb.innerHTML='<tr><td colspan="7" style="padding:18px;text-align:center;color:var(--gris)">No hay referentes cargados todavía. Creá uno con el formulario de arriba, o tocá «🔄 Actualizar».</td></tr>';
+    return;
+  }
+  tb.innerHTML=REFERENTES.map(r=>{
+    const v=votosDe(REGISTROS.filter(x=>x.ref===r.id));
+    const estCol=r.estado==='activo'?'var(--verde-ok)':r.estado==='tibio'?'var(--amarillo)':'var(--gris)';
+    const esYo=r.id===current.id;
+    return `<tr${esYo?' style="background:#fbf3e8"':''}>
+      <td><span class="ref-name">${r.nombre}</span>${esYo?' <span class="badge" style="background:var(--selva)">vos</span>':''}<div style="font-size:11px;color:var(--gris)">${v.pos} votos · meta ${r.meta}</div></td>
+      <td class="hide-sm">${r.usuario}</td>
+      <td><span class="badge" style="background:${CAT_COLOR[r.cat]}">${CATS[r.cat]}</span></td>
+      <td class="hide-sm">${r.zona}</td>
+      <td><span class="semaforo" style="background:${estCol}"></span>${r.estado}</td>
+      <td>${r.coord?'<span class="badge" style="background:var(--tierra)">Coord.</span>':'Referente'}</td>
+      <td><button onclick="editRef('${r.id}')" style="background:var(--arena-2);border-radius:8px;width:30px;height:30px;font-size:14px">✏️</button></td>
+    </tr>`;
+  }).join('');
+}
+function editRef(id){
+  const r=REFERENTES.find(x=>x.id===id);if(!r)return;editRefId=id;
+  document.getElementById('modalTit').textContent=`Referente: ${r.nombre}`;
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-row">
+      <div class="form-field"><label>Nombre</label><input id="erNombre" value="${r.nombre}"></div>
+      <div class="form-field"><label>Usuario</label><input id="erUsuario" value="${r.usuario}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Categoría</label><select id="erCat">
+        <option value="barrial"${r.cat==='barrial'?' selected':''}>Barrial</option>
+        <option value="politico"${r.cat==='politico'?' selected':''}>Político</option>
+        <option value="sectorial"${r.cat==='sectorial'?' selected':''}>Sectorial</option></select></div>
+      <div class="form-field"><label>Zona</label><input id="erZona" list="barriosList" value="${r.zona}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Meta</label><input id="erMeta" type="number" value="${r.meta}"></div>
+      <div class="form-field"><label>Estado</label><select id="erEstado">
+        <option value="activo"${r.estado==='activo'?' selected':''}>Activo</option>
+        <option value="tibio"${r.estado==='tibio'?' selected':''}>Tibio</option>
+        <option value="inactivo"${r.estado==='inactivo'?' selected':''}>Inactivo</option></select></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600;cursor:pointer">
+      <input type="checkbox" id="erCoord" ${r.coord?'checked':''} style="width:18px;height:18px;accent-color:var(--tierra)">Acceso de coordinación</label>
+    <div class="form-field" style="margin-top:14px"><label>Resetear clave <span class="opt">(dejá vacío para no cambiarla)</span></label><input id="erClave" placeholder="nueva clave (opcional)"></div>`;
+  document.getElementById('btnBorrar').textContent='🗑 Dar de baja este referente';
+  document.getElementById('btnBorrar').setAttribute('onclick','bajaRef()');
+  document.getElementById('modalBg').querySelector('.btn-add').setAttribute('onclick','guardarRef()');
+  document.getElementById('modalBg').style.display='flex';
+}
+async function guardarRef(){
+  const r=REFERENTES.find(x=>x.id===editRefId);if(!r)return;
+  const id=editRefId;
+  r.nombre=document.getElementById('erNombre').value.trim()||r.nombre;
+  r.usuario=document.getElementById('erUsuario').value.trim().toLowerCase()||r.usuario;
+  r.cat=document.getElementById('erCat').value;
+  r.zona=document.getElementById('erZona').value.trim()||r.zona;
+  r.meta=parseInt(document.getElementById('erMeta').value)||r.meta;
+  r.estado=document.getElementById('erEstado').value;
+  r.coord=document.getElementById('erCoord').checked;
+  const claveNueva=document.getElementById('erClave')?document.getElementById('erClave').value.trim():'';
+  cerrarModal();restoreModalButtons();renderAll();
+  // GUARDAR EN LA BASE
+  if(sb){
+    const {error}=await sb.from('usuarios').update({
+      nombre:r.nombre, usuario:r.usuario, categoria:r.cat,
+      zona:r.zona, meta:r.meta, estado:r.estado, coord:r.coord
+    }).eq('id', id);
+    if(error){toast('Error al actualizar: '+error.message);}
+    else{
+      if(claveNueva){
+        const {error:e2}=await sb.rpc('resetear_clave',{p_usuario:r.usuario,p_clave_nueva:claveNueva});
+        if(e2)toast('Datos guardados, pero la clave no se pudo cambiar.');
+        else{toast('Datos y clave actualizados ✓',true);alert(`Clave de ${r.nombre} cambiada a: ${claveNueva}\nPasásela por WhatsApp.`);return;}
+      }
+      toast('Referente actualizado ✓',true);
+    }
+  }
+}
+async function bajaRef(){
+  const r=REFERENTES.find(x=>x.id===editRefId);if(!r)return;
+  const id=editRefId;
+  const n=REGISTROS.filter(x=>x.ref===id).length;
+  if(!confirm(`¿Dar de baja a ${r.nombre}?${n?` Tiene ${n} registro(s) cargados, que se conservan.`:''}\n\nNo podrá entrar más a la app, pero sus datos quedan.`))return;
+  // baja = marcar inactivo (conserva sus registros y su historial). No borramos el usuario.
+  r.estado='inactivo';
+  cerrarModal();restoreModalButtons();renderAll();
+  if(sb){
+    const {error}=await sb.from('usuarios').update({estado:'inactivo'}).eq('id',id);
+    if(error)toast('Error al dar de baja: '+error.message);
+    else toast('Referente dado de baja ✓',true);
+  }
+}
+function restoreModalButtons(){
+  const save=document.getElementById('modalBg').querySelector('.btn-add');
+  save.setAttribute('onclick','guardarEdit()');
+  const del=document.getElementById('btnBorrar');
+  del.textContent='🗑 Borrar este registro';del.setAttribute('onclick','borrarRegistro()');
+  editRefId=null;
+}
+let editRefId=null;
+
+function buildTabs(){
+  const esCoord = current.role==='admin'||current.coord;
+  // [id, label corto, ícono tabler]
+  const all = esCoord
+    ? [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Lista','ti-list'],['piramide','Pirámide','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Elección','ti-car'],['mapa','Mapa','ti-map-2'],['referentes','Referentes','ti-users']]
+    : [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Mi lista','ti-list'],['piramide','Mi red','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Elección','ti-car']];
+  window._tabs=all;
+  // barra superior (desktop): todas las pestañas
+  const c=document.getElementById('tabs');c.innerHTML='';
+  all.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.className='tab'+(i===0?' active':'');b.textContent=t[1];b.dataset.tab=t[0];
+    b.onclick=()=>goTab(t[0]);
+    c.appendChild(b);
+  });
+  // nav inferior (celular): Inicio · Lista · CARGAR (centro) · Agenda · Más
+  const nav=document.getElementById('bottomnav');nav.innerHTML='';
+  const slots=[
+    {tab:'dash',label:'Inicio',icon:'ti-home'},
+    {tab:'lista',label:esCoord?'Lista':'Mi lista',icon:'ti-list'},
+    {tab:'cargar',label:'Cargar',icon:'ti-plus',center:true},
+    {tab:'agenda',label:'Agenda',icon:'ti-calendar'},
+    {tab:'__mas',label:'Más',icon:'ti-dots',mas:true},
+  ];
+  slots.forEach(s=>{
+    const b=document.createElement('button');
+    if(s.center){
+      b.className='navbtn navcenter';b.dataset.tab=s.tab;
+      b.innerHTML=`<span class="navfab"><span class="ti ${s.icon}" aria-hidden="true"></span></span><span>${s.label}</span>`;
+      b.onclick=()=>goTab(s.tab);
+    }else if(s.mas){
+      b.className='navbtn';b.dataset.tab='__mas';
+      b.innerHTML=`<span class="ti ${s.icon}" aria-hidden="true"></span><span>${s.label}</span>`;
+      b.onclick=()=>abrirMas();
+    }else{
+      b.className='navbtn'+(s.tab==='dash'?' active':'');b.dataset.tab=s.tab;
+      b.innerHTML=`<span class="ti ${s.icon}" aria-hidden="true"></span><span>${s.label}</span>`;
+      b.onclick=()=>goTab(s.tab);
+    }
+    nav.appendChild(b);
+  });
+  goTab('dash');
+}
+function goTab(v){
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===v));
+  document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('active',x.dataset.tab===v));
+  showView(v);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function abrirMas(){
+  const all=window._tabs||[];
+  const enNav=['dash','lista','cargar','agenda']; // los que ya están en la barra
+  const resto=all.filter(t=>!enNav.includes(t[0]));
+  if(!resto.length)return;
+  const cont=document.createElement('div');
+  cont.id='masSheet';
+  cont.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end';
+  cont.onclick=e=>{if(e.target===cont)cont.remove();};
+  cont.innerHTML=`<div style="background:var(--blanco);width:100%;border-radius:20px 20px 0 0;padding:18px 18px calc(24px + env(safe-area-inset-bottom))">
+    <div style="width:40px;height:4px;background:var(--linea);border-radius:3px;margin:0 auto 16px"></div>
+    <div style="font-size:13px;color:var(--gris);font-weight:700;margin-bottom:12px">Más secciones</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      ${resto.map(t=>`<button onclick="document.getElementById('masSheet').remove();goTab('${t[0]}')" style="background:var(--arena);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;color:var(--tinta)"><span class="ti ${t[2]}" style="font-size:24px;color:var(--selva)" aria-hidden="true"></span><span style="font-size:14.5px;font-weight:700">${t[1]}</span></button>`).join('')}
+    </div></div>`;
+  document.body.appendChild(cont);
+}
+function showView(v){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.getElementById('view-'+v).classList.add('active');}
+
+function setTipo(t){
+  tipoCarga=t; softOk=false;
+  document.getElementById('tb-persona').classList.toggle('active',t==='persona');
+  document.getElementById('tb-conf').classList.toggle('active',t==='conf');
+  document.getElementById('campos-conf').style.display = t==='conf'?'block':'none';
+  clearAlert(true);
+}
+
+/* ---- PADRÓN REAL: busca en la base (43 mil electores) ---- */
+let _padronCache={}; // cache simple por DNI ya consultado
+async function padronPorDniDB(dni){
+  if(!dni||!sb)return null;
+  if(_padronCache[dni]!==undefined)return _padronCache[dni];
+  try{
+    const {data,error}=await sb.from('padron').select('*').eq('dni',dni).maybeSingle();
+    if(error)throw error;
+    _padronCache[dni]=data||null;
+    return data||null;
+  }catch(e){ console.error('padron dni:', e); return null; }
+}
+async function onDni(){
+  clearAlert();
+  const dni=normDni(document.getElementById('fDni').value);
+  const box=document.getElementById('padronBox');
+  const fn=document.getElementById('fNombre'), fa=document.getElementById('fApellido');
+  if(dni.length<7){
+    box.className='padron-box';
+    // si los datos venían del padrón y borran el DNI, limpiarlos para no guardar algo viejo
+    if(window._datosDePadron){fn.value='';fa.value='';window._datosDePadron=false;}
+    return;
+  }
+  box.className='padron-box show';
+  box.innerHTML='Buscando en el padrón...';
+  const m=await padronPorDniDB(dni);
+  // por si el usuario siguió tipeando, revalidar
+  if(normDni(document.getElementById('fDni').value)!==dni)return;
+  if(m){
+    // el padrón es la fuente oficial: SIEMPRE actualiza nombre y apellido al del DNI
+    fn.value=m.nombres;
+    fa.value=m.apellido;
+    window._datosDePadron=true;  // marca que estos datos vienen del padrón
+    // BARRIO AUTOMÁTICO: deducirlo del domicilio oficial (editable por si se mudó)
+    const fb=document.getElementById('fBarrio');
+    const bAuto=barrioDesdeDomicilio(m.domicilio);
+    let barrioMsg='';
+    if(fb && bAuto && (!fb.value.trim() || window._barrioDePadron)){
+      fb.value=bAuto; window._barrioDePadron=true;
+      barrioMsg=`<div style="font-size:11.5px;margin-top:6px;color:var(--verde-ok)">🏘 Barrio detectado: <b>${bAuto}</b> — editalo si se mudó.</div>`;
+    }
+    box.className='padron-box show';
+    box.innerHTML=`✔ <b>${m.apellido}, ${m.nombres}</b> — clase ${m.clase}
+      <div style="margin-top:8px;background:var(--azul);color:#fff;border-radius:9px;padding:9px 12px;font-size:13px">
+        <span class="ti ti-building" aria-hidden="true"></span> <b>Vota en:</b> ${m.circuito}<br>
+        <span class="ti ti-clipboard-list" aria-hidden="true"></span> <b>Mesa ${m.mesa}</b>
+      </div>
+      ${m.domicilio?`<div style="font-size:11.5px;margin-top:6px">📍 ${m.domicilio}</div>`:''}${barrioMsg}`;
+  }else{
+    // DNI no figura: si los campos venían del padrón anterior, limpiarlos para no confundir
+    if(window._datosDePadron){fn.value='';fa.value='';window._datosDePadron=false;}
+    if(window._barrioDePadron){const fb=document.getElementById('fBarrio');if(fb)fb.value='';window._barrioDePadron=false;}
+    box.className='padron-box show';
+    box.innerHTML=`Este DNI no figura en el padrón de Puerto Iguazú (circuito 80). Completá nombre y apellido a mano. Se guarda igual.`;
+  }
+}
+// Buscar en el padrón por nombre/apellido y sugerir
+let _buscarTimer=null;
+async function buscarPadronNombre(){
+  const ape=document.getElementById('fApellido').value.trim();
+  const nom=document.getElementById('fNombre').value.trim();
+  const box=document.getElementById('padronSug');
+  if(!box)return;
+  if((ape+nom).length<3){box.style.display='none';return;}
+  clearTimeout(_buscarTimer);
+  _buscarTimer=setTimeout(async()=>{
+    if(!sb)return;
+    try{
+      let q=sb.from('padron').select('dni,apellido,nombres,clase,domicilio,mesa,circuito').limit(20);
+      if(ape)q=q.ilike('apellido',ape+'%');
+      if(nom)q=q.ilike('nombres','%'+nom+'%');
+      const {data,error}=await q;
+      if(error)throw error;
+      if(!data||!data.length){box.style.display='none';return;}
+      box.style.display='block';
+      box.innerHTML=data.map(e=>`<div onclick='elegirDelPadron(${JSON.stringify(e).replace(/'/g,"&#39;")})' style="padding:10px 14px;border-bottom:1px solid var(--linea);cursor:pointer;font-size:13px" onmouseover="this.style.background='var(--arena)'" onmouseout="this.style.background='transparent'"><b>${e.apellido}, ${e.nombres}</b> <span style="color:var(--azul);font-weight:600">DNI ${e.dni}</span><div style="font-size:11px;color:var(--gris)">Mesa ${e.mesa} · clase ${e.clase}${e.domicilio?' · '+e.domicilio:''}</div></div>`).join('');
+    }catch(e){ console.error('buscar padron:', e); box.style.display='none'; }
+  },280);
+}
+function elegirDelPadron(e){
+  document.getElementById('fApellido').value=e.apellido;
+  document.getElementById('fNombre').value=e.nombres;
+  document.getElementById('fDni').value=e.dni;
+  document.getElementById('padronSug').style.display='none';
+  _padronCache[e.dni]=e;
+  onDni();
+}
+
+// ¿el DNI está verificado en el padrón? (usa cache; si no, queda en false hasta consultar)
+function dniVerificado(p){return p.dni&&_padronCache[normDni(p.dni)]?true:false;}
+
+// PESO POR ESTADO (lo que dice el referente)
+const PESO_ESTADO={porconv:0,cont:0.35,prom:0.55,conf:0.80};
+// La evidencia ajusta hacia arriba o abajo ese peso:
+//  - DNI verificado en padrón: +0.15 (oro)
+//  - tiene DNI pero sin verificar: +0.05
+//  - tiene teléfono: +0.05
+//  - es solo un número sin nombre (hijo fantasma): se trata como humo (0.15)
+function fuerzaVoto(p){
+  // "Por convencer" no cuenta nada en la proyección hasta que prometa
+  if(p.estado==='porconv')return 0;
+  let base=PESO_ESTADO[p.estado]??0.45;
+  if(dniVerificado(p))base+=0.15;
+  else if(p.dni)base+=0.05;
+  if(p.tel)base+=0.05;
+  return Math.min(0.97,base);
+}
+// nivel de evidencia textual (para mostrar)
+function nivelEvidencia(p){
+  if(dniVerificado(p))return {n:'Verificado',col:'var(--verde-ok)'};
+  if(p.dni)return {n:'Con DNI',col:'var(--azul)'};
+  if(p.tel)return {n:'Contactable',col:'var(--amarillo)'};
+  return {n:'Sin respaldo',col:'var(--gris)'};
+}
+
+// totales honestos de una lista
+function votosDe(list){
+  let pos=0,conf=0,proy=0,firmes=0;
+  list.forEach(r=>{
+    if(r.tipo==='conf'){
+      const hijos=REGISTROS.filter(x=>x.padre===r.id && list.includes(x));
+      const sinNombre=Math.max(0,r.votosPos-hijos.length);
+      // pos: la persona de confianza (1) + los votos que promete sin nombre.
+      // Los hijos con nombre se cuentan por sí solos en su propia iteración.
+      pos+=1+sinNombre;
+      proy+=fuerzaVoto(r)+sinNombre*0.15;
+      if(r.estado==='conf'&&(dniVerificado(r)||r.dni))firmes++;
+    }else{
+      pos+=r.votosPos;
+      proy+=fuerzaVoto(r);
+      if(r.estado==='conf')conf+=r.votosPos;
+      if(r.estado==='conf'&&(dniVerificado(r)||r.dni))firmes++;
+    }
+  });
+  return {pos,conf,proy:Math.round(proy),firmes};
+}
+
+// calidad de un referente: % con DNI, % con tel, y si está frío
+function calidadRef(refId){
+  const regs=REGISTROS.filter(x=>x.ref===refId);
+  const n=regs.length;
+  if(!n)return {n:0,pctDni:0,pctTel:0,score:0,nivel:'vacio'};
+  const conDni=regs.filter(x=>x.dni).length;
+  const conTel=regs.filter(x=>x.tel).length;
+  const pctDni=Math.round(conDni/n*100);
+  const pctTel=Math.round(conTel/n*100);
+  // score simple: mezcla de cobertura de DNI y teléfono
+  const score=Math.round(pctDni*0.65+pctTel*0.35);
+  let nivel='malo';
+  if(score>=60)nivel='bueno'; else if(score>=30)nivel='regular';
+  return {n,pctDni,pctTel,score,nivel};
+}
+
+function renderDash(){
+  if(!document.getElementById('homeHero'))return;
+  const isAdmin=current.role==='admin'||current.coord;
+  const mine = isAdmin?REGISTROS:REGISTROS.filter(r=>r.ref===current.id);
+  const {pos,conf,proy,firmes}=votosDe(mine);
+  const meta = isAdmin?REFERENTES.reduce((s,r)=>s+(r.meta||0),0):(REFERENTES.find(r=>r.id===current.id)?.meta||100);
+  const pct=meta?Math.min(100,Math.round(proy/meta*100)):0;
+  const contactos=mine.filter(p=>p.tipo==='persona'||p.tipo==='conf').length;
+
+  // HERO
+  if(isAdmin){
+    document.getElementById('homeHero').innerHTML=`
+      <div class="home-hero">
+        <div class="lab">Votos proyectados — toda la campaña</div>
+        <div class="big-row"><span class="big">${proy.toLocaleString('es-AR')}</span><span class="sub">de ${meta.toLocaleString('es-AR')} meta total</span></div>
+        <div class="track"><div class="fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }else{
+    // REFERENTE: meta en escalones fijos de 20
+    const ESCALON=20;
+    const escalonActual=Math.floor(proy/ESCALON)*ESCALON;
+    const proxMeta=escalonActual+ESCALON;
+    const faltan=proxMeta-proy;
+    const pctEsc=Math.round((proy-escalonActual)/ESCALON*100);
+    const totalEscalones=Math.ceil(meta/ESCALON);
+    const escalonNro=Math.floor(proy/ESCALON)+1;
+    const pips=Array.from({length:totalEscalones},(_,i)=>
+      `<span style="flex:1;height:5px;border-radius:3px;background:${i<Math.floor(proy/ESCALON)?'var(--tierra-claro)':'rgba(255,255,255,.2)'}"></span>`
+    ).join('');
+    document.getElementById('homeHero').innerHTML=`
+      <div class="home-hero">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span class="lab">Tu próxima meta</span>
+          <span style="color:var(--tierra-claro);font-size:13.5px;font-weight:700">${faltan>0?'faltan '+faltan:'¡meta cumplida!'}</span>
+        </div>
+        <div class="big-row"><span class="big">${proy}</span><span class="sub">de ${proxMeta} votos</span></div>
+        <div class="track"><div class="fill" style="width:${pctEsc}%"></div></div>
+        <div style="display:flex;gap:5px;margin-top:9px">${pips}</div>
+        <div style="font-size:11.5px;color:#9db8ab;margin-top:8px">Meta ${escalonNro} de ${totalEscalones} · objetivo final: ${meta}</div>
+      </div>`;
+  }
+
+  // STATS: ranking (solo referente) + firmes
+  let posRank='';
+  if(!isAdmin){
+    const orden=REFERENTES.map(r=>({id:r.id,proy:votosDe(REGISTROS.filter(x=>x.ref===r.id)).proy})).sort((a,b)=>b.proy-a.proy);
+    const pos=orden.findIndex(r=>r.id===current.id)+1;
+    posRank=`<div class="home-stat"><span class="ti ti-trophy" style="color:#ba7517" aria-hidden="true"></span><div class="n">${pos>0?pos+'º':'—'}</div><div class="l">de ${REFERENTES.length} referentes</div></div>`;
+  }else{
+    posRank=`<div class="home-stat"><span class="ti ti-users" style="color:var(--azul)" aria-hidden="true"></span><div class="n">${contactos.toLocaleString('es-AR')}</div><div class="l">contactos cargados</div></div>`;
+  }
+  document.getElementById('homeStats').innerHTML=`
+    ${posRank}
+    <div class="home-stat"><span class="ti ti-shield-check" style="color:var(--verde-ok)" aria-hidden="true"></span><div class="n">${firmes.toLocaleString('es-AR')}</div><div class="l">votos firmes</div></div>`;
+
+  // AVISO datos incompletos (solo referente, discreto)
+  const avisoEl=document.getElementById('homeAviso');
+  if(avisoEl){
+    const sinTel=mine.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&!p.tel).length;
+    const sinDni=mine.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&!p.dni).length;
+    if(!isAdmin && (sinTel>0||sinDni>0)){
+      const msgs=[];
+      if(sinDni>0)msgs.push(`${sinDni} sin DNI`);
+      if(sinTel>0)msgs.push(`${sinTel} sin teléfono`);
+      avisoEl.style.display='flex';
+      avisoEl.innerHTML=`<span class="ti ti-alert-circle" style="font-size:20px;color:var(--tierra)" aria-hidden="true"></span>
+        <span style="font-size:13px;color:#854f0b;flex:1">${msgs.join(' · ')} — completá para mejorar tus datos</span>
+        <span class="ti ti-chevron-right" style="font-size:18px;color:var(--tierra)" aria-hidden="true"></span>`;
+      avisoEl.onclick=()=>goTab('lista');
+    }else{avisoEl.style.display='none';}
+  }
+
+  // ACCESOS RÁPIDOS según rol
+  const quick = isAdmin
+    ? [['piramide','Pirámide','ti-binary-tree'],['diad','Elección','ti-car'],['referentes','Referentes','ti-users'],['lista','Lista completa','ti-list']]
+    : [['piramide','Mi red','ti-binary-tree'],['diad','Elección','ti-car'],['lista','Mi lista','ti-list'],['agenda','Agenda','ti-calendar']];
+  document.getElementById('homeQuick').innerHTML=quick.map(q=>
+    `<button class="home-qbtn" onclick="goTab('${q[0]}')"><span class="ti ${q[2]}" aria-hidden="true"></span><span class="t">${q[1]}</span></button>`
+  ).join('');
+
+  // botón Tablero PC (solo coordinación) — abre el dashboard en pestaña nueva
+  const tabPC=document.getElementById('homeTableroPC');
+  if(tabPC)tabPC.style.display=isAdmin?'flex':'none';
+
+  // ranking solo coordinación
+  document.getElementById('refTableWrap').style.display=isAdmin?'block':'none';
+  if(isAdmin){
+    const rows=REFERENTES.map(r=>{const v=votosDe(REGISTROS.filter(x=>x.ref===r.id));const q=calidadRef(r.id);return {...r,...v,q};}).sort((a,b)=>b.proy-a.proy);
+    const tb=document.querySelector('#refTable tbody');tb.innerHTML='';
+    rows.forEach(r=>{
+      const p=r.meta?Math.round(r.proy/r.meta*100):0;
+      let sem='s-gris'; if(p===0)sem='s-gris';else if(p<33)sem='s-rojo';else if(p<66)sem='s-amar';else sem='s-verde';
+      const qCol=r.q.nivel==='bueno'?'var(--verde-ok)':r.q.nivel==='regular'?'var(--amarillo)':r.q.nivel==='vacio'?'#c3c3c3':'var(--rojo)';
+      const qTxt=r.q.n?`${r.q.pctDni}% DNI`:'—';
+      const frio=esFrio(r.id);
+      const reus=reunionesDe(r.id);
+      tb.innerHTML+=`<tr><td class="ref-name">${r.nombre}${frio?' <span class="dup-flag" style="background:var(--azul);color:#fff">frío</span>':''}</td>
+        <td class="hide-sm">${r.zona}</td>
+        <td><span class="mini-bar"><i style="width:${Math.min(100,p)}%"></i></span>${p}%</td>
+        <td><span class="semaforo ${sem}"></span>${r.proy}<span style="color:var(--gris);font-size:11px">/${r.pos}</span></td>
+        <td><b style="color:${reus>0?'var(--selva)':'var(--gris)'}">${reus}</b> <span style="font-size:11px;color:var(--gris)">en agenda</span></td>
+        <td class="hide-sm"><span class="semaforo" style="background:${qCol}"></span><span style="font-size:11.5px">${qTxt}</span></td></tr>`;
+    });
+  }
+}
+// referente frío: tiene registros pero ninguno reciente (en demo: marca a los inactivos o sin carga)
+function esFrio(refId){
+  const r=REFERENTES.find(x=>x.id===refId);
+  if(r&&r.estado==='inactivo')return true;
+  const regs=REGISTROS.filter(x=>x.ref===refId);
+  return regs.length>0 && regs.length<2; // poca actividad (proxy en la demo)
+}
+
+function norm(s){return (s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+function estLabel(e){return e==='conf'?'Confirmado':e==='prom'?'Prometió':e==='porconv'?'Por convencer':'Contactado';}
+function estClass(e){return e==='conf'?'conf':e==='prom'?'prom':e==='porconv'?'porconv':'cont';}
+function normDni(s){return (s||'').replace(/\D/g,'');}
+// arma el link de WhatsApp normalizando números argentinos (0, 15, +54)
+function waLink(tel){
+  let n=(tel||'').replace(/\D/g,'');
+  if(n.length<8)return null;
+  if(n.startsWith('0'))n=n.slice(1);                 // sacar el 0 de área
+  const m=n.match(/^(\d{2,4})15(\d{6,8})$/);         // sacar el 15 del medio si está
+  if(m)n=m[1]+m[2];
+  if(n.startsWith('549')){/* ya está */}
+  else if(n.startsWith('54'))n='549'+n.slice(2);
+  else n='549'+n;
+  return 'https://wa.me/'+n;
+}
+function abrirWA(tel){const l=waLink(tel);if(l)window.open(l,'_blank');else alert('El teléfono no parece válido.');}
+// ==== deducir el barrio desde el domicilio del padrón ====
+const BARRIO_KEYS=[
+ [/2000\s*(HECTAREAS|HAS|HTAS)|B\.?\s*2000/, "2000 Hectáreas"],
+ [/600\s*(HECTAREAS|HAS)|SELVA\s*(Y|I)R(Y|I)APU/, "Selva Yryapú"],
+ [/1000\s*(VIVIENDAS|VDAS|VIV)|LAS\s*CALANDRIAS/, "1000 Viviendas"],
+ [/300\s*(VIVIENDAS|VDAS|VIV)/, "300 Viviendas"],
+ [/120\s*(VIVIENDAS|VDAS|VIV)/, "120 Viviendas"],
+ [/155\s*(VIVIENDAS|VDAS|VIV)/, "155 Viviendas"],
+ [/73\s*(VIVIENDAS|VDAS|VIV)/, "73 Viviendas"],
+ [/ORQUIDEA/, "Las Orquídeas"],
+ [/VILLA\s*ALTA|VA?\.?\s*ALTA/, "Villa Alta"],
+ [/VILLA\s*NUEVA|VA\.?\s*NUEVA/, "Villa Nueva"],
+ [/VILLA\s*14|VA\.?\s*14\b/, "Villa 14"],
+ [/STA\.?\s*ROSA|SANTA\s*ROSA/, "Santa Rosa"],
+ [/SANTA\s*M(ARIA)?\.?\s*DEL?\s*IGUAZU/, "Santa María"],
+ [/SAN\s*CAYETANO/, "San Cayetano"],
+ [/LAS\s*LE(Ñ|N)AS/, "Las Leñas"],
+ [/1\s*(RO|º|°)?\s*(DE\s*)?MAYO|PRIMERO\s*DE\s*MAYO/, "1º de Mayo"],
+ [/PRIMAVERA/, "Primavera"],
+ [/FLORIDA/, "Villa Florida"],
+ [/BEL(E|É)N/, "Belén"],
+ [/UNI(O|Ó)N/, "Unión"],
+ [/(Ñ|N)AND(U|Ú)/, "Ñandú"],
+ [/COSTA\s*NORTE/, "Costa Norte"],
+ [/COSTA\s*BRAVA/, "Costa Brava"],
+ [/ITA(EMBE)?\b|B\s*ITA\b/, "Itá"],
+ [/YACU(Y|I)\b/, "Yacuy"],
+ [/INTEGRACI(O|Ó)N/, "Integración"],
+ [/BRASILERA/, "Brasilera"],
+ [/EX\s*COMBATIENTES/, "Ex Combatientes"],
+ [/DON\s*BOSCO/, "Don Bosco"],
+ [/LAS\s*AMERICAS/, "Las Américas"],
+ [/OBRERO/, "Obrero"],
+ [/RAMON\s*MERCADO/, "Ramón Mercado"],
+ [/A(LTE|LMIRANTE)?\.?\s*BROWN/, "Almirante Brown"],
+ [/MALVINAS/, "Malvinas"],
+ [/COM(ANDANTE)?\.?\s*ANDRESITO/, "Cdte. Andresito"],
+ [/Z(ONA)?\.?\s*PORTUARIA/, "Zona Portuaria"],
+ [/LOTE\s*A\b/, "Lote A"],
+ [/LOTE\s*B\b/, "Lote B"],
+ [/LOTE\s*7\b/, "Lote 7"],
+ [/LOTE\s*8\b/, "Lote 8"],
+ [/LOTE\s*14\b/, "Lote 14"],
+ [/LOTE\s*47\b/, "Lote 47"],
+ [/RIO\s*PARANA/, "Calle Río Paraná"],
+ [/SAN\s*LORENZO/, "San Lorenzo"],
+ [/IPRODHA/, "IPRODHA"],
+ [/\bCENTRO\b/, "Centro"]
+];
+function normTxt(s){return (s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function barrioDesdeDomicilio(dom){
+  const d=normTxt(dom);
+  for(const [rx,b] of BARRIO_KEYS){ if(rx.test(d)) return b; }
+  return '';
+}
+
+async function tryAdd(){
+  const a=document.getElementById('dupAlert');
+  const nombre=document.getElementById('fNombre').value.trim();
+  const apellido=document.getElementById('fApellido').value.trim();
+  const dni=normDni(document.getElementById('fDni').value);
+  const tel=document.getElementById('fTel').value.trim();
+  const barrio=document.getElementById('fBarrio').value;
+  const estado=document.getElementById('fEstado').value;
+
+  if(!nombre||!apellido)return warn(a,'Faltan datos: nombre y apellido son obligatorios.');
+
+  // dedup fuerte por DNI (para los dos tipos)
+  if(dni){
+    const hit=REGISTROS.find(p=>normDni(p.dni)===dni);
+    if(hit)return hard(a,`<b>Ya está cargada.</b> Ese DNI pertenece a <b>${hit.nombre} ${hit.apellido}</b>, cargada por <b>${hit.refNom}</b>.`);
+  }else{
+    const hit=REGISTROS.find(p=>norm(p.nombre)===norm(nombre)&&norm(p.apellido)===norm(apellido));
+    if(hit&&!softOk){softOk=true;return soft(a,`<b>Posible repetido.</b> Ya hay un <b>${hit.nombre} ${hit.apellido}</b> cargado por <b>${hit.refNom}</b>. Si es otra persona, guardá de nuevo (mejor con DNI).`);}
+  }
+
+  const pad=dni?(_padronCache[dni]||await padronPorDniDB(dni)):null;
+  const mesa=pad?pad.mesa:'', circuito=pad?pad.circuito:'';
+  // ¿a qué referente se le asigna? coordinación puede elegir; un referente, siempre a sí mismo
+  const esCoord=current.role==='admin'||current.coord;
+  const refSel=document.getElementById('fRefAsignar');
+  const refId=(esCoord && refSel && refSel.value)?refSel.value:current.id;
+  const refUser=REFERENTES.find(u=>u.id===refId);
+  const refNombre=refUser?refUser.nombre:current.nombre;
+  let nuevo;
+  if(tipoCarga==='conf'){
+    const votos=parseInt(document.getElementById('fConfVotos').value)||0;
+    if(votos<1)return warn(a,'¿A cuánta gente trae esta persona de confianza?');
+    nuevo={tipo:'conf',nombre,apellido,dni,tel,votosPos:votos,barrio,estado,ref:refId,refNom:refNombre,mesa,circuito};
+  }else{
+    nuevo={tipo:'persona',nombre,apellido,dni,tel,votosPos:1,barrio,estado,ref:refId,refNom:refNombre,mesa,circuito};
+  }
+
+  // GUARDAR EN LA BASE
+  const btn=document.querySelector('#view-cargar .btn-add');
+  if(btn){btn.textContent='Guardando...';btn.disabled=true;}
+  const guardado=await guardarRegistroDB(nuevo);
+  if(btn){btn.textContent='Guardar';btn.disabled=false;}
+  if(!guardado){ warn(a,'No se pudo guardar en la base. Revisá tu internet e intentá de nuevo.'); return; }
+
+  guardado.refNom=current.nombre;
+  REGISTROS.unshift(guardado);
+  ok(a,`<b>Guardado en la base.</b> ${nombre} ${apellido}${mesa?' · vota en mesa '+mesa:''}.`);
+  toast('Guardado ✓', true);
+  document.getElementById('fConfVotos').value='';
+  ['fNombre','fApellido','fDni','fTel'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('padronBox').className='padron-box';
+  window._datosDePadron=false;
+  window._barrioDePadron=false;
+  document.getElementById('padronSug').style.display='none';
+  softOk=false; renderAll();
+}
+function warn(a,m){a.className='alert dup-soft show';a.innerHTML=m;}
+function soft(a,m){a.className='alert dup-soft show';a.innerHTML=m;}
+function hard(a,m){a.className='alert dup-hard show';a.innerHTML=m;}
+function ok(a,m){a.className='alert ok show';a.innerHTML=m;}
+function clearAlert(force){const a=document.getElementById('dupAlert');if(force||a.classList.contains('ok')){a.className='alert';softOk=false;}}
+
+function renderRecent(){
+  const mine=REGISTROS.filter(p=>current.role==='admin'||p.ref===current.id).slice(0,8);
+  const l=document.getElementById('recentList');
+  if(!mine.length){l.innerHTML='<div style="color:var(--gris);font-size:13px">Todavía no cargaste nada. Empezá arriba.</div>';return;}
+  l.innerHTML=mine.map(p=>{
+    const badge = p.tipo==='conf'?`<span class="badge badge-conf">trae ${p.votosPos}</span>`:`<span class="badge badge-vot">votante</span>`;
+    const sub = `${p.barrio}${p.dni?` · DNI ${p.dni}`:''}${current.role==='admin'?' · por '+p.refNom:''}`;
+    return `<div class="person-row"><div class="who"><div><b>${p.nombre} ${p.apellido}</b>${badge}</div><div class="meta">${sub}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="tag ${estClass(p.estado)}">${estLabel(p.estado)}</span>
+        <button onclick="abrirEdit('${p.id}')" title="Editar" style="background:var(--arena-2);border-radius:8px;width:30px;height:30px;font-size:14px">✏️</button>
+      </div></div>`;
+  }).join('');
+}
+
+/* ---- PIRÁMIDE ---- */
+function renderTree(){
+  const isAdmin=current.role==='admin'||current.coord;
+  // base: coordinación ve todos los referentes; un referente se ve a sí mismo
+  let refs = isAdmin?REFERENTES.slice():REFERENTES.filter(r=>r.id===current.id);
+  // asegurar que el usuario actual esté como nodo (aunque no esté en la lista de referentes)
+  if(!refs.find(r=>r.id===current.id)){
+    refs.unshift({id:current.id, nombre:current.nombre, zona:current.zona||'—', meta:current.meta||0, coord:current.coord});
+  }
+  // Solo coordinación ve huérfanos sueltos, agrupados aparte y claramente marcados,
+  // para no atribuirlos falsamente a nadie.
+  const idsValidos=new Set(refs.map(r=>r.id));
+  const huerfanos=isAdmin?REGISTROS.filter(p=>!p.ref||!idsValidos.has(p.ref)):[];
+  const cont=document.getElementById('tree'); cont.innerHTML='';
+  refs.forEach(r=>{
+    // gente del referente (cada uno la suya, sin mezclar)
+    let mis=REGISTROS.filter(x=>x.ref===r.id);
+    const v=votosDe(mis);
+    const confs=mis.filter(x=>x.tipo==='conf');
+    const sueltos=mis.filter(x=>x.tipo==='persona'&&!x.padre);
+    const ini=(r.nombre[0]||'?').toUpperCase();
+    let kids='';
+    confs.forEach(c=>{
+      const hijos=REGISTROS.filter(x=>x.padre===c.id);
+      let leafs=hijos.map(h=>`<div class="leaf"><span class="lnm">${h.nombre} ${h.apellido} <button onclick="event.stopPropagation();abrirEdit('${h.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">${estLabel(h.estado).toLowerCase()}${dniVerificado(h)?' · ✔padrón':h.dni?' · DNI':''}</span></div>`).join('');
+      const faltan=c.votosPos-hijos.length;
+      if(faltan>0) leafs+=`<div class="leaf"><span class="lmeta" style="font-style:italic">+ ${faltan} voto(s) sin nombre todavía</span></div>`;
+      const btnAdd=`<div class="leaf" style="border:none;padding:4px 0 8px"><button onclick="event.stopPropagation();addHijo('${c.id}')" style="background:#e6eef3;color:var(--azul);font-size:12px;font-weight:700;padding:6px 11px;border-radius:8px">+ Agregar nombre a la gente de ${c.nombre}</button></div>`;
+      kids+=`<div class="leaf" style="border:none;padding:6px 0 2px"><span class="lnm" style="color:var(--azul)">⭐ ${c.nombre} ${c.apellido} <button onclick="event.stopPropagation();abrirEdit('${c.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">trae ${c.votosPos}</span></div>${leafs}${btnAdd}`;
+    });
+    sueltos.forEach(s=>{kids+=`<div class="leaf"><span class="lnm">${s.nombre} ${s.apellido} <button onclick="event.stopPropagation();abrirEdit('${s.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">votante directo</span></div>`;});
+    if(!kids) kids='<div class="leaf"><span class="lmeta" style="font-style:italic">Sin gente cargada todavía. Cargá votantes o personas de confianza desde «Cargar».</span></div>';
+    cont.innerHTML+=`<div class="node lvl-ref">
+      <div class="node-head" onclick="toggleNode(this)">
+        <span class="caret">▶</span>
+        <div class="node-ava">${ini}</div>
+        <div class="node-info"><div class="nm">${r.nombre}</div><div class="sb">${r.zona||'—'} · ${confs.length} de confianza · meta ${r.meta||0}</div></div>
+        <div class="node-votos"><div class="big">${v.pos}</div><div class="lb">votos</div></div>
+      </div>
+      <div class="node-children">${kids}</div>
+    </div>`;
+  });
+  // Nodo de huérfanos (solo coordinación): registros de prueba o sin referente válido
+  if(huerfanos.length){
+    const confs=huerfanos.filter(x=>x.tipo==='conf');
+    const sueltos=huerfanos.filter(x=>x.tipo==='persona'&&!x.padre);
+    let kids='';
+    confs.forEach(c=>{
+      const hijos=huerfanos.filter(x=>x.padre===c.id);
+      let leafs=hijos.map(h=>`<div class="leaf"><span class="lnm">${h.nombre} ${h.apellido} <button onclick="event.stopPropagation();abrirEdit('${h.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">${estLabel(h.estado).toLowerCase()}</span></div>`).join('');
+      kids+=`<div class="leaf" style="border:none;padding:6px 0 2px"><span class="lnm" style="color:var(--azul)">⭐ ${c.nombre} ${c.apellido} <button onclick="event.stopPropagation();abrirEdit('${c.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">trae ${c.votosPos}</span></div>${leafs}`;
+    });
+    sueltos.forEach(s=>{kids+=`<div class="leaf"><span class="lnm">${s.nombre} ${s.apellido} <button onclick="event.stopPropagation();abrirEdit('${s.id}')" style="background:none;font-size:12px;opacity:.6">✏️</button></span><span class="lmeta">votante directo</span></div>`;});
+    cont.innerHTML+=`<div class="node lvl-ref" style="opacity:.85">
+      <div class="node-head" onclick="toggleNode(this)">
+        <span class="caret">▶</span>
+        <div class="node-ava" style="background:var(--gris)">?</div>
+        <div class="node-info"><div class="nm">Sin referente asignado</div><div class="sb">registros viejos o de prueba · revisá y reasigná o borrá</div></div>
+        <div class="node-votos"><div class="big">${votosDe(huerfanos).pos}</div><div class="lb">votos</div></div>
+      </div>
+      <div class="node-children">${kids}</div>
+    </div>`;
+  }
+}
+function toggleNode(h){h.classList.toggle('open');h.parentElement.querySelector('.node-children').classList.toggle('open');}
+
+/* ---- EDITAR / BORRAR / AGREGAR HIJO ---- */
+let editId=null;
+async function onDniEdit(){
+  const dni=normDni(document.getElementById('eDni').value);
+  const box=document.getElementById('eDniBox');
+  const fn=document.getElementById('eNombre'), fa=document.getElementById('eApellido');
+  if(dni.length<7){box.className='padron-box';return;}
+  box.className='padron-box show';box.innerHTML='Buscando en el padrón...';
+  const m=await padronPorDniDB(dni);
+  if(normDni(document.getElementById('eDni').value)!==dni)return;
+  if(m){
+    // el padrón es oficial: actualiza nombre y apellido
+    fn.value=m.nombres; fa.value=m.apellido;
+    box.className='padron-box show';
+    box.innerHTML=`✔ <b>${m.apellido}, ${m.nombres}</b> · Mesa ${m.mesa} · ${m.circuito}`;
+  }else{
+    box.className='padron-box show';
+    box.innerHTML='Ese DNI no figura en el padrón de Puerto Iguazú.';
+  }
+}
+function abrirEdit(id){
+  const p=REGISTROS.find(x=>x.id===id); if(!p)return;
+  editId=id;
+  document.getElementById('modalTit').textContent=`Editar: ${p.nombre} ${p.apellido}`;
+  const esConf=p.tipo==='conf';
+  document.getElementById('modalBody').innerHTML=`
+    <div class="form-row">
+      <div class="form-field"><label>Nombre</label><input id="eNombre" value="${p.nombre||''}"></div>
+      <div class="form-field"><label>Apellido</label><input id="eApellido" value="${p.apellido||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>DNI</label><input id="eDni" value="${p.dni||''}" placeholder="agregalo para ubicar dónde vota" oninput="onDniEdit()"><div id="eDniBox" class="padron-box"></div></div>
+      <div class="form-field"><label>Teléfono</label><input id="eTel" value="${p.tel||''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-field"><label>Barrio</label><input id="eBarrio" list="barriosList" value="${p.barrio||''}"></div>
+      <div class="form-field"><label>Estado</label><select id="eEstado"><option value="porconv"${p.estado==='porconv'?' selected':''}>Por convencer</option><option value="cont"${p.estado==='cont'?' selected':''}>Contactado</option><option value="prom"${p.estado==='prom'?' selected':''}>Prometió</option><option value="conf"${p.estado==='conf'?' selected':''}>Confirmado</option></select></div>
+    </div>
+    ${esConf?`<div class="form-field"><label>¿A cuánta gente trae?</label><input id="eVotos" type="number" min="1" value="${p.votosPos}"><div class="helper">Subilo o bajalo según lo que confirmes. Ya tiene ${REGISTROS.filter(x=>x.padre===p.id).length} nombre(s) cargado(s).</div></div>`:''}
+    ${(current.role==='admin'||current.coord)?`<div class="form-field"><label>Referente <span class="opt">(a quién pertenece)</span></label><select id="eRefAsignar">${REFERENTES.filter(r=>r.estado!=='inactivo').sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(r=>`<option value="${r.id}"${r.id===p.ref?' selected':''}>${r.nombre}${r.id===current.id?' (vos)':''}</option>`).join('')}</select><div class="helper">Cambialo si esta persona fue cargada para otro referente por error.</div></div>`:''}`;
+  document.getElementById('modalBg').style.display='flex';
+}
+async function guardarEdit(){
+  const p=REGISTROS.find(x=>x.id===editId); if(!p)return;
+  p.nombre=document.getElementById('eNombre').value.trim()||p.nombre;
+  p.apellido=document.getElementById('eApellido').value.trim();
+  p.dni=normDni(document.getElementById('eDni').value);
+  p.tel=document.getElementById('eTel').value.trim();
+  p.barrio=document.getElementById('eBarrio').value.trim()||p.barrio;
+  p.estado=document.getElementById('eEstado').value;
+  const ev=document.getElementById('eVotos'); if(ev){const nh=REGISTROS.filter(x=>x.padre===p.id).length;p.votosPos=Math.max(parseInt(ev.value)||p.votosPos,nh);}
+  // si el DNI ahora figura en el padrón, completar mesa/circuito
+  const pad=p.dni?(_padronCache[p.dni]||await padronPorDniDB(p.dni)):null;
+  if(pad){p.mesa=pad.mesa;p.circuito=pad.circuito;}
+  // reasignar referente (solo coordinación)
+  let refCambiado=null;
+  const refSel=document.getElementById('eRefAsignar');
+  if(refSel && refSel.value && refSel.value!==p.ref){
+    p.ref=refSel.value;
+    const ru=REFERENTES.find(u=>u.id===p.ref);
+    p.refNom=ru?ru.nombre:p.refNom;
+    refCambiado=p.ref;
+    // si es persona de confianza, mover también a su gente
+    REGISTROS.forEach(x=>{if(x.padre===p.id){x.ref=p.ref;x.refNom=p.refNom;}});
+  }
+  cerrarModal(); renderAll();
+  // GUARDAR EN LA BASE
+  const updates={
+    nombre:p.nombre, apellido:p.apellido, dni:p.dni||null, tel:p.tel||null,
+    barrio:p.barrio||null, estado:p.estado, votos_pos:p.votosPos,
+    mesa:p.mesa||null, circuito:p.circuito||null
+  };
+  if(refCambiado)updates.ref_id=refCambiado;
+  const okDB=await actualizarRegistroDB(p.id,updates);
+  // guardar el cambio de referente en la gente colgante también
+  if(refCambiado){
+    for(const x of REGISTROS.filter(y=>y.padre===p.id)){await actualizarRegistroDB(x.id,{ref_id:refCambiado});}
+  }
+  if(okDB)toast('Cambios guardados ✓', true);
+}
+async function borrarRegistro(){
+  const p=REGISTROS.find(x=>x.id===editId); if(!p)return;
+  const hijos=REGISTROS.filter(x=>x.padre===editId).length;
+  const msg=hijos?`Esta persona de confianza tiene ${hijos} nombre(s) colgando. Si la borrás, esos quedan sueltos. ¿Borrar igual?`:`¿Borrar a ${p.nombre} ${p.apellido}?`;
+  if(!confirm(msg))return;
+  const idBorrar=editId;
+  REGISTROS.forEach(x=>{if(x.padre===idBorrar)delete x.padre;});
+  REGISTROS=REGISTROS.filter(x=>x.id!==idBorrar);
+  cerrarModal(); renderAll();
+  // BORRAR EN LA BASE
+  const okDB=await borrarRegistroDB(idBorrar);
+  if(okDB)toast('Borrado ✓', true);
+}
+function cerrarModal(){document.getElementById('modalBg').style.display='none';editId=null;if(typeof restoreModalButtons==='function'&&editRefId!==null)restoreModalButtons();}
+function addHijo(confId){
+  const c=REGISTROS.find(x=>x.id===confId); if(!c)return;
+  const m=document.createElement('div');
+  m.id='hijoModal';
+  m.style.cssText='position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center';
+  m.onclick=e=>{if(e.target===m)m.remove();};
+  m.innerHTML=`<div style="background:var(--blanco);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom))">
+    <div style="width:40px;height:4px;background:var(--linea);border-radius:3px;margin:0 auto 16px"></div>
+    <h3 style="font-size:17px;color:var(--selva);margin-bottom:4px">Agregar a la gente de ${c.nombre}</h3>
+    <p style="font-size:13px;color:var(--gris);margin-bottom:16px">Cargá un nombre. Si tenés el DNI, lo ubicamos en el padrón.</p>
+    <div class="form-row">
+      <div class="form-field"><label>Nombre <span class="req">*</span></label><input id="hNombre" placeholder="Juan" autocomplete="off"></div>
+      <div class="form-field"><label>Apellido</label><input id="hApellido" placeholder="Pérez" autocomplete="off"></div>
+    </div>
+    <div class="form-field"><label>DNI <span class="opt">(opcional)</span></label><input id="hDni" placeholder="si lo tenés" oninput="onDniHijo()"><div id="hDniBox" class="padron-box"></div></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button onclick="document.getElementById('hijoModal').remove()" style="flex:1;background:var(--arena-2);color:var(--tinta);border-radius:12px;padding:14px;font-weight:700">Cancelar</button>
+      <button onclick="guardarHijo('${confId}')" style="flex:2;background:var(--tierra);color:#fff;border-radius:12px;padding:14px;font-weight:700">Guardar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('hNombre').focus(),100);
+}
+async function onDniHijo(){
+  const dni=normDni(document.getElementById('hDni').value);
+  const box=document.getElementById('hDniBox');
+  const fn=document.getElementById('hNombre'), fa=document.getElementById('hApellido');
+  if(dni.length<7){box.className='padron-box';return;}
+  box.className='padron-box show';box.innerHTML='Buscando...';
+  const m=await padronPorDniDB(dni);
+  if(normDni(document.getElementById('hDni').value)!==dni)return;
+  if(m){fn.value=m.nombres;fa.value=m.apellido;box.className='padron-box show';box.innerHTML=`✔ <b>${m.apellido}, ${m.nombres}</b> · Mesa ${m.mesa}`;}
+  else{box.className='padron-box show';box.innerHTML='No figura en el padrón. Se guarda igual.';}
+}
+async function guardarHijo(confId){
+  const c=REGISTROS.find(x=>x.id===confId); if(!c)return;
+  const nombre=document.getElementById('hNombre').value.trim();
+  const apellido=document.getElementById('hApellido').value.trim();
+  const dni=normDni(document.getElementById('hDni').value);
+  if(!nombre){alert('Poné al menos el nombre.');return;}
+  const pad=dni?(_padronCache[dni]||await padronPorDniDB(dni)):null;
+  const nuevo={tipo:'persona',nombre,apellido,dni,tel:'',votosPos:1,barrio:c.barrio,estado:'prom',ref:c.ref,refNom:c.refNom,padre:confId,
+    mesa:pad?pad.mesa:'',circuito:pad?pad.circuito:''};
+  const guardado=await guardarRegistroDB(nuevo);
+  if(!guardado){toast('No se pudo guardar.');return;}
+  guardado.refNom=c.refNom;
+  REGISTROS.unshift(guardado);
+  const nHijos=REGISTROS.filter(x=>x.padre===confId).length;
+  if(nHijos>c.votosPos){c.votosPos=nHijos;await actualizarRegistroDB(c.id,{votos_pos:c.votosPos});}
+  document.getElementById('hijoModal').remove();
+  toast('Nombre agregado ✓', true);
+  renderAll();
+}
+
+/* ---- AGENDA con TURNOS ---- */
+const TURNOS=['10:00–12:00','14:00–16:00','16:00–18:00','18:00–20:00'];
+function renderTurnos(){
+  const fecha=document.getElementById('evFecha').value;
+  const grid=document.getElementById('turnoGrid');
+  document.getElementById('evTurno').value='';
+  if(!fecha){grid.innerHTML='<div class="empty" style="grid-column:1/-1;padding:10px">Elegí una fecha para ver los turnos libres.</div>';return;}
+  const d=new Date(fecha+'T00:00');
+  if(d.getDay()===0){grid.innerHTML='<div class="empty" style="grid-column:1/-1;padding:10px;color:var(--rojo)">El domingo no hay turnos. Elegí de lunes a sábado.</div>';return;}
+  grid.innerHTML=TURNOS.map(t=>{
+    const tomado=EVENTOS.find(e=>e.fecha===fecha&&e.turno===t);
+    if(tomado){
+      return `<div style="padding:12px;border:1.5px solid var(--linea);border-radius:11px;background:var(--arena-2);opacity:.6;text-align:center">
+        <div style="font-weight:700;text-decoration:line-through;color:var(--gris)">${t}</div>
+        <div style="font-size:10.5px;color:var(--rojo);font-weight:600;margin-top:2px">OCUPADO</div></div>`;
+    }
+    return `<button type="button" onclick="elegirTurno('${t}',this)" style="padding:12px;border:1.5px solid var(--linea);border-radius:11px;background:var(--arena);font-weight:700;color:var(--tinta);cursor:pointer;transition:.12s">
+      ${t}<div style="font-size:10.5px;color:var(--verde-ok);font-weight:600;margin-top:2px">libre</div></button>`;
+  }).join('');
+}
+function elegirTurno(t,btn){
+  document.getElementById('evTurno').value=t;
+  document.querySelectorAll('#turnoGrid button').forEach(b=>{b.style.background='var(--arena)';b.style.borderColor='var(--linea)';b.style.color='var(--tinta)';});
+  btn.style.background='var(--selva)';btn.style.borderColor='var(--selva)';btn.style.color='#fff';
+}
+async function addEvento(){
+  const tipo=document.getElementById('evTipo').value;
+  const fecha=document.getElementById('evFecha').value;
+  const turno=document.getElementById('evTurno').value;
+  const titulo=document.getElementById('evTitulo').value.trim();
+  const lugar=document.getElementById('evLugar').value.trim();
+  const nota=document.getElementById('evNota').value.trim();
+  if(!fecha||!titulo){alert('Poné fecha y título.');return;}
+  if(!turno){alert('Elegí un turno disponible.');return;}
+  // doble chequeo por si dos cargan a la vez (agenda global)
+  if(EVENTOS.find(e=>e.fecha===fecha&&e.turno===turno)){alert('Ese turno se acaba de ocupar. Elegí otro.');renderTurnos();return;}
+  if(!sb){alert('Sin conexión con la base.');return;}
+  // GUARDAR EN LA BASE
+  const {data,error}=await sb.from('eventos').insert({tipo,titulo,fecha,turno,lugar:lugar||null,nota:nota||null,ref_id:current.id}).select().single();
+  if(error){
+    if(/(duplicate|unique)/i.test(error.message)){alert('Ese turno ya está ocupado. Elegí otro.');renderTurnos();}
+    else toast('Error al guardar el turno: '+error.message);
+    return;
+  }
+  EVENTOS.push({id:data.id,tipo,fecha,turno,titulo,lugar,nota,ref:current.id,refNom:current.nombre});
+  ['evTitulo','evLugar','evNota'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('evFecha').value='';document.getElementById('evTurno').value='';
+  document.getElementById('turnoGrid').innerHTML='<div class="empty" style="grid-column:1/-1;padding:10px">Elegí una fecha para ver los turnos libres.</div>';
+  renderAgenda();
+  toast('Turno reservado ✓',true);
+}
+function renderAgenda(){
+  const isAdmin=current.role==='admin'||current.coord;
+  const mine=EVENTOS.filter(e=>isAdmin||e.ref===current.id||e.ref==='admin')
+    .slice().sort((a,b)=>(a.fecha+(a.turno||'')).localeCompare(b.fecha+(b.turno||'')));
+  const l=document.getElementById('agendaList');
+  if(!mine.length){l.innerHTML='<div style="color:var(--gris);font-size:13px">No hay nada agendado. Reservá un turno arriba.</div>';return;}
+  l.innerHTML=mine.map(e=>{
+    const d=new Date(e.fecha+'T00:00');
+    const tEt = e.tipo==='visita'?'et-visita':e.tipo==='reunion'?'et-reunion':'et-acto';
+    const tNm = e.tipo==='visita'?'Visita':e.tipo==='reunion'?'Reunión':'Acto';
+    const puedeBorrar = isAdmin || e.ref===current.id;
+    return `<div class="ev">
+      <div class="ev-date"><div class="d">${d.getDate()}</div><div class="m">${MESES[d.getMonth()]}</div></div>
+      <div class="ev-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div class="ti">${e.titulo}</div><span class="ev-type ${tEt}">${tNm}</span>
+        </div>
+        <div class="me"><b>${e.turno||e.hora||'—'}</b> · ${e.lugar||'—'}${e.nota?'<br>'+e.nota:''}${isAdmin?'<br><span style="color:var(--tierra)">'+e.refNom+'</span>':''}</div>
+      </div>
+      ${puedeBorrar?`<button onclick="borrarEvento('${e.id}')" title="Cancelar turno" style="align-self:flex-start;background:var(--arena-2);border-radius:8px;width:32px;height:32px;font-size:14px;flex-shrink:0">🗑</button>`:''}
+    </div>`;
+  }).join('');
+}
+async function borrarEvento(id){
+  const e=EVENTOS.find(x=>x.id===id);if(!e)return;
+  if(!confirm(`¿Cancelar "${e.titulo}"? El turno queda libre para reservar de nuevo.`))return;
+  EVENTOS=EVENTOS.filter(x=>x.id!==id);
+  renderAgenda();renderTurnos();renderDash();
+  if(sb){
+    const {error}=await sb.from('eventos').delete().eq('id',id);
+    if(error)toast('Error al cancelar: '+error.message);
+    else toast('Turno cancelado ✓',true);
+  }
+}
+
+/* ---- LISTA + BUSCADOR + REPETIDOS ---- */
+let filtroLista='todos';
+function setFiltro(f){filtroLista=f;document.querySelectorAll('.filtro-btn').forEach(b=>b.classList.toggle('active',b.dataset.f===f));renderLista();}
+function claveDup(p){return p.dni?('dni:'+normDni(p.dni)):('nom:'+norm(p.nombre)+'|'+norm(p.apellido));}
+function mapaDuplicados(lista){
+  // cuenta cuántas veces aparece cada clave; >1 = repetido
+  const cuenta={};
+  lista.forEach(p=>{const k=claveDup(p);cuenta[k]=(cuenta[k]||0)+1;});
+  return cuenta;
+}
+function renderLista(){
+  const cont=document.getElementById('listaBody');if(!cont)return;
+  const esCoord=current.role==='admin'||current.coord;
+
+  // selector de referente (solo coordinación): por defecto "lo mío"
+  const selRef=document.getElementById('selRefLista');
+  if(esCoord && selRef){
+    if(!selRef.dataset.lleno || selRef.dataset.lleno!==String(REFERENTES.length)){
+      const yo=REFERENTES.find(r=>r.id===current.id);
+      const otros=REFERENTES.filter(r=>r.id!==current.id && r.estado!=='inactivo').sort((a,b)=>a.nombre.localeCompare(b.nombre));
+      selRef.innerHTML=`<option value="__mio">👤 Solo lo mío</option><option value="__todos">👥 Todos los referentes</option>`+
+        otros.map(r=>`<option value="${r.id}">${r.nombre}</option>`).join('');
+      selRef.dataset.lleno=String(REFERENTES.length);
+      if(!selRef.value)selRef.value='__mio'; // arranca en lo mío
+    }
+    selRef.style.display='block';
+  }else if(selRef){selRef.style.display='none';}
+
+  // alcance según el selector
+  const modo=esCoord&&selRef?selRef.value||'__mio':'__propio';
+  let base;
+  if(!esCoord) base=REGISTROS.filter(p=>p.ref===current.id);
+  else if(modo==='__todos') base=REGISTROS.slice();
+  else if(modo==='__mio') base=REGISTROS.filter(p=>p.ref===current.id);
+  else base=REGISTROS.filter(p=>p.ref===modo); // un referente puntual
+
+  const refElegido=(modo!=='__todos'&&modo!=='__mio'&&modo!=='__propio')?REFERENTES.find(r=>r.id===modo):null;
+  document.getElementById('listaTitle').textContent=
+    !esCoord?'Mi lista':
+    modo==='__todos'?'Lista completa':
+    modo==='__mio'?'Mi lista':
+    refElegido?'Lista de '+refElegido.nombre:'Lista';
+
+  // detección de repetidos sobre TODA la base visible (no sobre el filtro)
+  const dupCount=mapaDuplicados(base);
+  const totalDups=Object.values(dupCount).filter(n=>n>1).length;
+  const warn=document.getElementById('dupWarn');
+  if(totalDups>0){warn.style.display='block';warn.innerHTML=`⚠ Hay <b>${totalDups}</b> nombre(s)/DNI que aparecen más de una vez. Tocá el filtro <b>Repetidos</b> para revisarlos y borrar el que sobre.`;}
+  else{warn.style.display='none';}
+
+  const q=norm(document.getElementById('buscador').value);
+  let list=base.filter(p=>{
+    if(filtroLista==='votante'&&p.tipo!=='persona')return false;
+    if(filtroLista==='conf'&&p.tipo!=='conf')return false;
+    if(filtroLista==='porconv'&&p.estado!=='porconv')return false;
+    if(filtroLista==='dups'&&dupCount[claveDup(p)]<2)return false;
+    if(!q)return true;
+    return [p.nombre,p.apellido,p.dni,p.barrio,p.refNom].some(v=>norm(v||'').includes(q));
+  });
+  // ordenar: repetidos primero si filtro dups, sino alfabético por apellido
+  list.sort((a,b)=>norm(a.apellido+a.nombre).localeCompare(norm(b.apellido+b.nombre)));
+
+  document.getElementById('listaCount').textContent=`${list.length} resultado${list.length!==1?'s':''}${q?` para "${document.getElementById('buscador').value}"`:''}`;
+  if(!list.length){cont.innerHTML='<div class="empty">Nada para mostrar con este filtro o búsqueda.</div>';return;}
+  cont.innerHTML=list.map(p=>{
+    const esDup=dupCount[claveDup(p)]>1;
+    const badge=p.tipo==='conf'?`<span class="badge badge-conf">trae ${p.votosPos}</span>`:'';
+    const padre=p.padre?REGISTROS.find(x=>x.id===p.padre):null;
+    // puntitos de marca, chiquitos
+    const dots=[
+      p.prioritaria?'<span class="mk" style="background:var(--rojo)" title="urgente"></span>':'',
+      p.visita?'<span class="mk" style="background:var(--tierra)" title="visitar"></span>':'',
+      p.transporte?'<span class="mk" style="background:var(--azul)" title="transporte"></span>':''
+    ].filter(Boolean).join('');
+    const sub=`${p.mesa?'Mesa '+p.mesa+' · ':''}${p.barrio||'sin barrio'}${esCoord&&p.refNom?' · '+p.refNom:''}`;
+    return `<div class="prow ${p.prioritaria?'prio':''}">
+      <div class="prow-main" onclick="toggleRow('${p.id}')">
+        <div class="prow-info">
+          <div class="prow-name">${p.nombre} ${p.apellido} ${badge}${esDup?'<span class="dup-flag">REP</span>':''}</div>
+          <div class="prow-sub">${sub}</div>
+        </div>
+        <div class="prow-right">
+          <span class="dots">${dots}</span>
+          <span class="tag ${estClass(p.estado)}">${estLabel(p.estado)}</span>
+          <span class="ti ti-chevron-down prow-caret" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="prow-actions" id="act-${p.id}">
+        <div style="grid-column:1/-1;display:flex;gap:8px;margin-bottom:4px">
+          <button onclick="setEstado('${p.id}','prom')" style="flex:1;background:${p.estado==='prom'?'#8a6a1c':'#fdf4e3'};color:${p.estado==='prom'?'#fff':'#8a6a1c'};border-radius:9px;padding:11px;font-size:13px;font-weight:700">Prometió</button>
+          <button onclick="setEstado('${p.id}','conf')" style="flex:1;background:${p.estado==='conf'?'var(--verde-ok)':'#e7f4ec'};color:${p.estado==='conf'?'#fff':'var(--verde-ok)'};border-radius:9px;padding:11px;font-size:13px;font-weight:700">Confirmó ✓</button>
+          <button onclick="setEstado('${p.id}','porconv')" style="flex:1;background:${p.estado==='porconv'?'var(--rojo)':'#fbe9e6'};color:${p.estado==='porconv'?'#fff':'var(--rojo)'};border-radius:9px;padding:11px;font-size:13px;font-weight:700">Por convencer</button>
+        </div>
+        <button class="act ${p.transporte?'on-azul':''}" onclick="toggleTransporte('${p.id}')"><span class="ti ti-car" aria-hidden="true"></span>Transporte</button>
+        <button class="act ${p.visita?'on-tierra':''}" onclick="toggleMarca('${p.id}','visita')"><span class="ti ti-map-pin" aria-hidden="true"></span>Visitar</button>
+        <button class="act ${p.prioritaria?'on-rojo':''}" onclick="toggleMarca('${p.id}','prioritaria')"><span class="ti ti-flag" aria-hidden="true"></span>Urgente</button>
+        ${p.tel?`<button class="act" style="background:#e9f7ef;border-color:#25D366;color:#128C4A" onclick="abrirWA('${p.tel}')"><span class="ti ti-brand-whatsapp" style="color:#25D366" aria-hidden="true"></span>WhatsApp</button>`:''}
+        <button class="act" onclick="agendarVisitaA('${p.id}')"><span class="ti ti-calendar-plus" aria-hidden="true"></span>Agendar</button>
+        <button class="act" onclick="abrirEdit('${p.id}')"><span class="ti ti-edit" aria-hidden="true"></span>Editar</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function setEstado(id,estado){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  p.estado=estado;renderLista();keepRowOpen(id);renderDash();
+  await actualizarRegistroDB(id,{estado});
+  toast(estado==='conf'?'¡Confirmado! ✓':estado==='prom'?'Marcado: prometió':'Marcado: por convencer',true);
+}
+function toggleRow(id){
+  const a=document.getElementById('act-'+id);if(!a)return;
+  const open=a.classList.contains('open');
+  document.querySelectorAll('.prow-actions.open').forEach(x=>{x.classList.remove('open');x.closest('.prow').classList.remove('expanded');});
+  if(!open){a.classList.add('open');a.closest('.prow').classList.add('expanded');}
+}
+async function toggleMarca(id,campo){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  p[campo]=!p[campo];renderLista();keepRowOpen(id);
+  await actualizarRegistroDB(id,{[campo]:p[campo]});
+}
+async function toggleTransporte(id){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  p.transporte=!p.transporte;renderLista();renderDiaD();keepRowOpen(id);
+  await actualizarRegistroDB(id,{transporte:p.transporte});
+}
+function keepRowOpen(id){const a=document.getElementById('act-'+id);if(a){a.classList.add('open');a.closest('.prow').classList.add('expanded');}}
+// Llevar a la agenda con los datos de la persona precargados
+function agendarVisitaA(id){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  // marcar como pendiente de visita
+  if(!p.visita){p.visita=true;actualizarRegistroDB(id,{visita:true});}
+  // ir a la pestaña Agenda
+  document.querySelectorAll('.tab').forEach(t=>{if(t.textContent.trim()==='Agenda'){t.click();}});
+  // precargar el formulario
+  setTimeout(()=>{
+    const ti=document.getElementById('evTitulo'); if(ti)ti.value=`Visita a ${p.nombre} ${p.apellido}`;
+    const tipo=document.getElementById('evTipo'); if(tipo)tipo.value='visita';
+    const lug=document.getElementById('evLugar'); if(lug)lug.value=p.barrio||'';
+    const nota=document.getElementById('evNota'); if(nota)nota.value=(p.tel?'Tel: '+p.tel+'. ':'')+(p.mesa?'Mesa '+p.mesa+'. ':'');
+    if(ti)ti.scrollIntoView({behavior:'smooth',block:'center'});
+    toast('Completá fecha y turno para agendar',true);
+  },100);
+}
+
+/* ---- DÍA D: MOVILIZACIÓN ---- */
+let diadTab='transporte';
+function setDiadTab(t){
+  diadTab=t;
+  document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('active',b.dataset.d===t));
+  document.getElementById('diad-transporte').style.display=t==='transporte'?'block':'none';
+  document.getElementById('diad-escuela').style.display=t==='escuela'?'block':'none';
+  document.getElementById('diad-control').style.display=t==='control'?'block':'none';
+  document.getElementById('diad-vivo').style.display=t==='vivo'?'block':'none';
+  document.getElementById('diad-fiscales').style.display=t==='fiscales'?'block':'none';
+  if(t==='control')renderControl();
+  if(t==='escuela')renderEscuela();
+  if(t==='vivo')iniciarMapaVivo();
+  if(t==='fiscales')renderFiscales();
+}
+
+// ==== MAPA EN VIVO (GPS de autos) ====
+let _mapaVivo=null,_marcadores={},_vivoTimer=null,_leafletCargado=false;
+function cargarLeaflet(cb){
+  if(_leafletCargado){cb();return;}
+  const css=document.createElement('link');css.rel='stylesheet';css.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(css);
+  const js=document.createElement('script');js.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+  js.onload=()=>{_leafletCargado=true;cb();};
+  document.head.appendChild(js);
+}
+function iniciarMapaVivo(){
+  cargarLeaflet(()=>{
+    if(!_mapaVivo){
+      _mapaVivo=L.map('mapaVivo').setView([-25.599,-54.573],13); // Puerto Iguazú
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(_mapaVivo);
+    }
+    actualizarMapaVivo();
+    if(_vivoTimer)clearInterval(_vivoTimer);
+    _vivoTimer=setInterval(()=>{
+      if(diadTab==='vivo'&&document.visibilityState==='visible')actualizarMapaVivo();
+    },20000);
+  });
+}
+async function actualizarMapaVivo(){
+  if(!sb||!_mapaVivo)return;
+  const {data}=await sb.from('autos').select('*');
+  if(!data)return;
+  AUTOS=data.map(a=>({id:a.id,conductor:a.conductor,cap:a.capacidad||4,barrio:a.barrio||'',tel:a.tel||'',modelo:a.modelo||'',dominio:a.dominio||'',enViaje:!!a.en_viaje,lat:a.lat,lng:a.lng,posTs:a.pos_ts}));
+  const ahora=Date.now();
+  const conPos=AUTOS.filter(a=>a.lat&&a.lng);
+  conPos.forEach(a=>{
+    const min=a.posTs?Math.round((ahora-new Date(a.posTs).getTime())/60000):null;
+    const viejo=min!==null&&min>5;
+    const txt=`<b>🚗 ${a.conductor}</b><br>${a.modelo||''} ${a.dominio||''}<br><span style="color:${viejo?'#c0432f':'#2e8b57'}">${min===null?'':viejo?'hace '+min+' min ⚠':'hace '+min+' min ✓'}</span>`;
+    if(_marcadores[a.id]){_marcadores[a.id].setLatLng([a.lat,a.lng]).setPopupContent(txt);}
+    else{_marcadores[a.id]=L.marker([a.lat,a.lng]).addTo(_mapaVivo).bindPopup(txt);}
+  });
+  const lst=document.getElementById('vivoLista');
+  if(lst){
+    if(!conPos.length){lst.innerHTML='<div class="empty">Ningún auto está compartiendo ubicación todavía. Mandales su link de conductor (desde la solapa Transporte) y que toquen "Compartir mi ubicación".</div>';}
+    else{
+      lst.innerHTML=conPos.map(a=>{
+        const min=a.posTs?Math.round((ahora-new Date(a.posTs).getTime())/60000):null;
+        const viejo=min!==null&&min>5;
+        return `<div class="person-row"><div class="who"><div><b>🚗 ${a.conductor}</b> ${a.dominio?'<span class="badge" style="background:var(--tinta)">'+a.dominio+'</span>':''}</div>
+          <div class="meta">${a.modelo||''}${min!==null?' · señal hace '+min+' min '+(viejo?'⚠':'✓'):''}</div></div>
+          <button onclick="_mapaVivo.setView([${a.lat},${a.lng}],15);_marcadores['${a.id}'].openPopup()" style="background:var(--arena-2);border-radius:9px;padding:9px 13px;font-size:12.5px;font-weight:700">Ver en mapa</button></div>`;
+      }).join('');
+    }
+  }
+}
+function linkConductor(id){
+  return location.origin+location.pathname.replace(/index\.html$/,'').replace(/\/$/,'')+'/conductor.html?a='+id;
+}
+// ==== REPARTIR LINKS (conductores y pasajeros) ====
+function _linksEnv(){try{return JSON.parse(localStorage.getItem('ri_links_env')||'[]');}catch(e){return[];}}
+function _marcarEnv(k){const e=_linksEnv();if(!e.includes(k)){e.push(k);localStorage.setItem('ri_links_env',JSON.stringify(e));}}
+function enviarLinkR(tipo,id){
+  if(tipo==='a')compartirLinkConductor(id);else compartirLinkPasajero(id);
+  _marcarEnv(tipo+':'+id);
+  setTimeout(renderDiaD,400);
+}
+function renderRepartir(){
+  const w=document.getElementById('repartirWrap');if(!w)return;
+  const esCoord=current.role==='admin'||current.coord;
+  if(!esCoord||!AUTOS.length){w.innerHTML='';return;}
+  const env=_linksEnv();
+  const btn=(tipo,id,tel)=>{
+    const hecho=env.includes(tipo+':'+id);
+    return `<button onclick="enviarLinkR('${tipo}','${id}')" style="padding:9px 14px;border-radius:10px;font-size:12.5px;font-weight:800;flex-shrink:0;${hecho?'background:var(--arena-2);color:var(--verde-ok)':'background:#25D366;color:#fff'}">${hecho?'✓ Enviado':'<span class="ti ti-brand-whatsapp" aria-hidden="true"></span> Enviar'}</button>`;
+  };
+  const autosHtml=AUTOS.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--arena-2)">
+      <span style="font-size:13.5px"><b>🚗 ${a.conductor}</b>${a.dominio?' <span style="font-size:11px;color:var(--gris)">'+a.dominio+'</span>':''}${!a.tel?' <span style="font-size:11px;color:var(--rojo)">(sin tel — se copia)</span>':''}</span>
+      ${btn('a',a.id,a.tel)}</div>`).join('');
+  const pasajeros=REGISTROS.filter(p=>p.autoId&&!p.voto);
+  const pasHtml=pasajeros.length?pasajeros.map(p=>{
+    const a=AUTOS.find(x=>x.id===p.autoId);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--arena-2)">
+      <span style="font-size:13.5px"><b>${p.nombre} ${p.apellido}</b> <span style="font-size:11px;color:var(--gris)">→ auto de ${a?a.conductor:'?'}</span>${!p.tel?' <span style="font-size:11px;color:var(--rojo)">(sin tel — se copia)</span>':''}</span>
+      ${btn('p',p.id,p.tel)}</div>`;
+  }).join(''):'<div style="font-size:12.5px;color:var(--gris);padding:8px 0">Todavía no hay pasajeros asignados a autos.</div>';
+  w.innerHTML=`<details style="background:var(--blanco);border:1px solid var(--linea);border-radius:14px;padding:14px 16px;margin-bottom:18px">
+    <summary style="font-size:14.5px;font-weight:800;color:var(--selva);cursor:pointer">📤 Repartir links — conductores y pasajeros</summary>
+    <div style="font-size:12px;color:var(--gris);margin:8px 0 4px">Tocá "Enviar" y se abre WhatsApp con el mensaje armado. Queda tildado para saber quién falta.</div>
+    <button onclick="compartirInvitacion()" style="width:100%;margin:8px 0 4px;background:var(--selva);color:#fff;border-radius:11px;padding:13px;font-size:13.5px;font-weight:800">🔗 Compartir invitación "te buscamos" (para difundir)</button>
+    <div style="font-size:12.5px;font-weight:800;color:var(--tierra);margin-top:10px">Conductores</div>${autosHtml}
+    <div style="font-size:12.5px;font-weight:800;color:var(--tierra);margin-top:14px">Pasajeros</div>${pasHtml}
+  </details>`;
+}
+
+function compartirInvitacion(){
+  const link=location.origin+location.pathname.replace(/index\.html$/,'').replace(/\/$/,'')+'/buscame.html';
+  const msg='🗳 ¿Necesitás que te pasen a buscar para ir a votar? Anotate acá y te llevamos gratis, ida y vuelta: '+link;
+  if(navigator.share){navigator.share({text:msg}).catch(()=>{});return;}
+  navigator.clipboard.writeText(msg).then(()=>toast('Invitación copiada ✓ Pegala donde quieras',true)).catch(()=>prompt('Copiá el mensaje:',msg));
+}
+function compartirLinkPasajero(id){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  const a=AUTOS.find(x=>x.id===p.autoId);
+  const link=location.origin+location.pathname.replace(/index\.html$/,'').replace(/\/$/,'')+'/pasajero.html?p='+id;
+  const msg=`Hola ${p.nombre}! ${a?`Te va a buscar ${a.conductor}${a.modelo?' en un '+a.modelo:''}${a.dominio?' (patente '+a.dominio+')':''} para ir a votar.`:'Te vamos a pasar a buscar para ir a votar.'} Seguí el auto en vivo acá: ${link}`;
+  if(p.tel){const wl=waLink(p.tel);if(wl){window.open(wl+'?text='+encodeURIComponent(msg),'_blank');return;}}
+  navigator.clipboard.writeText(msg).then(()=>toast('Mensaje copiado ✓ Pegáselo por WhatsApp',true)).catch(()=>prompt('Copiá el mensaje:',msg));
+}
+function compartirLinkConductor(id){
+  const a=AUTOS.find(x=>x.id===id);if(!a)return;
+  const link=linkConductor(id);
+  const msg=`Hola ${a.conductor}! Este es tu link de conductor para el día de la elección. Abrilo y vas a ver tu lista de pasajeros con las direcciones y el botón "Cómo llegar": ${link}`;
+  if(a.tel){const wl=waLink(a.tel);if(wl){window.open(wl.replace('https://wa.me/','https://wa.me/')+'?text='+encodeURIComponent(msg),'_blank');return;}}
+  navigator.clipboard.writeText(link).then(()=>toast('Link copiado ✓ Pegáselo por WhatsApp',true)).catch(()=>prompt('Copiá el link:',link));
+}
+function necesitanTransporte(){const c=current.role==='admin'||current.coord;return REGISTROS.filter(p=>p.transporte&&(c||p.ref===current.id));}
+function renderDiaD(){
+  if(!document.getElementById('diadStats'))return;
+  const esCoord=current.role==='admin'||current.coord;
+
+  // El referente solo ve Control (no arma autos). Coordinación ve todo.
+  const formAuto=document.querySelector('#diad-transporte .form-card');
+  if(formAuto)formAuto.style.display=esCoord?'block':'none';
+  const tabsBtns=document.querySelectorAll('[data-d]');
+  if(!esCoord){
+    // el referente solo ve Escuelas y Control
+    ['transporte','vivo','fiscales'].forEach(d=>{const b=document.querySelector('[data-d="'+d+'"]');if(b)b.style.display='none';});
+    if(diadTab==='transporte'||diadTab==='vivo'||diadTab==='fiscales'){diadTab='control';}
+  }else{
+    ['transporte','vivo','fiscales'].forEach(d=>{const b=document.querySelector('[data-d="'+d+'"]');if(b)b.style.display='';});
+  }
+  document.getElementById('diad-transporte').style.display=(diadTab==='transporte'&&esCoord)?'block':'none';
+  document.getElementById('diad-fiscales').style.display=(diadTab==='fiscales'&&esCoord)?'block':'none';
+  document.getElementById('diad-escuela').style.display=(diadTab==='escuela')?'block':'none';
+  document.getElementById('diad-control').style.display=(diadTab==='control'||(!esCoord&&diadTab!=='escuela'))?'block':'none';
+  document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('active',b.dataset.d===diadTab));
+
+  const scope=esCoord?REGISTROS:REGISTROS.filter(p=>p.ref===current.id);
+  const autosScope=AUTOS;
+  const yaVotaron=scope.filter(p=>p.voto).length;
+  const totalGente=scope.filter(p=>p.tipo==='persona'||p.tipo==='conf').length;
+  const sinAuto=scope.filter(p=>p.transporte&&!p.voto&&!p.autoId).length;
+  const aBordo=scope.filter(p=>p.abordo&&!p.voto).length;
+  const ahora=Date.now();
+  const autosVivo=autosScope.filter(a=>a.posTs&&(ahora-new Date(a.posTs).getTime())<10*60000).length;
+  const mesasConGente=[...new Set(scope.filter(p=>p.mesa).map(p=>String(p.mesa)))];
+  const mesasCubiertas=mesasConGente.filter(m=>fiscalDe(m)).length;
+
+  document.getElementById('diadStats').innerHTML=`
+    <div class="stat"><div class="num" style="color:var(--verde-ok)">${yaVotaron}<span style="font-size:16px;color:var(--gris)">/${totalGente}</span></div><div class="lab">Ya votaron</div></div>
+    <div class="stat"><div class="num" style="color:var(--azul)">${aBordo}</div><div class="lab">A bordo ahora</div></div>
+    <div class="stat" style="${sinAuto>0?'border:2px solid var(--rojo)':''}"><div class="num" style="color:${sinAuto>0?'var(--rojo)':'var(--verde-ok)'}">${sinAuto>0?sinAuto:'OK'}</div><div class="lab">${sinAuto>0?'Sin auto aún':'Todos con auto'}</div></div>
+    ${esCoord?`<div class="stat"><div class="num" style="color:${autosVivo>0?'var(--verde-ok)':'var(--gris)'}">${autosVivo}<span style="font-size:16px;color:var(--gris)">/${autosScope.length}</span></div><div class="lab">Autos en vivo 📡</div></div>
+    <div class="stat" style="${mesasCubiertas<mesasConGente.length?'border:2px solid var(--rojo)':''}"><div class="num" style="color:${mesasCubiertas<mesasConGente.length?'var(--rojo)':'var(--verde-ok)'}">${mesasCubiertas}<span style="font-size:16px;color:var(--gris)">/${mesasConGente.length}</span></div><div class="lab">Mesas con fiscal</div></div>`:''}`;
+
+  renderMovByRef();
+  renderRepartir();
+  if(diadTab==='control')renderControl();
+  if(diadTab==='escuela')renderEscuela();
+}
+// ===== VISTA POR ESCUELA (dónde votan) =====
+let _escAbierta={};
+function renderEscuela(){
+  const cont=document.getElementById('escuelaList');if(!cont)return;
+  const esCoord=current.role==='admin'||current.coord;
+  const scope=REGISTROS.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&(esCoord||p.ref===current.id));
+  // solo los que tienen mesa (vienen del padrón)
+  const conMesa=scope.filter(p=>p.mesa);
+  const sinMesa=scope.filter(p=>!p.mesa);
+  if(!conMesa.length){
+    cont.innerHTML=`<div class="empty">Todavía no hay gente con escuela/mesa asignada.<br><span style="font-size:12.5px">Se asigna sola cuando cargás a alguien con DNI que figura en el padrón.</span>${sinMesa.length?`<br><br><b>${sinMesa.length}</b> persona(s) cargadas sin DNI del padrón (no sabemos dónde votan).`:''}</div>`;
+    return;
+  }
+  // agrupar por circuito (escuela) -> mesa
+  const escuelas={};
+  conMesa.forEach(p=>{
+    const esc=p.circuito||'Sin escuela';
+    (escuelas[esc]=escuelas[esc]||{}); 
+    (escuelas[esc][p.mesa]=escuelas[esc][p.mesa]||[]).push(p);
+  });
+  let html='';
+  Object.keys(escuelas).sort().forEach(esc=>{
+    const mesas=escuelas[esc];
+    const totalEsc=Object.values(mesas).reduce((s,arr)=>s+arr.length,0);
+    const votaronEsc=Object.values(mesas).flat().filter(p=>p.voto).length;
+    const abierta=_escAbierta[esc];
+    html+=`<div class="node" style="margin-bottom:12px">
+      <div class="node-head" onclick="toggleEscuela('${esc.replace(/'/g,"\\'")}')">
+        <span class="caret">${abierta?'▼':'▶'}</span>
+        <div class="node-ava" style="background:var(--azul)"><span class="ti ti-building" aria-hidden="true"></span></div>
+        <div class="node-info"><div class="nm">${esc}</div><div class="sb">${Object.keys(mesas).length} mesa(s) · ${totalEsc} de tu gente</div></div>
+        <div class="node-votos"><div class="big" style="color:var(--verde-ok)">${votaronEsc}<span style="font-size:14px;color:var(--gris)">/${totalEsc}</span></div><div class="lb">votaron</div></div>
+      </div>
+      <div class="node-children" style="${abierta?'display:block':'display:none'}">`;
+    Object.keys(mesas).sort((a,b)=>a-b).forEach(mesa=>{
+      const gente=mesas[mesa].sort((a,b)=>(a.voto?1:0)-(b.voto?1:0)||norm(a.apellido).localeCompare(norm(b.apellido)));
+      const votaron=gente.filter(p=>p.voto).length;
+      const mid=esc+'__'+mesa;
+      const mAbierta=_escAbierta[mid];
+      html+=`<div style="margin:4px 0 8px">
+        <div onclick="toggleEscuela('${mid.replace(/'/g,"\\'")}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--arena);border-radius:10px;cursor:pointer;gap:8px;flex-wrap:wrap">
+          <span style="font-weight:700;font-size:13.5px;color:var(--tierra)">Mesa ${mesa}</span>
+          ${(()=>{const fi=fiscalDe(mesa);const esC=current.role==='admin'||current.coord;
+            if(fi)return `<span onclick="event.stopPropagation();${esC?`abrirFiscal('${mesa}')`:''}" style="font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:14px;background:${fi.confirmado?'#e7f4ec':'#faf3e6'};color:${fi.confirmado?'var(--verde-ok)':'#8a6a1c'};${esC?'cursor:pointer':''}">🛡 ${fi.nombre}${fi.confirmado?' ✓':' (sin conf.)'}</span>`;
+            if(esC)return `<span onclick="event.stopPropagation();abrirFiscal('${mesa}')" style="font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:14px;background:#fbe9e6;color:var(--rojo);cursor:pointer">🛡 sin fiscal — asignar</span>`;
+            return '';})()}
+          <span style="font-size:12.5px;color:var(--gris);margin-left:auto">${votaron}/${gente.length} votaron ${mAbierta?'▲':'▼'}</span>
+        </div>`;
+      if(mAbierta){
+        html+=gente.map(p=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--arena-2);${p.voto?'opacity:.6':''}">
+          <span style="font-size:13.5px"><b>${p.nombre} ${p.apellido}</b>${p.transporte?' <span class="ti ti-car" style="color:var(--azul)" aria-hidden="true"></span>':''}</span>
+          <button onclick="event.stopPropagation();toggleVoto('${p.id}')" style="padding:7px 13px;border-radius:8px;font-size:12px;font-weight:700;${p.voto?'background:var(--verde-ok);color:#fff':'background:var(--arena-2);color:var(--tinta)'}">${p.voto?'✓ votó':'votó'}</button>
+        </div>`).join('');
+      }
+      html+='</div>';
+    });
+    html+='</div></div>';
+  });
+  if(sinMesa.length){
+    html+=`<div class="helper" style="margin-top:10px;background:#faf3e6;border-left:3px solid var(--amarillo);padding:10px 13px;border-radius:8px"><b>${sinMesa.length}</b> persona(s) cargadas sin DNI del padrón — no sabemos en qué escuela votan. Cargales el DNI para ubicarlas.</div>`;
+  }
+  cont.innerHTML=html;
+}
+function toggleEscuela(id){_escAbierta[id]=!_escAbierta[id];renderEscuela();}
+function renderMovByRef(){
+  const cont=document.getElementById('movByRef');if(!cont)return;
+  const esCoord=current.role==='admin'||current.coord;
+  // universo: quienes necesitan transporte y NO votaron
+  const pendientes=REGISTROS.filter(p=>p.transporte&&!p.voto&&(esCoord||p.ref===current.id));
+  const autosScope=esCoord?AUTOS:AUTOS.filter(a=>a.ref===current.id);
+
+  // COLA = pendientes sin auto, agrupados por barrio
+  const enCola=pendientes.filter(p=>!p.autoId);
+  const porBarrio={};
+  enCola.forEach(p=>{(porBarrio[p.barrio]=porBarrio[p.barrio]||[]).push(p);});
+
+  let html='';
+
+  // ---- COLA ----
+  html+=`<h3 style="font-size:15px;color:var(--selva);margin:6px 0 10px">📍 Cola: sin auto asignado (${enCola.length})</h3>`;
+  if(!enCola.length){
+    html+='<div class="empty" style="margin-bottom:18px">Toda la gente con transporte ya tiene auto, o ya votó.</div>';
+  }else{
+    html+='<div style="margin-bottom:20px">';
+    Object.keys(porBarrio).sort().forEach(b=>{
+      html+=`<div style="background:var(--blanco);border:1px solid var(--linea);border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--sombra)">
+        <div style="font-weight:700;color:var(--tierra);font-size:13.5px;margin-bottom:8px">${b} <span style="color:var(--gris);font-weight:600">· ${porBarrio[b].length} para buscar</span></div>`;
+      porBarrio[b].forEach(p=>{
+        const opts=autosScope.map(a=>`<option value="${a.id}">${a.conductor} (${a.barrio||'—'})</option>`).join('');
+        html+=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--arena-2)">
+          <div style="font-size:13px"><b>${p.nombre} ${p.apellido}</b><div style="font-size:11px;color:var(--gris)">${p.tel||'sin tel'}${p.mesa?' · mesa '+p.mesa:''}</div></div>
+          ${esCoord&&autosScope.length?`<select onchange="asignarAuto('${p.id}',this.value)" style="padding:6px 9px;border:1.5px solid var(--linea);border-radius:8px;font-size:12px;background:var(--arena)"><option value="">→ asignar a auto</option>${opts}</select>`:''}
+        </div>`;
+      });
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+
+  // ---- AUTOS ----
+  html+=`<h3 style="font-size:15px;color:var(--selva);margin:18px 0 10px">🚗 Autos y su gente</h3>`;
+  if(!autosScope.length){
+    html+='<div class="empty">No hay autos cargados todavía.</div>';
+  }else{
+    autosScope.forEach(a=>{
+      const asignados=REGISTROS.filter(p=>p.autoId===a.id&&p.transporte);
+      const pend=asignados.filter(p=>!p.voto);
+      const votaron=asignados.filter(p=>p.voto);
+      const libre=a.cap-pend.length;
+      const lleno=libre<=0;
+      const otrosAutos=autosScope.filter(x=>x.id!==a.id);
+      const genteHtml=asignados.length?asignados.map(p=>{
+        const reasignar=otrosAutos.length?otrosAutos.map(x=>`<option value="${x.id}">→ ${x.conductor}</option>`).join(''):'';
+        return `<div class="leaf" style="${p.voto?'opacity:.55':''}">
+          <span class="lnm">${p.nombre} ${p.apellido} ${p.voto?'<b style="color:var(--verde-ok)">✓ votó</b>':''}</span>
+          <span style="display:flex;gap:5px;align-items:center">
+            <span class="lmeta">${p.barrio}${p.mesa?' · m'+p.mesa:''}</span>
+            ${!p.voto?`<button onclick="event.stopPropagation();compartirLinkPasajero('${p.id}')" title="Mandarle su link para seguir el auto" style="background:#e9f7ef;border-radius:7px;width:28px;height:28px;flex-shrink:0"><span class="ti ti-brand-whatsapp" style="color:#25D366;font-size:15px" aria-hidden="true"></span></button>`:''}
+            ${esCoord&&!p.voto?`<select onchange="reasignar('${p.id}',this.value)" style="padding:4px 7px;border:1px solid var(--linea);border-radius:7px;font-size:11px;background:var(--arena)"><option value="">mover…</option><option value="__cola">→ a la cola</option>${reasignar}</select>`:''}
+          </span></div>`;
+      }).join(''):'<div class="leaf"><span class="lmeta" style="font-style:italic">Sin gente asignada. Asignale desde la cola de arriba.</span></div>';
+      html+=`<div class="node" style="margin-bottom:12px">
+        <div class="node-head" onclick="toggleNode(this)"><span class="caret">▶</span>
+          <div class="node-ava" style="background:${lleno?'var(--rojo)':'var(--azul)'}">🚗</div>
+          <div class="node-info"><div class="nm">${a.conductor} ${a.barrio?'· '+a.barrio:''}${a.dominio?' <span style="background:var(--tinta);color:#fff;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;letter-spacing:.5px">'+a.dominio+'</span>':''}</div><div class="sb">${a.modelo?'🚗 '+a.modelo+' · ':''}${pend.length}/${a.cap} a bordo${votaron.length?' · '+votaron.length+' ya votaron':''}${a.tel?` · <span onclick="event.stopPropagation();abrirWA('${a.tel}')" style="color:#128C4A;font-weight:700;cursor:pointer"><span class="ti ti-brand-whatsapp" aria-hidden="true"></span> ${a.tel}</span>`:''}</div></div>
+          <div class="node-votos"><div class="big" style="color:${lleno?'var(--rojo)':'var(--verde-ok)'}">${libre>0?libre:'lleno'}</div><div class="lb">${libre>0?'lugares':''}</div></div>
+        </div>
+        <div class="node-children">
+          ${genteHtml}
+          ${esCoord?`<div class="leaf" style="border:none;padding-top:8px"><button onclick="event.stopPropagation();compartirLinkConductor('${a.id}')" style="background:#e9f7ef;color:#128C4A;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px;margin-right:6px"><span class="ti ti-brand-whatsapp" aria-hidden="true"></span> Link del conductor</button><button onclick="event.stopPropagation();vaciarAuto('${a.id}')" style="background:#fdf4e3;color:#8a6a1c;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px;margin-right:6px">Mandar todos a la cola</button><button onclick="event.stopPropagation();quitarAuto('${a.id}')" style="background:#fbe9e6;color:var(--rojo);font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px">Eliminar auto</button></div>`:''}
+        </div></div>`;
+    });
+  }
+  cont.innerHTML=html;
+}
+async function asignarAuto(personaId,autoId){
+  if(!autoId)return;
+  const p=REGISTROS.find(x=>x.id===personaId);if(!p)return;
+  const a=AUTOS.find(x=>x.id===autoId);
+  const aBordo=REGISTROS.filter(x=>x.autoId===autoId&&x.transporte&&!x.voto).length;
+  if(a&&aBordo>=a.cap){if(!confirm(`El auto de ${a.conductor} ya está completo (${a.cap}). ¿Asignar igual?`))return;}
+  p.autoId=autoId;renderDiaD();
+  await actualizarRegistroDB(personaId,{auto_id:autoId});
+}
+async function reasignar(personaId,destino){
+  const p=REGISTROS.find(x=>x.id===personaId);if(!p)return;
+  if(destino==='__cola'){delete p.autoId;await actualizarRegistroDB(personaId,{auto_id:null});}
+  else if(destino){p.autoId=destino;await actualizarRegistroDB(personaId,{auto_id:destino});}
+  renderDiaD();
+}
+async function vaciarAuto(autoId){
+  if(!confirm('¿Mandar a toda la gente de este auto de vuelta a la cola?'))return;
+  const ids=REGISTROS.filter(p=>p.autoId===autoId).map(p=>p.id);
+  REGISTROS.forEach(p=>{if(p.autoId===autoId)delete p.autoId;});
+  renderDiaD();
+  for(const id of ids){await actualizarRegistroDB(id,{auto_id:null});}
+}
+async function agregarAuto(){
+  const conductor=document.getElementById('auCond').value.trim();
+  const barrio=document.getElementById('auZona').value.trim();
+  const cap=parseInt(document.getElementById('auCap').value)||4;
+  const tel=document.getElementById('auTel').value.trim();
+  const modelo=document.getElementById('auModelo').value.trim();
+  const dominio=document.getElementById('auDominio').value.trim().toUpperCase();
+  if(!conductor){alert('Poné el nombre del conductor.');return;}
+  if(!sb){alert('Sin conexión con la base.');return;}
+  // GUARDAR EN LA BASE
+  const {data,error}=await sb.from('autos').insert({conductor,capacidad:cap,barrio:barrio||null,tel:tel||null,modelo:modelo||null,dominio:dominio||null,en_viaje:false}).select().single();
+  if(error){toast('Error al guardar el auto: '+error.message);return;}
+  const nuevo={id:data.id,conductor,cap,tel,barrio,modelo,dominio,enViaje:false};
+  AUTOS.push(nuevo);
+  // ASIGNACIÓN POR DEFECTO: tomar gente sin auto del mismo barrio, hasta llenar capacidad
+  if(barrio){
+    const candidatos=REGISTROS.filter(p=>p.transporte&&!p.voto&&!p.autoId&&norm(p.barrio)===norm(barrio));
+    for(const p of candidatos.slice(0,cap)){p.autoId=nuevo.id;await actualizarRegistroDB(p.id,{auto_id:nuevo.id});}
+  }
+  ['auCond','auZona','auTel','auModelo','auDominio'].forEach(id=>document.getElementById(id).value='');document.getElementById('auCap').value='4';
+  toast('Auto agregado ✓',true);
+  renderDiaD();
+}
+async function quitarAuto(id){
+  if(!confirm('¿Quitar este auto? La gente que tenía asignada vuelve a la cola.'))return;
+  // liberar a su gente
+  const ids=REGISTROS.filter(p=>p.autoId===id).map(p=>p.id);
+  REGISTROS.forEach(p=>{if(p.autoId===id)delete p.autoId;});
+  AUTOS=AUTOS.filter(a=>a.id!==id);
+  renderDiaD();
+  if(sb){
+    for(const rid of ids){await actualizarRegistroDB(rid,{auto_id:null});}
+    const {error}=await sb.from('autos').delete().eq('id',id);
+    if(error)toast('Error al borrar el auto: '+error.message);
+    else toast('Auto eliminado ✓',true);
+  }
+}
+function renderControl(){
+  const cont=document.getElementById('controlList');if(!cont)return;
+  const esCoord=current.role==='admin'||current.coord;
+  const q=norm(document.getElementById('buscadorDiaD').value);
+  let list=REGISTROS.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&(esCoord||p.ref===current.id));
+  if(q)list=list.filter(p=>[p.nombre,p.apellido,p.barrio,p.refNom].some(v=>norm(v||'').includes(q)));
+  list.sort((a,b)=>(a.voto?1:0)-(b.voto?1:0)||norm(a.apellido).localeCompare(norm(b.apellido)));
+  if(!list.length){cont.innerHTML='<div class="empty">No tenés gente para controlar todavía.</div>';return;}
+  cont.innerHTML=list.map(p=>`
+    <div class="person-row" style="${p.voto?'background:#e7f4ec;border-color:var(--verde-ok)':''}">
+      <div class="who"><div><b>${p.nombre} ${p.apellido}</b>${p.transporte?'<span class="badge" style="background:var(--azul)">🚗 transporte</span>':''}</div>
+        <div class="meta">${p.mesa?`<b style="color:var(--azul)">Mesa ${p.mesa}</b> · `:''}${p.barrio}${esCoord?' · '+p.refNom:''}${p.tel?' · '+p.tel:''}</div></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${p.tel?`<button onclick="abrirWA('${p.tel}')" title="WhatsApp" style="background:#e9f7ef;border-radius:9px;width:36px;height:36px"><span class="ti ti-brand-whatsapp" style="color:#25D366;font-size:19px" aria-hidden="true"></span></button>`:''}
+        <button onclick="toggleVoto('${p.id}')" style="padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:700;${p.voto?'background:var(--verde-ok);color:#fff':'background:var(--arena-2);color:var(--tinta)'}">${p.voto?'✓ Ya votó':'Marcar votó'}</button>
+      </div>
+    </div>`).join('');
+}
+async function toggleVoto(id){const p=REGISTROS.find(x=>x.id===id);if(!p)return;p.voto=!p.voto;renderDiaD();await actualizarRegistroDB(id,{voto:p.voto});}
+
+function renderMapa(){
+  const counts={};BARRIOS.forEach(b=>counts[b]=0);
+  REGISTROS.forEach(p=>{if(counts[p.barrio]!==undefined)counts[p.barrio]+=p.votosPos;});
+  const max=Math.max(1,...Object.values(counts));
+  document.getElementById('barrioGrid').innerHTML=BARRIOS.map(b=>{
+    const c=counts[b];const op=(0.06+0.30*(c/max)).toFixed(2);
+    return `<div class="barrio-card"><div class="heat" style="opacity:${op}"></div>
+      <div class="bname">${b}</div><div class="bcount">${c}</div><div class="blab">votos posibles</div></div>`;
+  }).join('');
+}
+
+// Inicializar conexión y atajos al cargar
+window.addEventListener('DOMContentLoaded', ()=>{
+  initSupabase();
+  const pass=document.getElementById('pass');
+  if(pass)pass.addEventListener('keydown',e=>{if(e.key==='Enter')login();});
+  const usr=document.getElementById('inUsuario');
+  if(usr)usr.addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('pass').focus();});
+  // Registrar el service worker (hace que sea instalable como app)
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(e=>console.log('SW:',e));
+  }
+});
+</script>
+</body>
+</html>

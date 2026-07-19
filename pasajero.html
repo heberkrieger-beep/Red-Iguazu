@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Red Iguazú — Tu auto</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{--selva:#0f3d2e;--tierra:#b5491f;--arena:#f5f1e8;--arena-2:#ece5d6;--tinta:#1c2a23;--gris:#6b756f;--linea:#d8d0bf;--verde-ok:#2e8b57;--rojo:#c0432f;--azul:#2c5f7c;--blanco:#fffdf8}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--arena);color:var(--tinta)}
+  button{border:none;cursor:pointer;font-family:inherit}
+  .top{background:var(--selva);color:#fff;padding:14px 16px}
+  .top .t1{font-size:17px;font-weight:800}
+  .top .t2{font-size:12.5px;color:#9db8ab;margin-top:2px}
+  .wrap{padding:16px;max-width:560px;margin:0 auto;padding-bottom:40px}
+  #mapa{height:46vh;min-height:300px;border-radius:16px;border:1px solid var(--linea);background:var(--arena-2);margin-bottom:14px}
+  .card{background:var(--blanco);border:1px solid var(--linea);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(15,61,46,.07)}
+  .estado{font-size:14px;font-weight:700;padding:11px 14px;border-radius:12px;margin-bottom:12px;text-align:center}
+  .nm{font-size:17px;font-weight:800}
+  .det{font-size:13.5px;color:var(--gris);margin-top:4px;line-height:1.5}
+  .pat{display:inline-block;background:var(--tinta);color:#fff;font-size:12px;font-weight:800;padding:2px 9px;border-radius:6px;letter-spacing:1px}
+  .b{width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+  .b-wa{background:#25D366;color:#fff}
+  .foot{font-size:11.5px;color:var(--gris);text-align:center;margin-top:14px;line-height:1.5}
+</style>
+</head>
+<body>
+  <div class="top"><div class="t1">🗳 Tu traslado para votar</div><div class="t2">Red Iguazú</div></div>
+  <div class="wrap">
+    <div class="estado" id="estado" style="background:var(--arena-2)">Cargando...</div>
+    <div id="mapa"></div>
+    <div class="card" id="autoCard" style="display:none"></div>
+    <div class="foot">El mapa se actualiza solo. Cuando el auto esté cerca, salí a la puerta. 🙌</div>
+  </div>
+
+<script>
+const SUPABASE_URL='https://qgogamniszilcefqvtcq.supabase.co';
+const SUPABASE_KEY='sb_publishable_RtlHSBqEDAi-aCfF6ZzKAg_RHg968Cr';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const PID=new URLSearchParams(location.search).get('p');
+
+let mapa=L.map('mapa').setView([-25.599,-54.573],13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(mapa);
+let mAuto=null, mYo=null, centrado=false;
+
+function waLink(tel){
+  let n=(tel||'').replace(/\D/g,'');
+  if(n.length<8)return null;
+  if(n.startsWith('0'))n=n.slice(1);
+  const m=n.match(/^(\d{2,4})15(\d{6,8})$/); if(m)n=m[1]+m[2];
+  if(n.startsWith('549')){}else if(n.startsWith('54'))n='549'+n.slice(2);else n='549'+n;
+  return 'https://wa.me/'+n;
+}
+
+// tu propia ubicación (solo se muestra en tu pantalla, no se transmite)
+if(navigator.geolocation){
+  navigator.geolocation.watchPosition(pos=>{
+    const ll=[pos.coords.latitude,pos.coords.longitude];
+    if(mYo)mYo.setLatLng(ll);
+    else mYo=L.circleMarker(ll,{radius:8,color:'#2c5f7c',fillColor:'#2c5f7c',fillOpacity:.9}).addTo(mapa).bindPopup('Vos estás acá');
+  },()=>{},{enableHighAccuracy:true,maximumAge:10000});
+}
+
+async function actualizar(){
+  const est=document.getElementById('estado');
+  const card=document.getElementById('autoCard');
+  if(!PID){est.textContent='Link inválido. Pedí que te lo reenvíen.';est.style.background='#fbe9e6';est.style.color='var(--rojo)';return;}
+  const {data:regs}=await sb.from('registros').select('*').eq('id',PID);
+  if(!regs||!regs.length){est.textContent='No encontramos tu registro. Pedí el link de nuevo.';est.style.background='#fbe9e6';est.style.color='var(--rojo)';return;}
+  const yo=regs[0];
+  if(yo.voto){est.textContent='✓ Ya figurás como votado. ¡Gracias!';est.style.background='#e7f4ec';est.style.color='var(--verde-ok)';card.style.display='none';return;}
+  if(!yo.auto_id){est.textContent='Todavía no te asignaron un auto. Apenas lo tengan, vas a verlo acá.';est.style.background='#faf3e6';est.style.color='#8a6a1c';card.style.display='none';return;}
+  const {data:autos}=await sb.from('autos').select('*').eq('id',yo.auto_id);
+  if(!autos||!autos.length){est.textContent='Tu auto se está organizando...';est.style.background='#faf3e6';est.style.color='#8a6a1c';return;}
+  const a=autos[0];
+  const wa=waLink(a.tel);
+  card.style.display='block';
+  card.innerHTML=`<div class="nm">🚗 Te busca ${a.conductor}</div>
+    <div class="det">${a.modelo?a.modelo+' ':''}${a.dominio?'<span class="pat">'+a.dominio+'</span>':''}</div>
+    ${yo.mesa?`<div class="det">Votás en la <b>mesa ${yo.mesa}</b>${yo.circuito?' · '+yo.circuito:''} — llevá tu DNI.</div>`:''}
+    ${wa?`<button class="b b-wa" onclick="window.open('${wa}','_blank')"><span class="ti ti-brand-whatsapp"></span> Hablar con ${a.conductor.split(' ')[0]}</button>`:''}`;
+  if(a.lat&&a.lng){
+    const min=a.pos_ts?Math.round((Date.now()-new Date(a.pos_ts).getTime())/60000):null;
+    const viejo=min!==null&&min>5;
+    if(viejo){est.textContent='El auto está en camino, pero su señal se cortó hace '+min+' min.';est.style.background='#faf3e6';est.style.color='#8a6a1c';}
+    else{est.textContent='📡 ¡Tu auto está en el mapa! Seguilo en vivo.';est.style.background='#e7f4ec';est.style.color='var(--verde-ok)';}
+    const ll=[a.lat,a.lng];
+    if(mAuto)mAuto.setLatLng(ll);
+    else mAuto=L.marker(ll).addTo(mapa).bindPopup('🚗 '+a.conductor);
+    if(!centrado){mapa.setView(ll,14);centrado=true;}
+  }else{
+    est.textContent='Tu auto ya está asignado. Cuando salga a la calle vas a verlo en el mapa.';
+    est.style.background='var(--arena-2)';est.style.color='var(--tinta)';
+  }
+}
+actualizar();
+setInterval(()=>{if(document.visibilityState==='visible')actualizar();},15000);
+</script>
+</body>
+</html>
