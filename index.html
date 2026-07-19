@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v25</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v27</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -471,19 +471,21 @@
 
   <!-- DÍA D -->
   <div class="view" id="view-diad">
-    <div class="view-head"><h2>🚗 Comando de campaña</h2><p>Tu sala de operaciones del día de la elección: transporte, mapa en vivo, escuelas y control de voto.</p></div>
+    <div class="view-head"><h2>🗳 Día de elección</h2><p>Todo lo del domingo en un solo lugar: móviles, mapa en vivo, escuelas, control de voto y fiscales.</p></div>
 
     <div class="stat-grid" id="diadStats"></div>
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
-      <button class="filtro-btn active" data-d="transporte" onclick="setDiadTab('transporte')"><span class="ti ti-car" aria-hidden="true"></span> Transporte</button>
+      <button class="filtro-btn active" data-d="transporte" onclick="setDiadTab('transporte')"><span class="ti ti-car" aria-hidden="true"></span> Móviles</button>
       <button class="filtro-btn" data-d="escuela" onclick="setDiadTab('escuela')"><span class="ti ti-building" aria-hidden="true"></span> Por escuela</button>
       <button class="filtro-btn" data-d="control" onclick="setDiadTab('control')"><span class="ti ti-checkbox" aria-hidden="true"></span> Control</button>
       <button class="filtro-btn" data-d="vivo" onclick="setDiadTab('vivo')"><span class="ti ti-map-pin" aria-hidden="true"></span> En vivo</button>
+      <button class="filtro-btn" data-d="fiscales" onclick="setDiadTab('fiscales')"><span class="ti ti-shield" aria-hidden="true"></span> Fiscales</button>
     </div>
 
     <!-- TRANSPORTE -->
     <div id="diad-transporte">
+      <div id="repartirWrap"></div>
       <div class="form-card" style="max-width:none;margin-bottom:20px">
         <h3 style="font-size:15px;color:var(--selva);margin-bottom:14px">➕ Agregar auto</h3>
         <div class="form-row">
@@ -524,18 +526,9 @@
       <div id="mapaVivo" style="height:420px;border-radius:16px;border:1px solid var(--linea);background:var(--arena-2)"></div>
       <div id="vivoLista" style="margin-top:14px"></div>
     </div>
-  </div>
 
-  <!-- MAPA -->
-  <div class="view" id="view-mapa">
-    <div class="view-head"><h2>Votos posibles por barrio</h2><p>Dónde está concentrada tu red. Te muestra dónde reforzar.</p></div>
-    <div class="barrio-grid" id="barrioGrid"></div>
-    <div class="note"><b>Próximo paso:</b> con el DNI cargado, cuando subamos el padrón electoral 2023 el sistema busca solo en qué mesa y circuito vota cada persona, y te marca quién está habilitado.</div>
-  </div>
-
-  <!-- REFERENTES (solo coordinación) -->
-  <!-- FISCALES (solo coordinación) -->
-  <div class="view" id="view-fiscales">
+    <!-- FISCALES (dentro de Día de elección, solo coordinación) -->
+    <div id="diad-fiscales" style="display:none">
     <div class="view-head"><h2>Fiscales de mesa</h2><p>Armá tu red de fiscales. Buscalos por DNI: la app propone su propia mesa (donde votan ellos), y podés cambiarla si hace falta.</p></div>
     <div id="fiscalesResumen" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap"></div>
     <div class="form-card" style="margin-bottom:20px">
@@ -553,8 +546,17 @@
     </div>
     <h3 style="font-size:15px;color:var(--selva);margin:0 0 12px">Fiscales cargados</h3>
     <div id="fiscalesLista"></div>
+    </div>
   </div>
 
+  <!-- MAPA -->
+  <div class="view" id="view-mapa">
+    <div class="view-head"><h2>Votos posibles por barrio</h2><p>Dónde está concentrada tu red. Te muestra dónde reforzar.</p></div>
+    <div class="barrio-grid" id="barrioGrid"></div>
+    <div class="note"><b>Próximo paso:</b> con el DNI cargado, cuando subamos el padrón electoral 2023 el sistema busca solo en qué mesa y circuito vota cada persona, y te marca quién está habilitado.</div>
+  </div>
+
+  <!-- REFERENTES (solo coordinación) -->
   <div class="view" id="view-referentes">
     <div class="view-head"><h2>Referentes</h2><p>Dar de alta, editar y administrar tu red de referentes.</p></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
@@ -1222,8 +1224,8 @@ function buildTabs(){
   const esCoord = current.role==='admin'||current.coord;
   // [id, label corto, ícono tabler]
   const all = esCoord
-    ? [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Lista','ti-list'],['piramide','Pirámide','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Comando','ti-car'],['fiscales','Fiscales','ti-shield'],['mapa','Mapa','ti-map-2'],['referentes','Referentes','ti-users']]
-    : [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Mi lista','ti-list'],['piramide','Mi red','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Comando','ti-car']];
+    ? [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Lista','ti-list'],['piramide','Pirámide','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Elección','ti-car'],['mapa','Mapa','ti-map-2'],['referentes','Referentes','ti-users']]
+    : [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Mi lista','ti-list'],['piramide','Mi red','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Elección','ti-car']];
   window._tabs=all;
   // barra superior (desktop): todas las pestañas
   const c=document.getElementById('tabs');c.innerHTML='';
@@ -1521,8 +1523,8 @@ function renderDash(){
 
   // ACCESOS RÁPIDOS según rol
   const quick = isAdmin
-    ? [['piramide','Pirámide','ti-binary-tree'],['diad','Comando','ti-car'],['referentes','Referentes','ti-users'],['lista','Lista completa','ti-list']]
-    : [['piramide','Mi red','ti-binary-tree'],['diad','Comando','ti-car'],['lista','Mi lista','ti-list'],['agenda','Agenda','ti-calendar']];
+    ? [['piramide','Pirámide','ti-binary-tree'],['diad','Elección','ti-car'],['referentes','Referentes','ti-users'],['lista','Lista completa','ti-list']]
+    : [['piramide','Mi red','ti-binary-tree'],['diad','Elección','ti-car'],['lista','Mi lista','ti-list'],['agenda','Agenda','ti-calendar']];
   document.getElementById('homeQuick').innerHTML=quick.map(q=>
     `<button class="home-qbtn" onclick="goTab('${q[0]}')"><span class="ti ${q[2]}" aria-hidden="true"></span><span class="t">${q[1]}</span></button>`
   ).join('');
@@ -2163,9 +2165,11 @@ function setDiadTab(t){
   document.getElementById('diad-escuela').style.display=t==='escuela'?'block':'none';
   document.getElementById('diad-control').style.display=t==='control'?'block':'none';
   document.getElementById('diad-vivo').style.display=t==='vivo'?'block':'none';
+  document.getElementById('diad-fiscales').style.display=t==='fiscales'?'block':'none';
   if(t==='control')renderControl();
   if(t==='escuela')renderEscuela();
   if(t==='vivo')iniciarMapaVivo();
+  if(t==='fiscales')renderFiscales();
 }
 
 // ==== MAPA EN VIVO (GPS de autos) ====
@@ -2221,6 +2225,56 @@ async function actualizarMapaVivo(){
 function linkConductor(id){
   return location.origin+location.pathname.replace(/index\.html$/,'').replace(/\/$/,'')+'/conductor.html?a='+id;
 }
+// ==== REPARTIR LINKS (conductores y pasajeros) ====
+function _linksEnv(){try{return JSON.parse(localStorage.getItem('ri_links_env')||'[]');}catch(e){return[];}}
+function _marcarEnv(k){const e=_linksEnv();if(!e.includes(k)){e.push(k);localStorage.setItem('ri_links_env',JSON.stringify(e));}}
+function enviarLinkR(tipo,id){
+  if(tipo==='a')compartirLinkConductor(id);else compartirLinkPasajero(id);
+  _marcarEnv(tipo+':'+id);
+  setTimeout(renderDiaD,400);
+}
+function renderRepartir(){
+  const w=document.getElementById('repartirWrap');if(!w)return;
+  const esCoord=current.role==='admin'||current.coord;
+  if(!esCoord||!AUTOS.length){w.innerHTML='';return;}
+  const env=_linksEnv();
+  const btn=(tipo,id,tel)=>{
+    const hecho=env.includes(tipo+':'+id);
+    return `<button onclick="enviarLinkR('${tipo}','${id}')" style="padding:9px 14px;border-radius:10px;font-size:12.5px;font-weight:800;flex-shrink:0;${hecho?'background:var(--arena-2);color:var(--verde-ok)':'background:#25D366;color:#fff'}">${hecho?'✓ Enviado':'<span class="ti ti-brand-whatsapp" aria-hidden="true"></span> Enviar'}</button>`;
+  };
+  const autosHtml=AUTOS.map(a=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--arena-2)">
+      <span style="font-size:13.5px"><b>🚗 ${a.conductor}</b>${a.dominio?' <span style="font-size:11px;color:var(--gris)">'+a.dominio+'</span>':''}${!a.tel?' <span style="font-size:11px;color:var(--rojo)">(sin tel — se copia)</span>':''}</span>
+      ${btn('a',a.id,a.tel)}</div>`).join('');
+  const pasajeros=REGISTROS.filter(p=>p.autoId&&!p.voto);
+  const pasHtml=pasajeros.length?pasajeros.map(p=>{
+    const a=AUTOS.find(x=>x.id===p.autoId);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--arena-2)">
+      <span style="font-size:13.5px"><b>${p.nombre} ${p.apellido}</b> <span style="font-size:11px;color:var(--gris)">→ auto de ${a?a.conductor:'?'}</span>${!p.tel?' <span style="font-size:11px;color:var(--rojo)">(sin tel — se copia)</span>':''}</span>
+      ${btn('p',p.id,p.tel)}</div>`;
+  }).join(''):'<div style="font-size:12.5px;color:var(--gris);padding:8px 0">Todavía no hay pasajeros asignados a autos.</div>';
+  w.innerHTML=`<details style="background:var(--blanco);border:1px solid var(--linea);border-radius:14px;padding:14px 16px;margin-bottom:18px">
+    <summary style="font-size:14.5px;font-weight:800;color:var(--selva);cursor:pointer">📤 Repartir links — conductores y pasajeros</summary>
+    <div style="font-size:12px;color:var(--gris);margin:8px 0 4px">Tocá "Enviar" y se abre WhatsApp con el mensaje armado. Queda tildado para saber quién falta.</div>
+    <button onclick="compartirInvitacion()" style="width:100%;margin:8px 0 4px;background:var(--selva);color:#fff;border-radius:11px;padding:13px;font-size:13.5px;font-weight:800">🔗 Compartir invitación "te buscamos" (para difundir)</button>
+    <div style="font-size:12.5px;font-weight:800;color:var(--tierra);margin-top:10px">Conductores</div>${autosHtml}
+    <div style="font-size:12.5px;font-weight:800;color:var(--tierra);margin-top:14px">Pasajeros</div>${pasHtml}
+  </details>`;
+}
+
+function compartirInvitacion(){
+  const link=location.origin+location.pathname.replace(/index\.html$/,'').replace(/\/$/,'')+'/buscame.html';
+  const msg='🗳 ¿Necesitás que te pasen a buscar para ir a votar? Anotate acá y te llevamos gratis, ida y vuelta: '+link;
+  if(navigator.share){navigator.share({text:msg}).catch(()=>{});return;}
+  navigator.clipboard.writeText(msg).then(()=>toast('Invitación copiada ✓ Pegala donde quieras',true)).catch(()=>prompt('Copiá el mensaje:',msg));
+}
+function compartirLinkPasajero(id){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  const a=AUTOS.find(x=>x.id===p.autoId);
+  const link=location.origin+location.pathname.replace(/index\.html$/,'').replace(/\/$/,'')+'/pasajero.html?p='+id;
+  const msg=`Hola ${p.nombre}! ${a?`Te va a buscar ${a.conductor}${a.modelo?' en un '+a.modelo:''}${a.dominio?' (patente '+a.dominio+')':''} para ir a votar.`:'Te vamos a pasar a buscar para ir a votar.'} Seguí el auto en vivo acá: ${link}`;
+  if(p.tel){const wl=waLink(p.tel);if(wl){window.open(wl+'?text='+encodeURIComponent(msg),'_blank');return;}}
+  navigator.clipboard.writeText(msg).then(()=>toast('Mensaje copiado ✓ Pegáselo por WhatsApp',true)).catch(()=>prompt('Copiá el mensaje:',msg));
+}
 function compartirLinkConductor(id){
   const a=AUTOS.find(x=>x.id===id);if(!a)return;
   const link=linkConductor(id);
@@ -2238,13 +2292,14 @@ function renderDiaD(){
   if(formAuto)formAuto.style.display=esCoord?'block':'none';
   const tabsBtns=document.querySelectorAll('[data-d]');
   if(!esCoord){
-    // forzar a control y ocultar el botón de transporte para referente
-    document.querySelector('[data-d="transporte"]').style.display='none';
-    if(diadTab==='transporte'){diadTab='control';}
+    // el referente solo ve Escuelas y Control
+    ['transporte','vivo','fiscales'].forEach(d=>{const b=document.querySelector('[data-d="'+d+'"]');if(b)b.style.display='none';});
+    if(diadTab==='transporte'||diadTab==='vivo'||diadTab==='fiscales'){diadTab='control';}
   }else{
-    document.querySelector('[data-d="transporte"]').style.display='';
+    ['transporte','vivo','fiscales'].forEach(d=>{const b=document.querySelector('[data-d="'+d+'"]');if(b)b.style.display='';});
   }
   document.getElementById('diad-transporte').style.display=(diadTab==='transporte'&&esCoord)?'block':'none';
+  document.getElementById('diad-fiscales').style.display=(diadTab==='fiscales'&&esCoord)?'block':'none';
   document.getElementById('diad-escuela').style.display=(diadTab==='escuela')?'block':'none';
   document.getElementById('diad-control').style.display=(diadTab==='control'||(!esCoord&&diadTab!=='escuela'))?'block':'none';
   document.querySelectorAll('[data-d]').forEach(b=>b.classList.toggle('active',b.dataset.d===diadTab));
@@ -2268,6 +2323,7 @@ function renderDiaD(){
     <div class="stat" style="${mesasCubiertas<mesasConGente.length?'border:2px solid var(--rojo)':''}"><div class="num" style="color:${mesasCubiertas<mesasConGente.length?'var(--rojo)':'var(--verde-ok)'}">${mesasCubiertas}<span style="font-size:16px;color:var(--gris)">/${mesasConGente.length}</span></div><div class="lab">Mesas con fiscal</div></div>`:''}`;
 
   renderMovByRef();
+  renderRepartir();
   if(diadTab==='control')renderControl();
   if(diadTab==='escuela')renderEscuela();
 }
@@ -2388,6 +2444,7 @@ function renderMovByRef(){
           <span class="lnm">${p.nombre} ${p.apellido} ${p.voto?'<b style="color:var(--verde-ok)">✓ votó</b>':''}</span>
           <span style="display:flex;gap:5px;align-items:center">
             <span class="lmeta">${p.barrio}${p.mesa?' · m'+p.mesa:''}</span>
+            ${!p.voto?`<button onclick="event.stopPropagation();compartirLinkPasajero('${p.id}')" title="Mandarle su link para seguir el auto" style="background:#e9f7ef;border-radius:7px;width:28px;height:28px;flex-shrink:0"><span class="ti ti-brand-whatsapp" style="color:#25D366;font-size:15px" aria-hidden="true"></span></button>`:''}
             ${esCoord&&!p.voto?`<select onchange="reasignar('${p.id}',this.value)" style="padding:4px 7px;border:1px solid var(--linea);border-radius:7px;font-size:11px;background:var(--arena)"><option value="">mover…</option><option value="__cola">→ a la cola</option>${reasignar}</select>`:''}
           </span></div>`;
       }).join(''):'<div class="leaf"><span class="lmeta" style="font-style:italic">Sin gente asignada. Asignale desde la cola de arriba.</span></div>';
