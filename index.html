@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v27</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v28</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -721,12 +721,17 @@ function appAFila(p){
 async function cargarRegistrosDB(){
   if(!sb)return;
   try{
-    const {data,error}=await sb.from('registros').select('*').order('creado_en',{ascending:false});
-    if(error)throw error;
-    if(data){
-      REGISTROS = data.map(filaABApp);
-      renderAll();
+    // traer TODO aunque haya miles: la base entrega de a 1000, así que pedimos por tandas
+    let todas=[], desde=0;
+    while(true){
+      const {data,error}=await sb.from('registros').select('*').order('creado_en',{ascending:false}).range(desde,desde+999);
+      if(error)throw error;
+      todas=todas.concat(data||[]);
+      if(!data||data.length<1000)break;
+      desde+=1000;
     }
+    REGISTROS = todas.map(filaABApp);
+    renderAll();
   }catch(e){ console.error('cargar registros:', e); toast('No se pudieron leer los registros de la base.'); }
 }
 // Leer los referentes (usuarios) de la base
@@ -2076,6 +2081,11 @@ function renderLista(){
 
   document.getElementById('listaCount').textContent=`${list.length} resultado${list.length!==1?'s':''}${q?` para "${document.getElementById('buscador').value}"`:''}`;
   if(!list.length){cont.innerHTML='<div class="empty">Nada para mostrar con este filtro o búsqueda.</div>';return;}
+  // con miles de cargados, dibujar de a partes para que el celular no se trabe
+  window._listaCap=window._listaCap||250;
+  const listaCompleta=list;
+  const hayMas=listaCompleta.length>window._listaCap;
+  list=listaCompleta.slice(0,window._listaCap);
   cont.innerHTML=list.map(p=>{
     const esDup=dupCount[claveDup(p)]>1;
     const badge=p.tipo==='conf'?`<span class="badge badge-conf">trae ${p.votosPos}</span>`:'';
@@ -2113,7 +2123,7 @@ function renderLista(){
         <button class="act" onclick="abrirEdit('${p.id}')"><span class="ti ti-edit" aria-hidden="true"></span>Editar</button>
       </div>
     </div>`;
-  }).join('');
+  }).join('')+(hayMas?`<button onclick="window._listaCap+=500;renderLista()" style="width:100%;margin-top:10px;background:var(--arena-2);color:var(--tinta);border-radius:12px;padding:14px;font-size:14px;font-weight:700">Mostrar más (quedan ${listaCompleta.length-window._listaCap})</button>`:'');
 }
 async function setEstado(id,estado){
   const p=REGISTROS.find(x=>x.id===id);if(!p)return;
