@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root{
     --selva:#0f3d2e; --selva-2:#16573f; --selva-3:#0b2e22; --tierra:#b5491f; --tierra-claro:#e2733f;
@@ -209,6 +211,8 @@
         <div class="hbtns"><button class="btn" onclick="cargarTodo()"><span class="ti ti-refresh"></span> Actualizar</button>
         <button class="btn verde" onclick="abrirAuto(null)"><span class="ti ti-plus"></span> Nuevo auto</button></div></div>
       <div class="kpis" id="movKpis"></div>
+      <div class="panel"><h2><span class="ti ti-broadcast"></span> Flota en vivo — GPS de todos los autos <span style="margin-left:auto;font-weight:600;font-size:11.5px;color:var(--gris)">se actualiza solo cada 20 seg</span></h2>
+        <div id="mapaCmd" style="height:380px;border-radius:12px;border:1px solid var(--linea);background:var(--arena-2)"></div></div>
       <div class="panel"><h2><span class="ti ti-clock"></span> Cola: esperando auto <span id="colaN" style="color:var(--rojo)"></span></h2><div id="colaList"></div></div>
       <h2 style="font-size:15px;color:var(--selva);margin:4px 0 12px">🚗 Flota</h2>
       <div class="autos-grid" id="autosGrid"></div>
@@ -495,6 +499,7 @@ function renderMoviles(){
       <select class="mini-sel" onchange="asignarA('${p.id}',this.value)"><option value="">→ asignar</option>${opts}</select>
     </div>`).join(''):'<div class="empty">Nadie esperando — toda la gente con transporte tiene auto.</div>';
   const ahora2=Date.now();
+  iniciarMapaCmd();
   document.getElementById('autosGrid').innerHTML=AUTOS.length?AUTOS.map(a=>{
     const pas=REG.filter(p=>p.auto_id===a.id);
     const pend=pas.filter(p=>!p.voto);
@@ -510,6 +515,35 @@ function renderMoviles(){
       ${pas.map(p=>`<div class="pasa"><span>${p.voto?'✅':'·'} ${p.nombre} ${p.apellido} <span style="color:var(--gris)">${p.barrio||''}</span></span>
         ${!p.voto?`<select class="mini-sel" onchange="asignarA('${p.id}',this.value)"><option value="">mover…</option><option value="__cola">→ cola</option>${otros}</select>`:''}</div>`).join('')||'<div class="empty" style="padding:12px">Sin pasajeros — asignale desde la cola.</div>'}
     </div>`;}).join(''):'<div class="empty">No hay autos. Creá el primero con "Nuevo auto".</div>';
+}
+let _mapC=null,_marcC={},_timerC=null;
+function iniciarMapaCmd(){
+  if(!document.getElementById('mapaCmd'))return;
+  if(!_mapC){
+    _mapC=L.map('mapaCmd').setView([-25.599,-54.573],13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(_mapC);
+  }
+  setTimeout(()=>_mapC.invalidateSize(),150);
+  actualizarMapaCmd(false);
+  if(_timerC)clearInterval(_timerC);
+  _timerC=setInterval(()=>{if(vistaActual==='moviles'&&document.visibilityState==='visible')actualizarMapaCmd(true);},20000);
+}
+async function actualizarMapaCmd(refetch){
+  if(!_mapC)return;
+  if(refetch){const {data}=await sb.from('autos').select('*');if(data)AUTOS=data;}
+  const ahora=Date.now();
+  const conPos=AUTOS.filter(a=>a.lat&&a.lng);
+  conPos.forEach(a=>{
+    const min=a.pos_ts?Math.round((ahora-new Date(a.pos_ts).getTime())/60000):null;
+    const viejo=min!==null&&min>10;
+    const txt=`<b>🚗 ${a.conductor}</b><br>${a.modelo||''} ${a.dominio||''}<br><span style="color:${viejo?'#c0432f':'#2e8b57'}">${min===null?'':viejo?'señal hace '+min+' min ⚠':'en vivo ('+min+' min) ✓'}</span>`;
+    if(_marcC[a.id]){_marcC[a.id].setLatLng([a.lat,a.lng]).setPopupContent(txt);}
+    else{
+      const ic=L.divIcon({html:'<div style="font-size:30px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))">🚗</div>',className:'',iconSize:[34,34],iconAnchor:[17,17]});
+      _marcC[a.id]=L.marker([a.lat,a.lng],{icon:ic}).addTo(_mapC).bindPopup(txt);
+    }
+  });
+  if(refetch&&vistaActual==='moviles')renderMoviles._soloKpis?null:null;
 }
 async function asignarA(pid,dest){
   if(!dest)return;

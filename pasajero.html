@@ -61,7 +61,10 @@ if(navigator.geolocation){
   navigator.geolocation.watchPosition(pos=>{
     const ll=[pos.coords.latitude,pos.coords.longitude];
     if(mYo)mYo.setLatLng(ll);
-    else mYo=L.circleMarker(ll,{radius:8,color:'#2c5f7c',fillColor:'#2c5f7c',fillOpacity:.9}).addTo(mapa).bindPopup('Vos estás acá');
+    else{
+      const icY=L.divIcon({html:'<div style="font-size:28px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))">🧍</div>',className:'',iconSize:[30,30],iconAnchor:[15,15]});
+      mYo=L.marker(ll,{icon:icY}).addTo(mapa).bindPopup('Vos estás acá');
+    }
   },()=>{},{enableHighAccuracy:true,maximumAge:10000});
 }
 
@@ -90,7 +93,10 @@ async function actualizar(){
     else{est.textContent='📡 ¡Tu auto está en el mapa! Seguilo en vivo.';est.style.background='#e7f4ec';est.style.color='var(--verde-ok)';}
     const ll=[a.lat,a.lng];
     if(mAuto)mAuto.setLatLng(ll);
-    else mAuto=L.marker(ll).addTo(mapa).bindPopup('🚗 '+a.conductor);
+    else{
+      const icA=L.divIcon({html:'<div style="font-size:32px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))">🚗</div>',className:'',iconSize:[36,36],iconAnchor:[18,18]});
+      mAuto=L.marker(ll,{icon:icA}).addTo(mapa).bindPopup('🚗 '+a.conductor);
+    }
     if(!centrado){mapa.setView(ll,14);centrado=true;}
   }else{
     est.textContent='Tu auto ya está asignado. Cuando salga a la calle vas a verlo en el mapa.';

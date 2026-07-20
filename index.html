@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v28</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v29</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -2216,7 +2216,10 @@ async function actualizarMapaVivo(){
     const viejo=min!==null&&min>5;
     const txt=`<b>🚗 ${a.conductor}</b><br>${a.modelo||''} ${a.dominio||''}<br><span style="color:${viejo?'#c0432f':'#2e8b57'}">${min===null?'':viejo?'hace '+min+' min ⚠':'hace '+min+' min ✓'}</span>`;
     if(_marcadores[a.id]){_marcadores[a.id].setLatLng([a.lat,a.lng]).setPopupContent(txt);}
-    else{_marcadores[a.id]=L.marker([a.lat,a.lng]).addTo(_mapaVivo).bindPopup(txt);}
+    else{
+      const ic=L.divIcon({html:'<div style="font-size:30px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))">🚗</div>',className:'',iconSize:[34,34],iconAnchor:[17,17]});
+      _marcadores[a.id]=L.marker([a.lat,a.lng],{icon:ic}).addTo(_mapaVivo).bindPopup(txt);
+    }
   });
   const lst=document.getElementById('vivoLista');
   if(lst){
