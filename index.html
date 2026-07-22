@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v31</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v32</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -335,6 +335,7 @@
     <button class="home-cta" onclick="goTab('cargar')">
       <span class="ti ti-user-plus" aria-hidden="true"></span> Cargar persona
     </button>
+    <div id="novedadesBox" style="display:none;background:#eef4f1;border:1.5px solid var(--selva);border-radius:13px;padding:13px 16px;margin-bottom:16px;font-size:13.5px;color:var(--tinta)"></div>
     <div id="homeHero"></div>
     <div class="home-stats" id="homeStats"></div>
     <div id="homeAviso" style="display:none;background:#faedd5;border-radius:12px;padding:12px 14px;align-items:center;gap:10px;margin-bottom:16px;cursor:pointer"></div>
@@ -441,11 +442,18 @@
         </div>
         <input type="hidden" id="evTurno">
       </div>
+      <div class="form-field full" id="evContactoWrap"><label>¿A quién visitás? <span class="opt">(elegí de tu lista o dejalo libre)</span></label>
+        <input id="evContactoBusca" placeholder="🔍 Escribí el nombre para buscarlo..." autocomplete="off" oninput="buscarContactoEv()" style="margin-bottom:6px">
+        <div id="evContactoRes" style="display:none;max-height:160px;overflow:auto;border:1px solid var(--linea);border-radius:10px;background:var(--blanco)"></div>
+        <input type="hidden" id="evContactoId">
+        <div id="evContactoSel" style="display:none;font-size:12.5px;margin-top:6px;padding:8px 11px;background:#eef4f1;border-radius:9px;color:var(--selva)"></div>
+      </div>
       <div class="form-field full"><label>Título <span class="req">*</span></label><input id="evTitulo" placeholder="Visita a familia Cuenca"></div>
       <div class="form-field full"><label>Barrio / Lugar</label><input id="evLugar" list="barriosList" placeholder="Centro" autocomplete="off"></div>
       <div class="form-field full"><label>Nota <span class="opt">(opcional)</span></label><textarea id="evNota" placeholder="Llevar folletos, confirmar antes por WhatsApp..."></textarea></div>
       <button class="btn-add" onclick="addEvento()">Reservar turno</button>
     </div>
+    <select id="agFiltroRef" onchange="renderAgenda()" style="display:none;width:100%;padding:11px 14px;border:1.5px solid var(--selva);border-radius:11px;font-size:14px;font-weight:700;background:var(--blanco);color:var(--selva);margin-bottom:14px"></select>
     <div class="agenda-list" id="agendaList"></div>
   </div>
 
@@ -700,7 +708,8 @@ function filaABApp(r){
     votosPos:r.votos_pos||1, mesa:r.mesa||'', circuito:r.circuito||'',
     ref:r.ref_id, refNom:refUser?refUser.nombre:'(sin referente)', padre:r.padre_id||undefined,
     transporte:!!r.transporte, voto:!!r.voto, abordo:!!r.abordo, autoId:r.auto_id||undefined,
-    visita:!!r.visita, prioritaria:!!r.prioritaria
+    visita:!!r.visita, prioritaria:!!r.prioritaria,
+    creadoEn:r.creado_en||'', creadoPor:r.creado_por||''
   };
 }
 // Convierte un registro de la app al formato de la base (columnas SQL)
@@ -988,10 +997,34 @@ async function cargarEventosDB(){
     const {data,error}=await sb.from('eventos').select('*').order('fecha');
     if(error)throw error;
     if(data){
-      EVENTOS = data.map(e=>({id:e.id, tipo:e.tipo, titulo:e.titulo, fecha:e.fecha, turno:e.turno||'', lugar:e.lugar||'', nota:e.nota||'', ref:e.ref_id, refNom:e.ref_nom||''}));
+      EVENTOS = data.map(e=>({id:e.id, tipo:e.tipo, titulo:e.titulo, fecha:e.fecha, turno:e.turno||'', lugar:e.lugar||'', nota:e.nota||'', ref:e.ref_id, refNom:e.ref_nom||'', contactoId:e.contacto_id||null, contactoNom:e.contacto_nom||'', hecho:!!e.hecho}));
       renderAgenda();
+      mostrarNovedades();
     }
   }catch(e){ console.error('cargar eventos:', e); }
+}
+// Resumen de novedades desde la última vez que entró (solo coordinación)
+function mostrarNovedades(){
+  const isAdmin=current.role==='admin'||current.coord;
+  if(!isAdmin)return;
+  const KEY='ri_ultima_visita_'+current.id;
+  const ultima=localStorage.getItem(KEY);
+  const ahora=new Date().toISOString();
+  // guardar la visita actual para la próxima
+  localStorage.setItem(KEY,ahora);
+  if(!ultima)return; // primera vez, no hay con qué comparar
+  const nuevasP=REGISTROS.filter(p=>p.creadoEn&&p.creadoEn>ultima&&p.creadoPor!==current.id).length;
+  const nuevasE=EVENTOS.filter(e=>e.ref!==current.id).length; // aprox: actividades de otros
+  const hechasRecientes=EVENTOS.filter(e=>e.hecho&&e.ref!==current.id).length;
+  if(nuevasP>0){
+    const box=document.getElementById('novedadesBox');
+    if(box){
+      box.style.display='block';
+      box.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><span style="font-size:22px">🔔</span>
+        <div style="flex:1"><b>Novedades desde tu última visita:</b> tu equipo cargó <b>${nuevasP}</b> ${nuevasP===1?'persona nueva':'personas nuevas'}.</div>
+        <span onclick="this.parentElement.parentElement.style.display='none'" style="cursor:pointer;color:var(--gris);font-size:18px">✕</span></div>`;
+    }
+  }
 }
 // Guardar un registro nuevo en la base; devuelve la fila guardada (con su id real)
 async function guardarRegistroDB(p){
@@ -1997,6 +2030,34 @@ function elegirTurno(t,btn){
   document.querySelectorAll('#turnoGrid button').forEach(b=>{b.style.background='var(--arena)';b.style.borderColor='var(--linea)';b.style.color='var(--tinta)';});
   btn.style.background='var(--selva)';btn.style.borderColor='var(--selva)';btn.style.color='#fff';
 }
+function buscarContactoEv(){
+  const q=(document.getElementById('evContactoBusca').value||'').toLowerCase().trim();
+  const box=document.getElementById('evContactoRes');
+  if(q.length<2){box.style.display='none';return;}
+  const esCoord=current.role==='admin'||current.coord;
+  const pool=REGISTROS.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&(esCoord||p.ref===current.id));
+  const res=pool.filter(p=>((p.nombre||'')+' '+(p.apellido||'')+' '+(p.dni||'')).toLowerCase().includes(q)).slice(0,8);
+  if(!res.length){box.style.display='block';box.innerHTML='<div style="padding:10px;font-size:12.5px;color:var(--gris)">No aparece. Podés dejar el nombre libre en el título.</div>';return;}
+  box.style.display='block';
+  box.innerHTML=res.map(p=>`<div onclick="elegirContactoEv('${p.id}')" style="padding:10px 12px;border-bottom:1px solid var(--arena-2);cursor:pointer;font-size:13.5px"><b>${p.nombre} ${p.apellido}</b> <span style="color:var(--gris)">${p.barrio||''}${p.tel?' · '+p.tel:''}</span></div>`).join('');
+}
+function elegirContactoEv(id){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  const nom=`${p.nombre} ${p.apellido}`;
+  document.getElementById('evContactoId').value=id;
+  document.getElementById('evContactoBusca').value='';
+  document.getElementById('evContactoRes').style.display='none';
+  const sel=document.getElementById('evContactoSel');
+  sel.style.display='block';sel.dataset.nom=nom;
+  sel.innerHTML=`✔ Visita a <b>${nom}</b>${p.barrio?' · '+p.barrio:''} <span onclick="quitarContactoEv()" style="color:var(--rojo);cursor:pointer;margin-left:8px">✕ quitar</span>`;
+  // autocompletar título y lugar si están vacíos
+  const t=document.getElementById('evTitulo');if(!t.value.trim())t.value='Visita a '+nom;
+  const l=document.getElementById('evLugar');if(!l.value.trim()&&p.barrio)l.value=p.barrio;
+}
+function quitarContactoEv(){
+  document.getElementById('evContactoId').value='';
+  document.getElementById('evContactoSel').style.display='none';
+}
 async function addEvento(){
   const tipo=document.getElementById('evTipo').value;
   const fecha=document.getElementById('evFecha').value;
@@ -2004,20 +2065,23 @@ async function addEvento(){
   const titulo=document.getElementById('evTitulo').value.trim();
   const lugar=document.getElementById('evLugar').value.trim();
   const nota=document.getElementById('evNota').value.trim();
+  const contactoId=document.getElementById('evContactoId').value||null;
+  const contactoNom=contactoId?(document.getElementById('evContactoSel').dataset.nom||''):'';
   if(!fecha||!titulo){alert('Poné fecha y título.');return;}
   if(!turno){alert('Elegí un turno disponible.');return;}
   // doble chequeo por si dos cargan a la vez (agenda global)
   if(EVENTOS.find(e=>e.fecha===fecha&&e.turno===turno)){alert('Ese turno se acaba de ocupar. Elegí otro.');renderTurnos();return;}
   if(!sb){alert('Sin conexión con la base.');return;}
   // GUARDAR EN LA BASE
-  const {data,error}=await sb.from('eventos').insert({tipo,titulo,fecha,turno,lugar:lugar||null,nota:nota||null,ref_id:current.id}).select().single();
+  const {data,error}=await sb.from('eventos').insert({tipo,titulo,fecha,turno,lugar:lugar||null,nota:nota||null,ref_id:current.id,contacto_id:contactoId,contacto_nom:contactoNom||null}).select().single();
   if(error){
     if(/(duplicate|unique)/i.test(error.message)){alert('Ese turno ya está ocupado. Elegí otro.');renderTurnos();}
     else toast('Error al guardar el turno: '+error.message);
     return;
   }
-  EVENTOS.push({id:data.id,tipo,fecha,turno,titulo,lugar,nota,ref:current.id,refNom:current.nombre});
-  ['evTitulo','evLugar','evNota'].forEach(id=>document.getElementById(id).value='');
+  EVENTOS.push({id:data.id,tipo,fecha,turno,titulo,lugar,nota,ref:current.id,refNom:current.nombre,contactoId,contactoNom,hecho:false});
+  ['evTitulo','evLugar','evNota','evContactoBusca'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('evContactoId').value='';document.getElementById('evContactoSel').style.display='none';
   document.getElementById('evFecha').value='';document.getElementById('evTurno').value='';
   document.getElementById('turnoGrid').innerHTML='<div class="empty" style="grid-column:1/-1;padding:10px">Elegí una fecha para ver los turnos libres.</div>';
   renderAgenda();
@@ -2025,26 +2089,59 @@ async function addEvento(){
 }
 function renderAgenda(){
   const isAdmin=current.role==='admin'||current.coord;
-  const mine=EVENTOS.filter(e=>isAdmin||e.ref===current.id||e.ref==='admin')
-    .slice().sort((a,b)=>(a.fecha+(a.turno||'')).localeCompare(b.fecha+(b.turno||'')));
-  const l=document.getElementById('agendaList');
-  if(!mine.length){l.innerHTML='<div style="color:var(--gris);font-size:13px">No hay nada agendado. Reservá un turno arriba.</div>';return;}
-  l.innerHTML=mine.map(e=>{
-    const d=new Date(e.fecha+'T00:00');
-    const tEt = e.tipo==='visita'?'et-visita':e.tipo==='reunion'?'et-reunion':'et-acto';
-    const tNm = e.tipo==='visita'?'Visita':e.tipo==='reunion'?'Reunión':'Acto';
-    const puedeBorrar = isAdmin || e.ref===current.id;
-    return `<div class="ev">
-      <div class="ev-date"><div class="d">${d.getDate()}</div><div class="m">${MESES[d.getMonth()]}</div></div>
-      <div class="ev-body">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <div class="ti">${e.titulo}</div><span class="ev-type ${tEt}">${tNm}</span>
-        </div>
-        <div class="me"><b>${e.turno||e.hora||'—'}</b> · ${e.lugar||'—'}${e.nota?'<br>'+e.nota:''}${isAdmin?'<br><span style="color:var(--tierra)">'+e.refNom+'</span>':''}</div>
-      </div>
-      ${puedeBorrar?`<button onclick="borrarEvento('${e.id}')" title="Cancelar turno" style="align-self:flex-start;background:var(--arena-2);border-radius:8px;width:32px;height:32px;font-size:14px;flex-shrink:0">🗑</button>`:''}
-    </div>`;
-  }).join('');
+  // llenar filtro de referente (solo admin)
+  const selF=document.getElementById('agFiltroRef');
+  if(selF){
+    if(isAdmin){
+      selF.style.display='block';
+      const actual=selF.value;
+      const refs=REFERENTES.filter(r=>r.estado!=='inactivo').sort((a,b)=>a.nombre.localeCompare(b.nombre));
+      selF.innerHTML='<option value="">📅 Ver la agenda de todos</option>'+refs.map(r=>`<option value="${r.id}">${r.nombre}</option>`).join('');
+      selF.value=actual;
+    }else{selF.style.display='none';}
+  }
+  const cont=document.getElementById('agendaList');
+  let base=EVENTOS.filter(e=>isAdmin||e.ref===current.id||e.ref==='admin');
+  // filtro admin por referente
+  const fRef=document.getElementById('agFiltroRef')?document.getElementById('agFiltroRef').value:'';
+  if(fRef)base=base.filter(e=>e.ref===fRef);
+  const mine=base.slice().sort((a,b)=>(a.fecha+(a.turno||'')).localeCompare(b.fecha+(b.turno||'')));
+  const hoy=new Date().toISOString().slice(0,10);
+  if(!mine.length){cont.innerHTML='<div style="color:var(--gris);font-size:13px">No hay nada agendado'+(fRef?' para ese referente':'')+'. Reservá un turno arriba.</div>';return;}
+  // separar próximas de pasadas
+  const prox=mine.filter(e=>e.fecha>=hoy&&!e.hecho);
+  const hechas=mine.filter(e=>e.hecho);
+  const vencidas=mine.filter(e=>e.fecha<hoy&&!e.hecho);
+  const bloque=(titulo,arr,color)=>{
+    if(!arr.length)return'';
+    return `<div style="font-size:12.5px;font-weight:800;color:${color};margin:16px 2px 8px;text-transform:uppercase;letter-spacing:.04em">${titulo} (${arr.length})</div>`+
+      arr.map(e=>{
+        const d=new Date(e.fecha+'T00:00');
+        const tEt = e.tipo==='visita'?'et-visita':e.tipo==='reunion'?'et-reunion':'et-acto';
+        const tNm = e.tipo==='visita'?'Visita':e.tipo==='reunion'?'Reunión':'Acto';
+        const puedeBorrar = isAdmin || e.ref===current.id;
+        const contacto=e.contactoNom?'<br>👤 <b>'+e.contactoNom+'</b>':'';
+        return `<div class="ev" ${e.hecho?'style="opacity:.7"':''}>
+          <div class="ev-date"><div class="d">${d.getDate()}</div><div class="m">${MESES[d.getMonth()]}</div></div>
+          <div class="ev-body">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <div class="ti">${e.hecho?'✓ ':''}${e.titulo}</div><span class="ev-type ${tEt}">${tNm}</span>
+            </div>
+            <div class="me"><b>${e.turno||e.hora||'—'}</b> · ${e.lugar||'—'}${contacto}${e.nota?'<br>'+e.nota:''}${isAdmin?'<br><span style="color:var(--tierra)">'+e.refNom+'</span>':''}</div>
+            ${puedeBorrar&&!e.hecho?`<button onclick="marcarHecho('${e.id}')" style="margin-top:8px;background:#e7f4ec;color:var(--verde-ok);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">✓ Marcar como hecha</button>`:''}
+            ${e.hecho?`<button onclick="marcarHecho('${e.id}')" style="margin-top:8px;background:var(--arena-2);color:var(--gris);border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700">↩ Deshacer</button>`:''}
+          </div>
+          ${puedeBorrar?`<button onclick="borrarEvento('${e.id}')" title="Cancelar turno" style="align-self:flex-start;background:var(--arena-2);border-radius:8px;width:32px;height:32px;font-size:14px;flex-shrink:0">🗑</button>`:''}
+        </div>`;
+      }).join('');
+  };
+  cont.innerHTML=bloque('📌 Próximas',prox,'var(--selva)')+bloque('⚠ Vencidas sin marcar',vencidas,'var(--rojo)')+bloque('✓ Realizadas',hechas,'var(--gris)');
+}
+async function marcarHecho(id){
+  const e=EVENTOS.find(x=>x.id===id);if(!e)return;
+  e.hecho=!e.hecho;
+  renderAgenda();
+  if(sb){const {error}=await sb.from('eventos').update({hecho:e.hecho}).eq('id',id);if(error)toast('Error: '+error.message);else if(e.hecho)toast('¡Marcada como hecha! ✓',true);}
 }
 async function borrarEvento(id){
   const e=EVENTOS.find(x=>x.id===id);if(!e)return;

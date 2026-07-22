@@ -165,6 +165,10 @@
         <div class="panel"><h2><span class="ti ti-chart-pie"></span> Embudo de votos</h2><div class="chart-box"><canvas id="chartEmbudo"></canvas></div></div>
         <div class="panel"><h2><span class="ti ti-chart-bar"></span> Votos por referente</h2><div class="chart-box"><canvas id="chartRef"></canvas></div></div>
       </div>
+      <div class="panel"><h2><span class="ti ti-calendar-check"></span> Actividad del equipo — planeado vs cumplido</h2>
+        <div id="actividadResumen" class="subgrid" style="margin-bottom:14px"></div>
+        <div id="actividadLista"></div>
+      </div>
       <div class="panel"><h2><span class="ti ti-trending-up"></span> Ritmo de campaña
         <span style="margin-left:auto;font-weight:600;font-size:12px;color:var(--gris);display:flex;align-items:center;gap:8px">Fecha de elección:
         <input type="date" id="fechaEleccion" onchange="setFechaEleccion(this.value)" style="padding:6px 9px;border:1.5px solid var(--linea);border-radius:8px;font-size:12.5px;background:var(--arena)"></span></h2>
@@ -346,7 +350,29 @@ function renderResumen(){
   dib('chartEmbudo','doughnut',{labels:['Por convencer','Contactado','Prometió','Confirmado'],datasets:[{data:[c.porconv,c.cont,c.prom,c.conf],backgroundColor:['#c0432f','#8a949a','#e0a92e','#2e8b57'],borderWidth:0}]},{plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12}}}});
   const rows=REF.filter(r=>r.estado!=='inactivo').map(r=>({n:r.nombre,p:votos(REG.filter(x=>x.ref_id===r.id)).proy})).sort((a,b)=>b.p-a.p);
   dib('chartRef','bar',{labels:rows.map(r=>r.n),datasets:[{data:rows.map(r=>r.p),backgroundColor:'#b5491f',borderRadius:6}]},{plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{display:false},beginAtZero:true}}});
+  renderActividad();
   renderRitmo();
+}
+function renderActividad(){
+  const cont=document.getElementById('actividadResumen');if(!cont)return;
+  const hoy=new Date().toISOString().slice(0,10);
+  const hechas=EV.filter(e=>e.hecho).length;
+  const prox=EV.filter(e=>e.fecha>=hoy&&!e.hecho);
+  const vencidas=EV.filter(e=>e.fecha<hoy&&!e.hecho).length;
+  const visitas=EV.filter(e=>e.tipo==='visita').length;
+  cont.innerHTML=`
+    <div class="mini"><div class="n" style="color:var(--verde-ok)">${hechas}</div><div class="l">actividades hechas</div></div>
+    <div class="mini"><div class="n" style="color:var(--azul)">${prox.length}</div><div class="l">próximas</div></div>
+    <div class="mini"><div class="n" style="color:${vencidas?'var(--rojo)':'var(--gris)'}">${vencidas}</div><div class="l">vencidas sin marcar</div></div>`;
+  // próximas 6, ordenadas por fecha
+  const lista=prox.slice().sort((a,b)=>(a.fecha+(a.turno||'')).localeCompare(b.fecha+(b.turno||''))).slice(0,6);
+  const refN=id=>{const r=REF.find(u=>u.id===id);return r?r.nombre:'—';};
+  document.getElementById('actividadLista').innerHTML=lista.length?
+    '<table><thead><tr><th>Fecha</th><th>Actividad</th><th>Contacto</th><th>Responsable</th></tr></thead><tbody>'+
+    lista.map(e=>{const d=new Date(e.fecha+'T00:00');
+      return `<tr><td>${d.getDate()}/${d.getMonth()+1} ${e.turno||''}</td><td><b>${e.titulo}</b> <span style="font-size:11px;color:var(--gris)">${e.tipo}</span></td><td>${e.contacto_nom||'—'}</td><td>${refN(e.ref_id)}</td></tr>`;
+    }).join('')+'</tbody></table>'
+    :'<div class="empty">No hay actividades próximas agendadas.</div>';
 }
 function setFechaEleccion(v){localStorage.setItem('ri_fecha_eleccion',v);renderRitmo();}
 function renderRitmo(){
