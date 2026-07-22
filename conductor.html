@@ -51,7 +51,7 @@
   <div class="wrap">
     <button class="gps off" id="btnGps" onclick="toggleGps()"><span class="ti ti-broadcast"></span> Compartir mi ubicación</button>
     <div class="gps-note">Dejá el celular <b>en el soporte del auto, enchufado y con la pantalla prendida</b> (como usás Google Maps). Así la coordinación ve dónde estás.</div>
-    <div id="mapaCond" style="height:230px;border-radius:14px;border:1px solid var(--linea);background:#12181c;margin-bottom:14px;display:none"></div>
+    <div id="mapaCond" style="height:230px;border-radius:14px;border:1px solid var(--linea);background:var(--arena-2);margin-bottom:14px;display:none"></div>
     <div class="resumen" id="resumen"></div>
     <button class="refresh" onclick="cargar()">🔄 Actualizar lista</button>
     <div id="lista"><div class="empty">Cargando pasajeros...</div></div>
@@ -134,7 +134,7 @@ function renderMapaCond(){
   box.style.display='block';
   if(!_mapCond){
     _mapCond=L.map('mapaCond',{zoomControl:false}).setView([-25.599,-54.573],13);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',subdomains:'abcd',maxZoom:19}).addTo(_mapCond);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(_mapCond);
     L.control.zoom({position:'bottomright'}).addTo(_mapCond);
   }
   setTimeout(()=>_mapCond.invalidateSize(),120);
