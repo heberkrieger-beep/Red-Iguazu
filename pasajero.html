@@ -88,7 +88,7 @@ function waLink(tel){
 function iconoAuto(rot){
   return L.divIcon({className:'',iconSize:[46,46],iconAnchor:[23,23],
     html:'<div class="m-auto" style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;transform:rotate('+rot+'deg)">'+
-      '<div style="width:38px;height:38px;border-radius:50%;background:#eef2f0;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 3px 12px rgba(0,0,0,.6)">🚗</div></div>'});
+      '<div style="font-size:34px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.8))">🚗</div></div>'});
 }
 function bearing(a,b){
   const y=Math.sin((b[1]-a[1])*Math.PI/180)*Math.cos(b[0]*Math.PI/180);
