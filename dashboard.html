@@ -212,7 +212,7 @@
         <button class="btn verde" onclick="abrirAuto(null)"><span class="ti ti-plus"></span> Nuevo auto</button></div></div>
       <div class="kpis" id="movKpis"></div>
       <div class="panel"><h2><span class="ti ti-broadcast"></span> Flota en vivo — GPS de todos los autos <span style="margin-left:auto;font-weight:600;font-size:11.5px;color:var(--gris)">se actualiza solo cada 20 seg</span></h2>
-        <div id="mapaCmd" style="height:380px;border-radius:12px;border:1px solid var(--linea);background:var(--arena-2)"></div></div>
+        <div id="mapaCmd" style="height:400px;border-radius:12px;border:1px solid var(--linea);background:#12181c;overflow:hidden"></div></div>
       <div class="panel"><h2><span class="ti ti-clock"></span> Cola: esperando auto <span id="colaN" style="color:var(--rojo)"></span></h2><div id="colaList"></div></div>
       <h2 style="font-size:15px;color:var(--selva);margin:4px 0 12px">🚗 Flota</h2>
       <div class="autos-grid" id="autosGrid"></div>
@@ -516,12 +516,27 @@ function renderMoviles(){
         ${!p.voto?`<select class="mini-sel" onchange="asignarA('${p.id}',this.value)"><option value="">mover…</option><option value="__cola">→ cola</option>${otros}</select>`:''}</div>`).join('')||'<div class="empty" style="padding:12px">Sin pasajeros — asignale desde la cola.</div>'}
     </div>`;}).join(''):'<div class="empty">No hay autos. Creá el primero con "Nuevo auto".</div>';
 }
-let _mapC=null,_marcC={},_timerC=null;
+let _mapC=null,_marcC={},_posC={},_timerC=null;
+function _icoAuto(rot,viejo){
+  return L.divIcon({className:'',iconSize:[42,42],iconAnchor:[21,21],
+    html:'<div style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;transform:rotate('+rot+'deg);transition:transform .9s linear">'+
+      '<div style="width:34px;height:34px;border-radius:50%;background:'+(viejo?'#8d9aa1':'#eef2f0')+';display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 3px 10px rgba(0,0,0,.6);opacity:'+(viejo?'.6':'1')+'">🚗</div></div>'});
+}
+function _bearC(a,b){
+  const y=Math.sin((b[1]-a[1])*Math.PI/180)*Math.cos(b[0]*Math.PI/180);
+  const x=Math.cos(a[0]*Math.PI/180)*Math.sin(b[0]*Math.PI/180)-Math.sin(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.cos((b[1]-a[1])*Math.PI/180);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+function _distC(a,b){
+  const R=6371000,dLat=(b[0]-a[0])*Math.PI/180,dLon=(b[1]-a[1])*Math.PI/180;
+  const s=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return Math.round(2*R*Math.asin(Math.sqrt(s)));
+}
 function iniciarMapaCmd(){
   if(!document.getElementById('mapaCmd'))return;
   if(!_mapC){
     _mapC=L.map('mapaCmd').setView([-25.599,-54.573],13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(_mapC);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(_mapC);
   }
   setTimeout(()=>_mapC.invalidateSize(),150);
   actualizarMapaCmd(false);
@@ -537,13 +552,30 @@ async function actualizarMapaCmd(refetch){
     const min=a.pos_ts?Math.round((ahora-new Date(a.pos_ts).getTime())/60000):null;
     const viejo=min!==null&&min>10;
     const txt=`<b>🚗 ${a.conductor}</b><br>${a.modelo||''} ${a.dominio||''}<br><span style="color:${viejo?'#c0432f':'#2e8b57'}">${min===null?'':viejo?'señal hace '+min+' min ⚠':'en vivo ('+min+' min) ✓'}</span>`;
-    if(_marcC[a.id]){_marcC[a.id].setLatLng([a.lat,a.lng]).setPopupContent(txt);}
+    const dest=[a.lat,a.lng];
+    if(_marcC[a.id]){
+      const m=_marcC[a.id],desde=_posC[a.id]||dest;
+      m.setPopupContent(txt);
+      if(_distC(desde,dest)>3){
+        m.setIcon(_icoAuto(_bearC(desde,dest),viejo));
+        const t0=performance.now();
+        (function paso(t){
+          const k=Math.min(1,(t-t0)/1200);
+          const ll=[desde[0]+(dest[0]-desde[0])*k, desde[1]+(dest[1]-desde[1])*k];
+          m.setLatLng(ll);_posC[a.id]=ll;
+          if(k<1)requestAnimationFrame(paso);
+        })(t0);
+      }else{m.setLatLng(dest);_posC[a.id]=dest;}
+    }
     else{
-      const ic=L.divIcon({html:'<div style="font-size:30px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.45))">🚗</div>',className:'',iconSize:[34,34],iconAnchor:[17,17]});
-      _marcC[a.id]=L.marker([a.lat,a.lng],{icon:ic}).addTo(_mapC).bindPopup(txt);
+      _marcC[a.id]=L.marker(dest,{icon:_icoAuto(0,viejo)}).addTo(_mapC).bindPopup(txt);
+      _posC[a.id]=dest;
     }
   });
-  if(refetch&&vistaActual==='moviles')renderMoviles._soloKpis?null:null;
+  if(conPos.length&&!_mapC._encuadrado){
+    _mapC.fitBounds(L.latLngBounds(conPos.map(a=>[a.lat,a.lng])).pad(.3));
+    _mapC._encuadrado=true;
+  }
 }
 async function asignarA(pid,dest){
   if(!dest)return;
