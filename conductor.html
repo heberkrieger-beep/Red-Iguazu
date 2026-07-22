@@ -172,15 +172,17 @@ function toggleGps(){
     btn.className='gps off';btn.innerHTML='<span class="ti ti-broadcast"></span> Compartir mi ubicación';
     return;
   }
-  if(!navigator.geolocation){alert('Este celular no permite ubicación desde el navegador.');return;}
+  if(!navigator.geolocation){document.getElementById('btnGps').innerHTML='<span class="ti ti-alert-triangle"></span> Este celular no permite ubicación';return;}
   watchId=navigator.geolocation.watchPosition(async pos=>{
     const t=Date.now();
     if(t-lastSend<10000)return; // mandar cada 10 segundos como mucho
     lastSend=t;
     await sb.from('autos').update({lat:pos.coords.latitude,lng:pos.coords.longitude,pos_ts:new Date().toISOString()}).eq('id',AUTO_ID);
   },err=>{
-    alert('No pudimos leer tu ubicación. Fijate que el GPS esté prendido y que el navegador tenga permiso.');
-    toggleGps();
+    // sin permiso todavía: dejar el botón listo para que lo toque (sin alert molesto)
+    if(watchId){navigator.geolocation.clearWatch(watchId);watchId=null;}
+    const btn=document.getElementById('btnGps');
+    btn.className='gps off';btn.innerHTML='<span class="ti ti-broadcast"></span> Tocá para compartir tu ubicación';
   },{enableHighAccuracy:true,maximumAge:5000,timeout:15000});
   pedirWakeLock();
   btn.className='gps on';btn.innerHTML='<span class="ti ti-broadcast"></span> Compartiendo ubicación ✓ (tocá para cortar)';
@@ -188,6 +190,15 @@ function toggleGps(){
 
 cargar();
 setInterval(()=>{if(document.visibilityState==='visible')cargar();},45000); // refresco suave
+
+// arrancar el GPS solo al abrir la página (el celu pide "Permitir" una vez; después queda solo)
+window.addEventListener('load',()=>{
+  if(!watchId)toggleGps();
+});
+// si por algo se cortó (volvió de otra app, se recargó), reactivarlo solo al volver
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&!watchId)toggleGps();
+});
 </script>
 </body>
 </html>
