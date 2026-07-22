@@ -128,6 +128,7 @@ function centrar(){
 if(navigator.geolocation){
   navigator.geolocation.watchPosition(function(pos){
     posYo=[pos.coords.latitude,pos.coords.longitude];
+    guardarMiUbicacion(pos.coords.latitude,pos.coords.longitude);
     if(mYo)mYo.setLatLng(posYo);
     else mYo=L.marker(posYo,{icon:L.divIcon({className:'',iconSize:[22,22],iconAnchor:[11,11],html:'<div class="halo"><i></i></div>'})}).addTo(mapa);
     dibujarLinea();
@@ -139,6 +140,13 @@ function setEstado(ic,t1,t2,color,pulso){
     '<span class="ic">'+ic+'</span><div class="tx"><div class="t1" style="'+(color?'color:'+color:'')+'">'+t1+'</div><div class="t2">'+(t2||'')+'</div></div>'+(pulso?'<span class="pulso"></span>':'');
 }
 
+let _ubiGuardada=false;
+async function guardarMiUbicacion(lat,lng){
+  // guardar la ubicación de la casa una sola vez, en silencio, para que el conductor la reciba exacta
+  if(_ubiGuardada||!PID)return;
+  _ubiGuardada=true;
+  try{await sb.from('registros').update({dom_lat:lat,dom_lng:lng}).eq('id',PID);}catch(e){}
+}
 async function actualizar(){
   const sheet=document.getElementById('sheetBody');
   if(!PID){setEstado('⚠','Link inválido','Pedí que te lo reenvíen','var(--rojo)');sheet.innerHTML='';return;}

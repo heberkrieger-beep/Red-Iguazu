@@ -40,6 +40,8 @@
     <input id="tel" inputmode="tel" placeholder="3757-..." autocomplete="tel">
     <label>Barrio y referencia de tu casa</label>
     <input id="dir" placeholder="Ej: Villa Alta, casa verde frente al kiosco">
+    <button type="button" id="btnGeo" onclick="tomarUbicacion()" style="width:100%;margin-bottom:14px;padding:13px;background:#e6eef3;color:var(--azul);border:1.5px solid var(--azul);border-radius:12px;font-size:14px;font-weight:800;cursor:pointer">📍 Usar mi ubicación actual (recomendado)</button>
+    <div id="geoMsg" style="display:none;font-size:12.5px;margin:-6px 0 14px;padding:9px 12px;border-radius:10px;line-height:1.5"></div>
     <button id="btn" onclick="enviar()">Quiero que me busquen 🚗</button>
   </div>
 
@@ -66,6 +68,22 @@ async function onDni(){
     box.textContent='No encontramos ese DNI en el padrón de Iguazú, pero podés anotarte igual.';
   }
 }
+let GEO=null;
+function tomarUbicacion(){
+  const msg=document.getElementById('geoMsg'),btn=document.getElementById('btnGeo');
+  if(!navigator.geolocation){msg.style.display='block';msg.style.background='#fbe9e6';msg.style.color='var(--rojo)';msg.textContent='Tu celular no permite compartir ubicación. No importa, con el barrio y la referencia alcanza.';return;}
+  btn.textContent='📍 Buscando tu ubicación...';btn.disabled=true;
+  navigator.geolocation.getCurrentPosition(pos=>{
+    GEO={lat:pos.coords.latitude,lng:pos.coords.longitude};
+    msg.style.display='block';msg.style.background='#e7f4ec';msg.style.color='var(--verde-ok)';
+    msg.innerHTML='✔ ¡Listo! Guardamos la ubicación de tu casa. Así el auto te encuentra fácil.';
+    btn.textContent='✔ Ubicación guardada';btn.style.background='#e7f4ec';btn.style.borderColor='var(--verde-ok)';btn.style.color='var(--verde-ok)';
+  },err=>{
+    msg.style.display='block';msg.style.background='#faf3e6';msg.style.color='#8a6a1c';
+    msg.textContent='No pudimos leer tu ubicación (fijate que el GPS esté prendido y le des permiso). Igual podés anotarte: con el barrio y la referencia el auto te va a encontrar.';
+    btn.textContent='📍 Reintentar ubicación';btn.disabled=false;
+  },{enableHighAccuracy:true,timeout:12000});
+}
 async function enviar(){
   const err=document.getElementById('err');err.style.display='none';
   const dni=normDni(document.getElementById('dni').value);
@@ -86,12 +104,14 @@ async function enviar(){
     let existente=null;
     if(dni){const {data:ex}=await sb.from('registros').select('id').eq('dni',dni).limit(1);if(ex&&ex.length)existente=ex[0];}
     if(existente){
-      await sb.from('registros').update({transporte:true,tel,barrio:dir}).eq('id',existente.id);
+      const upd={transporte:true,tel,barrio:dir};if(GEO){upd.dom_lat=GEO.lat;upd.dom_lng=GEO.lng;}
+      await sb.from('registros').update(upd).eq('id',existente.id);
     }else{
       const fila={tipo:'persona',nombre:PAD?PAD.nombres:nombre,apellido:PAD?PAD.apellido:apellido,
         dni:dni||null,tel,barrio:dir,estado:'prom',votos_pos:1,transporte:true,voto:false,
         mesa:PAD?PAD.mesa:null,circuito:PAD?PAD.circuito:null,
         ref_id:coord.id,creado_por:coord.id};
+      if(GEO){fila.dom_lat=GEO.lat;fila.dom_lng=GEO.lng;}
       const {error}=await sb.from('registros').insert(fila);
       if(error)throw error;
     }

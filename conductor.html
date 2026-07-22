@@ -101,14 +101,16 @@ function render(){
   const orden=[...PAS].sort((a,b)=>(a.voto?1:0)-(b.voto?1:0));
   l.innerHTML=orden.map(p=>{
     const dom=DOMS[String(p.dni||'').replace(/\D/g,'')]||'';
-    const destino=encodeURIComponent((dom||p.barrio||'')+', Puerto Iguazú, Misiones');
+    // si el pasajero marcó su ubicación exacta, usamos coordenadas (Google nunca falla); si no, la dirección de texto
+    const destino=(p.dom_lat&&p.dom_lng)?(p.dom_lat+','+p.dom_lng):encodeURIComponent((dom||p.barrio||'')+', Puerto Iguazú, Misiones');
+    const tieneGps=!!(p.dom_lat&&p.dom_lng);
     const wa=waLink(p.tel);
     return `<div class="card ${p.voto?'done':''}">
       <div class="nm">${p.nombre} ${p.apellido}</div>
       <div class="dir">📍 ${dom||('Barrio '+(p.barrio||'—')+' (sin dirección del padrón)')}</div>
       ${p.mesa?`<div class="mesa">Vota en mesa ${p.mesa}${p.circuito?' · '+p.circuito:''}</div>`:'<div style="margin-bottom:10px"></div>'}
       <div class="fila">
-        <button class="b b-nav" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${destino}','_blank')"><span class="ti ti-map-pin"></span>Cómo llegar</button>
+        <button class="b b-nav" onclick="window.open('https://www.google.com/maps/dir/?api=1&destination=${destino}','_blank')"><span class="ti ti-map-pin"></span>Cómo llegar${tieneGps?' 📍':''}</button>
         ${wa?`<button class="b b-wa" onclick="window.open('${wa}','_blank')"><span class="ti ti-brand-whatsapp"></span>WhatsApp</button>`:''}
       </div>
       <div class="fila" style="margin-top:8px">
