@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Red Iguazú — Conductor</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{--selva:#0f3d2e;--tierra:#b5491f;--arena:#f5f1e8;--arena-2:#ece5d6;--tinta:#1c2a23;--gris:#6b756f;--linea:#d8d0bf;--verde-ok:#2e8b57;--rojo:#c0432f;--azul:#2c5f7c;--blanco:#fffdf8}
@@ -49,6 +51,7 @@
   <div class="wrap">
     <button class="gps off" id="btnGps" onclick="toggleGps()"><span class="ti ti-broadcast"></span> Compartir mi ubicación</button>
     <div class="gps-note">Dejá el celular <b>en el soporte del auto, enchufado y con la pantalla prendida</b> (como usás Google Maps). Así la coordinación ve dónde estás.</div>
+    <div id="mapaCond" style="height:230px;border-radius:14px;border:1px solid var(--linea);background:#12181c;margin-bottom:14px;display:none"></div>
     <div class="resumen" id="resumen"></div>
     <button class="refresh" onclick="cargar()">🔄 Actualizar lista</button>
     <div id="lista"><div class="empty">Cargando pasajeros...</div></div>
@@ -93,6 +96,7 @@ async function cargar(){
 function render(){
   const l=document.getElementById('lista');
   const pend=PAS.filter(p=>!p.voto);
+  renderMapaCond();
   document.getElementById('resumen').innerHTML=`
     <div class="r"><div class="n">${PAS.length}</div><div class="l">pasajeros</div></div>
     <div class="r"><div class="n" style="color:var(--azul)">${PAS.filter(p=>p.abordo&&!p.voto).length}</div><div class="l">a bordo</div></div>
@@ -105,8 +109,9 @@ function render(){
     const destino=(p.dom_lat&&p.dom_lng)?(p.dom_lat+','+p.dom_lng):encodeURIComponent((dom||p.barrio||'')+', Puerto Iguazú, Misiones');
     const tieneGps=!!(p.dom_lat&&p.dom_lng);
     const wa=waLink(p.tel);
+    const numMapa=(p.dom_lat&&p.dom_lng&&!p.voto)?PAS.filter(x=>x.dom_lat&&x.dom_lng&&!x.voto).indexOf(p)+1:null;
     return `<div class="card ${p.voto?'done':''}">
-      <div class="nm">${p.nombre} ${p.apellido}</div>
+      <div class="nm">${numMapa?'<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:#b5491f;color:#fff;font-size:12px;font-weight:800;align-items:center;justify-content:center;margin-right:6px;vertical-align:middle">'+numMapa+'</span>':''}${p.nombre} ${p.apellido}</div>
       <div class="dir">📍 ${dom||('Barrio '+(p.barrio||'—')+' (sin dirección del padrón)')}</div>
       ${p.mesa?`<div class="mesa">Vota en mesa ${p.mesa}${p.circuito?' · '+p.circuito:''}</div>`:'<div style="margin-bottom:10px"></div>'}
       <div class="fila">
@@ -121,6 +126,28 @@ function render(){
   }).join('');
 }
 
+let _mapCond=null,_marcCond={};
+function renderMapaCond(){
+  const conUbi=PAS.filter(p=>p.dom_lat&&p.dom_lng&&!p.voto);
+  const box=document.getElementById('mapaCond');
+  if(!conUbi.length){box.style.display='none';return;}
+  box.style.display='block';
+  if(!_mapCond){
+    _mapCond=L.map('mapaCond',{zoomControl:false}).setView([-25.599,-54.573],13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',subdomains:'abcd',maxZoom:19}).addTo(_mapCond);
+    L.control.zoom({position:'bottomright'}).addTo(_mapCond);
+  }
+  setTimeout(()=>_mapCond.invalidateSize(),120);
+  // limpiar marcadores previos
+  Object.values(_marcCond).forEach(m=>_mapCond.removeLayer(m));_marcCond={};
+  conUbi.forEach((p,i)=>{
+    const ic=L.divIcon({className:'',iconSize:[34,34],iconAnchor:[17,17],
+      html:'<div style="width:34px;height:34px;border-radius:50%;background:#b5491f;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 6px rgba(0,0,0,.6);color:#fff;font-weight:800">'+(i+1)+'</div>'});
+    _marcCond[p.id]=L.marker([p.dom_lat,p.dom_lng],{icon:ic}).addTo(_mapCond)
+      .bindPopup('<b>'+p.nombre+' '+p.apellido+'</b><br>'+(p.barrio||'')+(p.mesa?'<br>Mesa '+p.mesa:''));
+  });
+  _mapCond.fitBounds(L.latLngBounds(conUbi.map(p=>[p.dom_lat,p.dom_lng])).pad(.35));
+}
 async function marcar(id,campo){
   const p=PAS.find(x=>x.id===id);if(!p)return;
   p[campo]=!p[campo];
