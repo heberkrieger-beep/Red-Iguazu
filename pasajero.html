@@ -9,20 +9,20 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  :root{--noche:#12181c;--noche-2:#1b2329;--verde-ok:#31c46f;--tierra:#e2733f;--rojo:#e05545;--amarillo:#e8b53a;--txt:#eef2f0;--txt-2:#93a1a8;--linea:#2a343b}
+  :root{--noche:#eef1f0;--noche-2:#ffffff;--verde-ok:#31c46f;--tierra:#e2733f;--rojo:#e05545;--amarillo:#e8b53a;--txt:#1c2a23;--txt-2:#6b756f;--linea:#d8d0bf}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
   body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--noche);color:var(--txt);overflow:hidden}
   button{border:none;cursor:pointer;font-family:inherit}
 
   #mapa{position:fixed;inset:0;background:var(--noche)}
-  .leaflet-container{background:var(--noche)!important}
-  .leaflet-control-attribution{background:rgba(18,24,28,.7)!important;color:#5f6c73!important;font-size:9px!important}
-  .leaflet-control-attribution a{color:#7b8890!important}
+  .leaflet-container{background:#e8ebea!important}
+  .leaflet-control-attribution{background:rgba(255,255,255,.7)!important;color:#8a938f!important;font-size:9px!important}
+  .leaflet-control-attribution a{color:#5a6b73!important}
 
   .top{position:fixed;top:0;left:0;right:0;z-index:500;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;
-       background:linear-gradient(180deg,rgba(18,24,28,.96) 60%,rgba(18,24,28,0))}
-  .estado{background:var(--noche-2);border:1px solid var(--linea);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:11px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+       background:linear-gradient(180deg,rgba(238,241,240,.97) 60%,rgba(238,241,240,0))}
+  .estado{background:var(--noche-2);border:1px solid var(--linea);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:11px;box-shadow:0 4px 18px rgba(15,61,46,.12)}
   .estado .ic{font-size:22px;flex-shrink:0}
   .estado .tx{flex:1}
   .estado .t1{font-size:14.5px;font-weight:700;line-height:1.3}
@@ -31,23 +31,23 @@
   @keyframes lat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
 
   .sheet{position:fixed;left:0;right:0;bottom:0;z-index:500;padding:14px 14px calc(16px + env(safe-area-inset-bottom));
-         background:linear-gradient(0deg,rgba(18,24,28,.97) 65%,rgba(18,24,28,0))}
-  .card{background:var(--noche-2);border:1px solid var(--linea);border-radius:18px;padding:16px;box-shadow:0 -4px 30px rgba(0,0,0,.55)}
+         background:linear-gradient(0deg,rgba(238,241,240,.98) 65%,rgba(238,241,240,0))}
+  .card{background:var(--noche-2);border:1px solid var(--linea);border-radius:18px;padding:16px;box-shadow:0 -2px 20px rgba(15,61,46,.1)}
   .card .fila{display:flex;align-items:center;gap:13px}
-  .ava{width:50px;height:50px;border-radius:14px;background:linear-gradient(140deg,#2a343b,#161d22);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;border:1px solid var(--linea)}
+  .ava{width:50px;height:50px;border-radius:14px;background:linear-gradient(140deg,#ece8dd,#f6f4ef);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;border:1px solid var(--linea)}
   .nm{font-size:16.5px;font-weight:800;line-height:1.2}
   .mod{font-size:12.5px;color:var(--txt-2);margin-top:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-  .pat{background:#eef2f0;color:#12181c;font-size:11px;font-weight:800;padding:2px 8px;border-radius:5px;letter-spacing:1.2px}
+  .pat{background:#1c2a23;color:#fff;font-size:11px;font-weight:800;padding:2px 8px;border-radius:5px;letter-spacing:1.2px}
   .mesa{margin-top:12px;padding-top:12px;border-top:1px solid var(--linea);font-size:12.5px;color:var(--txt-2)}
   .mesa b{color:var(--txt)}
   .wa{width:100%;margin-top:12px;padding:14px;border-radius:13px;background:var(--verde-ok);color:#08150d;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px}
-  .msg{background:var(--noche-2);border:1px solid var(--linea);border-radius:16px;padding:18px;text-align:center;font-size:14px;color:var(--txt-2);box-shadow:0 -4px 30px rgba(0,0,0,.5)}
+  .msg{background:var(--noche-2);border:1px solid var(--linea);border-radius:16px;padding:18px;text-align:center;font-size:14px;color:var(--txt-2);box-shadow:0 -2px 20px rgba(15,61,46,.1)}
 
   .m-auto{transition:transform .9s linear}
   .halo{width:22px;height:22px;border-radius:50%;background:rgba(49,196,111,.25);display:flex;align-items:center;justify-content:center;animation:halo 2.2s infinite}
   .halo i{width:11px;height:11px;border-radius:50%;background:var(--verde-ok);border:2px solid #0d1418;display:block}
   @keyframes halo{0%{box-shadow:0 0 0 0 rgba(49,196,111,.4)}70%{box-shadow:0 0 0 16px rgba(49,196,111,0)}100%{box-shadow:0 0 0 0 rgba(49,196,111,0)}}
-  .btn-centrar{position:fixed;right:14px;bottom:215px;z-index:499;width:44px;height:44px;border-radius:50%;background:var(--noche-2);border:1px solid var(--linea);color:var(--txt);font-size:19px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+  .btn-centrar{position:fixed;right:14px;bottom:215px;z-index:499;width:44px;height:44px;border-radius:50%;background:var(--noche-2);border:1px solid var(--linea);color:var(--txt);font-size:19px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 12px rgba(15,61,46,.15)}
 </style>
 </head>
 <body>
@@ -71,7 +71,7 @@ const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const PID=new URLSearchParams(location.search).get('p');
 
 const mapa=L.map('mapa',{zoomControl:false}).setView([-25.599,-54.573],13);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
   attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(mapa);
 L.control.zoom({position:'bottomleft'}).addTo(mapa);
 
@@ -164,14 +164,18 @@ async function actualizar(){
   const viejo=min!==null&&min>5;
   const posConfiable=(a.lat&&a.lng&&min!==null&&min<=15); // más de 15 min = posición vieja, no la mostramos
 
+  const datosAuto=[a.modelo?a.modelo:'',a.dominio?'<span class="pat">'+a.dominio+'</span>':''].filter(Boolean).join(' ');
   sheet.innerHTML='<div class="card">'+
     '<div class="fila"><div class="ava">🚗</div>'+
-      '<div style="flex:1;min-width:0"><div class="nm">'+a.conductor+'</div>'+
-      '<div class="mod">'+(a.modelo||'')+(a.dominio?'<span class="pat">'+a.dominio+'</span>':'')+'</div></div>'+
+      '<div style="flex:1;min-width:0"><div style="font-size:11px;color:var(--txt-2);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px">Te busca</div>'+
+      '<div class="nm">'+a.conductor+'</div>'+
+      '<div class="mod">'+(datosAuto||'<span style="color:var(--txt-2)">datos del auto no cargados</span>')+'</div></div>'+
       (yo.abordo?'<span style="font-size:11px;font-weight:800;background:rgba(49,196,111,.15);color:var(--verde-ok);padding:5px 10px;border-radius:20px">A BORDO</span>':'')+
     '</div>'+
+    (a.dominio?'<div style="margin-top:12px;padding:11px;background:var(--noche);border-radius:11px;text-align:center"><div style="font-size:10.5px;color:var(--txt-2);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Buscá este auto</div><div style="font-size:18px;font-weight:800;margin-top:3px">'+(a.modelo?a.modelo+' · ':'')+'<span style="letter-spacing:2px">'+a.dominio+'</span></div></div>':'')+
     (yo.mesa?'<div class="mesa">Votás en la <b>mesa '+yo.mesa+'</b>'+(yo.circuito?' · '+yo.circuito:'')+' — llevá tu <b>DNI</b>.</div>':'')+
     (wa?'<button class="wa" onclick="window.open(\''+wa+'\',\'_blank\')"><span class="ti ti-brand-whatsapp"></span> Hablar con '+a.conductor.split(' ')[0]+'</button>':'')+
+    '<div style="text-align:center;font-size:11px;color:var(--txt-2);margin-top:12px;padding-top:11px;border-top:1px solid var(--linea)">Red Iguazú · Te acercamos a votar 🗳️</div>'+
   '</div>';
 
   if(posConfiable){
