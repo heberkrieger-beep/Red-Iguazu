@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v30</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v31</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -1179,7 +1179,11 @@ function editRef(id){
     </div>
     <label style="display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600;cursor:pointer">
       <input type="checkbox" id="erCoord" ${r.coord?'checked':''} style="width:18px;height:18px;accent-color:var(--tierra)">Acceso de coordinación</label>
-    <div class="form-field" style="margin-top:14px;background:#eef4f1;border:1px solid var(--linea);border-radius:11px;padding:12px"><label style="color:var(--azul)">🔑 Cambiar la clave de acceso <span class="opt">(dejá vacío para no tocarla)</span></label><input id="erClave" placeholder="escribí una clave nueva acá"><div style="font-size:11px;color:var(--gris);margin-top:6px">Si ponés una clave nueva, la de antes deja de funcionar. Después pasásela por WhatsApp.</div></div>`;
+    <div class="form-field" style="margin-top:14px;background:#eef4f1;border:1px solid var(--linea);border-radius:11px;padding:12px"><label style="color:var(--azul)">🔑 Cambiar la clave de acceso <span class="opt">(dejá vacío para no tocarla)</span></label><input id="erClave" placeholder="escribí una clave nueva acá"><div style="font-size:11px;color:var(--gris);margin-top:6px">Si ponés una clave nueva, la de antes deja de funcionar. Después pasásela por WhatsApp.</div></div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px dashed var(--linea)">
+      <div style="font-size:11.5px;color:var(--gris);margin-bottom:8px">⚠️ Zona de peligro</div>
+      <button onclick="borrarRefDelTodo()" style="width:100%;padding:11px;border-radius:11px;background:#fbe9e6;color:var(--rojo);font-weight:800;font-size:13px;border:1px solid var(--rojo)">🗑 Borrar este referente del todo (no se puede deshacer)</button>
+    </div>`;
   document.getElementById('btnBorrar').textContent='🗑 Dar de baja este referente';
   document.getElementById('btnBorrar').setAttribute('onclick','bajaRef()');
   document.getElementById('modalBg').querySelector('.btn-add').setAttribute('onclick','guardarRef()');
@@ -1213,6 +1217,31 @@ async function guardarRef(){
       toast('Referente actualizado ✓',true);
     }
   }
+}
+async function borrarRefDelTodo(){
+  const r=REFERENTES.find(x=>x.id===editRefId);if(!r)return;
+  const id=editRefId;
+  if(id===current.id){alert('No podés borrarte a vos mismo.');return;}
+  const n=REGISTROS.filter(x=>x.ref===id).length;
+  const msg=n
+    ? `⚠️ ${r.nombre} tiene ${n} persona(s) cargada(s).\n\nSi lo borrás del todo, esas ${n} persona(s) quedan SIN referente (no se borran, pero pierden a quién estaban asignadas).\n\n¿Seguro querés borrarlo?`
+    : `¿Borrar del todo a ${r.nombre}? No tiene gente cargada.\n\nEsto no se puede deshacer.`;
+  if(!confirm(msg))return;
+  if(!confirm(`Última confirmación: escribí mentalmente "sí".\n\n¿Borrar definitivamente a ${r.nombre}?`))return;
+  // desasignar su gente (quedan sin referente, no se pierden)
+  if(sb&&n){
+    await sb.from('registros').update({ref_id:null}).eq('ref_id',id);
+    REGISTROS.forEach(p=>{if(p.ref===id)p.ref=null;});
+  }
+  // borrar el usuario de la base
+  if(sb){
+    const {error}=await sb.from('usuarios').delete().eq('id',id);
+    if(error){toast('No se pudo borrar: '+error.message);return;}
+  }
+  REFERENTES=REFERENTES.filter(x=>x.id!==id);
+  editRefId=null;
+  cerrarModal();restoreModalButtons();renderAll();
+  toast(`${r.nombre} borrado del todo`,true);
 }
 async function bajaRef(){
   const r=REFERENTES.find(x=>x.id===editRefId);if(!r)return;
