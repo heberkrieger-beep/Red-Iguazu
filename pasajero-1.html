@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Red Iguazú — Tu auto</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{--noche:#12181c;--noche-2:#1b2329;--verde-ok:#31c46f;--tierra:#e2733f;--rojo:#e05545;--amarillo:#e8b53a;--txt:#eef2f0;--txt-2:#93a1a8;--linea:#2a343b}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--noche);color:var(--txt);overflow:hidden}
+  button{border:none;cursor:pointer;font-family:inherit}
+
+  #mapa{position:fixed;inset:0;background:var(--noche)}
+  .leaflet-container{background:var(--noche)!important}
+  .leaflet-control-attribution{background:rgba(18,24,28,.7)!important;color:#5f6c73!important;font-size:9px!important}
+  .leaflet-control-attribution a{color:#7b8890!important}
+
+  .top{position:fixed;top:0;left:0;right:0;z-index:500;padding:calc(12px + env(safe-area-inset-top)) 14px 12px;
+       background:linear-gradient(180deg,rgba(18,24,28,.96) 60%,rgba(18,24,28,0))}
+  .estado{background:var(--noche-2);border:1px solid var(--linea);border-radius:14px;padding:13px 16px;display:flex;align-items:center;gap:11px;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+  .estado .ic{font-size:22px;flex-shrink:0}
+  .estado .tx{flex:1}
+  .estado .t1{font-size:14.5px;font-weight:700;line-height:1.3}
+  .estado .t2{font-size:12px;color:var(--txt-2);margin-top:2px}
+  .pulso{width:9px;height:9px;border-radius:50%;background:var(--verde-ok);flex-shrink:0;animation:lat 1.6s infinite}
+  @keyframes lat{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
+
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:500;padding:14px 14px calc(16px + env(safe-area-inset-bottom));
+         background:linear-gradient(0deg,rgba(18,24,28,.97) 65%,rgba(18,24,28,0))}
+  .card{background:var(--noche-2);border:1px solid var(--linea);border-radius:18px;padding:16px;box-shadow:0 -4px 30px rgba(0,0,0,.55)}
+  .card .fila{display:flex;align-items:center;gap:13px}
+  .ava{width:50px;height:50px;border-radius:14px;background:linear-gradient(140deg,#2a343b,#161d22);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;border:1px solid var(--linea)}
+  .nm{font-size:16.5px;font-weight:800;line-height:1.2}
+  .mod{font-size:12.5px;color:var(--txt-2);margin-top:3px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .pat{background:#eef2f0;color:#12181c;font-size:11px;font-weight:800;padding:2px 8px;border-radius:5px;letter-spacing:1.2px}
+  .mesa{margin-top:12px;padding-top:12px;border-top:1px solid var(--linea);font-size:12.5px;color:var(--txt-2)}
+  .mesa b{color:var(--txt)}
+  .wa{width:100%;margin-top:12px;padding:14px;border-radius:13px;background:var(--verde-ok);color:#08150d;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:8px}
+  .msg{background:var(--noche-2);border:1px solid var(--linea);border-radius:16px;padding:18px;text-align:center;font-size:14px;color:var(--txt-2);box-shadow:0 -4px 30px rgba(0,0,0,.5)}
+
+  .m-auto{transition:transform .9s linear}
+  .halo{width:22px;height:22px;border-radius:50%;background:rgba(49,196,111,.25);display:flex;align-items:center;justify-content:center;animation:halo 2.2s infinite}
+  .halo i{width:11px;height:11px;border-radius:50%;background:var(--verde-ok);border:2px solid #0d1418;display:block}
+  @keyframes halo{0%{box-shadow:0 0 0 0 rgba(49,196,111,.4)}70%{box-shadow:0 0 0 16px rgba(49,196,111,0)}100%{box-shadow:0 0 0 0 rgba(49,196,111,0)}}
+  .btn-centrar{position:fixed;right:14px;bottom:215px;z-index:499;width:44px;height:44px;border-radius:50%;background:var(--noche-2);border:1px solid var(--linea);color:var(--txt);font-size:19px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.5)}
+</style>
+</head>
+<body>
+  <div id="mapa"></div>
+
+  <div class="top">
+    <div class="estado" id="estado">
+      <span class="ic">⏳</span>
+      <div class="tx"><div class="t1">Cargando...</div><div class="t2">Buscando tu traslado</div></div>
+    </div>
+  </div>
+
+  <button class="btn-centrar" onclick="centrar()" title="Centrar">⌖</button>
+
+  <div class="sheet"><div id="sheetBody"></div></div>
+
+<script>
+const SUPABASE_URL='https://qgogamniszilcefqvtcq.supabase.co';
+const SUPABASE_KEY='sb_publishable_RtlHSBqEDAi-aCfF6ZzKAg_RHg968Cr';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const PID=new URLSearchParams(location.search).get('p');
+
+const mapa=L.map('mapa',{zoomControl:false}).setView([-25.599,-54.573],13);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(mapa);
+L.control.zoom({position:'bottomleft'}).addTo(mapa);
+
+let mAuto=null,mYo=null,linea=null,centrado=false,posAuto=null,posYo=null,anim=null;
+
+function waLink(tel){
+  let n=(tel||'').replace(/\D/g,'');
+  if(n.length<8)return null;
+  if(n.startsWith('0'))n=n.slice(1);
+  const m=n.match(/^(\d{2,4})15(\d{6,8})$/); if(m)n=m[1]+m[2];
+  if(n.startsWith('549')){}else if(n.startsWith('54'))n='549'+n.slice(2);else n='549'+n;
+  return 'https://wa.me/'+n;
+}
+function iconoAuto(rot){
+  return L.divIcon({className:'',iconSize:[46,46],iconAnchor:[23,23],
+    html:'<div class="m-auto" style="width:46px;height:46px;display:flex;align-items:center;justify-content:center;transform:rotate('+rot+'deg)">'+
+      '<div style="width:38px;height:38px;border-radius:50%;background:#eef2f0;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 3px 12px rgba(0,0,0,.6)">🚗</div></div>'});
+}
+function bearing(a,b){
+  const y=Math.sin((b[1]-a[1])*Math.PI/180)*Math.cos(b[0]*Math.PI/180);
+  const x=Math.cos(a[0]*Math.PI/180)*Math.sin(b[0]*Math.PI/180)-Math.sin(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.cos((b[1]-a[1])*Math.PI/180);
+  return (Math.atan2(y,x)*180/Math.PI+360)%360;
+}
+function dist(a,b){
+  const R=6371000,dLat=(b[0]-a[0])*Math.PI/180,dLon=(b[1]-a[1])*Math.PI/180;
+  const s=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return Math.round(2*R*Math.asin(Math.sqrt(s)));
+}
+function moverAuto(destino){
+  if(!mAuto){posAuto=destino;mAuto=L.marker(destino,{icon:iconoAuto(0),zIndexOffset:600}).addTo(mapa);dibujarLinea();return;}
+  const desde=posAuto||destino;
+  if(dist(desde,destino)<3){posAuto=destino;mAuto.setLatLng(destino);dibujarLinea();return;}
+  mAuto.setIcon(iconoAuto(bearing(desde,destino)));
+  if(anim)cancelAnimationFrame(anim);
+  const t0=performance.now(),dur=1200;
+  function paso(t){
+    const k=Math.min(1,(t-t0)/dur);
+    const ll=[desde[0]+(destino[0]-desde[0])*k, desde[1]+(destino[1]-desde[1])*k];
+    mAuto.setLatLng(ll);posAuto=ll;dibujarLinea();
+    if(k<1)anim=requestAnimationFrame(paso);
+  }
+  anim=requestAnimationFrame(paso);
+}
+function dibujarLinea(){
+  if(!posAuto||!posYo)return;
+  if(linea)linea.setLatLngs([posAuto,posYo]);
+  else linea=L.polyline([posAuto,posYo],{color:'#31c46f',weight:2.5,opacity:.55,dashArray:'7,9'}).addTo(mapa);
+}
+function centrar(){
+  if(posAuto&&posYo)mapa.fitBounds(L.latLngBounds([posAuto,posYo]).pad(.45));
+  else if(posAuto)mapa.setView(posAuto,15);
+  else if(posYo)mapa.setView(posYo,15);
+}
+if(navigator.geolocation){
+  navigator.geolocation.watchPosition(function(pos){
+    posYo=[pos.coords.latitude,pos.coords.longitude];
+    if(mYo)mYo.setLatLng(posYo);
+    else mYo=L.marker(posYo,{icon:L.divIcon({className:'',iconSize:[22,22],iconAnchor:[11,11],html:'<div class="halo"><i></i></div>'})}).addTo(mapa);
+    dibujarLinea();
+    if(!centrado){centrar();centrado=true;}
+  },function(){},{enableHighAccuracy:true,maximumAge:10000});
+}
+function setEstado(ic,t1,t2,color,pulso){
+  document.getElementById('estado').innerHTML=
+    '<span class="ic">'+ic+'</span><div class="tx"><div class="t1" style="'+(color?'color:'+color:'')+'">'+t1+'</div><div class="t2">'+(t2||'')+'</div></div>'+(pulso?'<span class="pulso"></span>':'');
+}
+
+async function actualizar(){
+  const sheet=document.getElementById('sheetBody');
+  if(!PID){setEstado('⚠','Link inválido','Pedí que te lo reenvíen','var(--rojo)');sheet.innerHTML='';return;}
+  const {data:regs}=await sb.from('registros').select('*').eq('id',PID);
+  if(!regs||!regs.length){setEstado('⚠','No encontramos tu registro','Pedí el link de nuevo','var(--rojo)');sheet.innerHTML='';return;}
+  const yo=regs[0];
+  if(yo.voto){setEstado('✅','¡Listo, ya votaste!','Gracias por participar 🙌','var(--verde-ok)');
+    sheet.innerHTML='<div class="msg">Tu traslado está completo. ¡Gracias!</div>';return;}
+  if(!yo.auto_id){setEstado('🕐','Todavía no te asignaron auto','Apenas lo tengan, vas a verlo acá','var(--amarillo)');
+    sheet.innerHTML='<div class="msg">Estás anotado en la lista de traslados. Te avisamos cuando salga tu auto.</div>';return;}
+  const {data:autos}=await sb.from('autos').select('*').eq('id',yo.auto_id);
+  if(!autos||!autos.length){setEstado('🕐','Organizando tu viaje','Un momento...','var(--amarillo)');return;}
+  const a=autos[0],wa=waLink(a.tel);
+  const min=a.pos_ts?Math.round((Date.now()-new Date(a.pos_ts).getTime())/60000):null;
+  const viejo=min!==null&&min>5;
+
+  sheet.innerHTML='<div class="card">'+
+    '<div class="fila"><div class="ava">🚗</div>'+
+      '<div style="flex:1;min-width:0"><div class="nm">'+a.conductor+'</div>'+
+      '<div class="mod">'+(a.modelo||'')+(a.dominio?'<span class="pat">'+a.dominio+'</span>':'')+'</div></div>'+
+      (yo.abordo?'<span style="font-size:11px;font-weight:800;background:rgba(49,196,111,.15);color:var(--verde-ok);padding:5px 10px;border-radius:20px">A BORDO</span>':'')+
+    '</div>'+
+    (yo.mesa?'<div class="mesa">Votás en la <b>mesa '+yo.mesa+'</b>'+(yo.circuito?' · '+yo.circuito:'')+' — llevá tu <b>DNI</b>.</div>':'')+
+    (wa?'<button class="wa" onclick="window.open(\''+wa+'\',\'_blank\')"><span class="ti ti-brand-whatsapp"></span> Hablar con '+a.conductor.split(' ')[0]+'</button>':'')+
+  '</div>';
+
+  if(a.lat&&a.lng){
+    moverAuto([a.lat,a.lng]);
+    if(yo.abordo){setEstado('🚗','Vas en camino a votar','Con '+a.conductor.split(' ')[0]+' · seguí el recorrido','var(--verde-ok)',true);}
+    else if(viejo){setEstado('📡','El auto está en camino','Su señal se cortó hace '+min+' min','var(--amarillo)');}
+    else{
+      const d=posYo?dist([a.lat,a.lng],posYo):null;
+      const txt=d===null?'Seguilo en el mapa':d<250?'¡Está muy cerca! Salí a la puerta 🙌':d<1000?'A unos '+d+' metros tuyo':'A '+(d/1000).toFixed(1).replace('.',',')+' km tuyo';
+      setEstado('🚗','Tu auto está en camino',txt,'var(--verde-ok)',true);
+    }
+    if(!centrado){centrar();centrado=true;}
+  }else{
+    setEstado('🕐','Tu auto ya está asignado','Cuando salga a la calle vas a verlo acá','var(--amarillo)');
+  }
+}
+actualizar();
+setInterval(function(){if(document.visibilityState==='visible')actualizar();},15000);
+</script>
+</body>
+</html>
