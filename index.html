@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v29</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v30</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -587,9 +587,7 @@
       <button class="btn-add" onclick="crearReferente()">Crear referente</button>
     </div>
     <button onclick="cargarReferentesDB();toast('Actualizado',true)" style="background:var(--arena-2);color:var(--tinta);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;margin-bottom:12px">🔄 Actualizar lista</button>
-    <table id="refAdminTable"><thead><tr>
-      <th>Referente</th><th class="hide-sm">Usuario</th><th>Categoría</th><th class="hide-sm">Zona</th><th>Estado</th><th>Acceso</th><th></th>
-    </tr></thead><tbody></tbody></table>
+    <div id="refAdminTable" style="display:flex;flex-direction:column;gap:10px"></div>
 
     <h3 style="font-size:15px;color:var(--selva);margin:30px 0 12px">🏘 Barrios de la campaña</h3>
     <div class="form-card" style="max-width:none">
@@ -1123,24 +1121,38 @@ async function crearReferente(){
   if(btn){btn.textContent='Crear referente';btn.disabled=false;}
 }
 function renderReferentes(){
-  const tb=document.querySelector('#refAdminTable tbody');if(!tb)return;
+  const cont=document.getElementById('refAdminTable');if(!cont)return;
   if(!REFERENTES.length){
-    tb.innerHTML='<tr><td colspan="7" style="padding:18px;text-align:center;color:var(--gris)">No hay referentes cargados todavía. Creá uno con el formulario de arriba, o tocá «🔄 Actualizar».</td></tr>';
+    cont.innerHTML='<div style="padding:18px;text-align:center;color:var(--gris)">No hay referentes cargados todavía. Creá uno con el formulario de arriba, o tocá «🔄 Actualizar».</div>';
     return;
   }
-  tb.innerHTML=REFERENTES.map(r=>{
+  const orden=[...REFERENTES].sort((a,b)=>{
+    if((a.estado==='inactivo')!==(b.estado==='inactivo'))return a.estado==='inactivo'?1:-1;
+    return votosDe(REGISTROS.filter(x=>x.ref===b.id)).pos - votosDe(REGISTROS.filter(x=>x.ref===a.id)).pos;
+  });
+  cont.innerHTML=orden.map(r=>{
     const v=votosDe(REGISTROS.filter(x=>x.ref===r.id));
     const estCol=r.estado==='activo'?'var(--verde-ok)':r.estado==='tibio'?'var(--amarillo)':'var(--gris)';
     const esYo=r.id===current.id;
-    return `<tr${esYo?' style="background:#fbf3e8"':''}>
-      <td><span class="ref-name">${r.nombre}</span>${esYo?' <span class="badge" style="background:var(--selva)">vos</span>':''}<div style="font-size:11px;color:var(--gris)">${v.pos} votos · meta ${r.meta}</div></td>
-      <td class="hide-sm">${r.usuario}</td>
-      <td><span class="badge" style="background:${CAT_COLOR[r.cat]}">${CATS[r.cat]}</span></td>
-      <td class="hide-sm">${r.zona}</td>
-      <td><span class="semaforo" style="background:${estCol}"></span>${r.estado}</td>
-      <td>${r.coord?'<span class="badge" style="background:var(--tierra)">Coord.</span>':'Referente'}</td>
-      <td><button onclick="editRef('${r.id}')" style="background:var(--arena-2);border-radius:8px;width:30px;height:30px;font-size:14px">✏️</button></td>
-    </tr>`;
+    const pct=r.meta?Math.min(100,Math.round(v.pos/r.meta*100)):0;
+    return `<div style="background:var(--blanco);border:1px solid var(--linea);${esYo?'border-left:4px solid var(--tierra);':''}border-radius:14px;padding:14px 15px;box-shadow:var(--sombra)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:16px;font-weight:800;color:var(--selva)">${r.nombre}${esYo?' <span class="badge" style="background:var(--selva)">vos</span>':''}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+            <span class="badge" style="background:${CAT_COLOR[r.cat]}">${CATS[r.cat]}</span>
+            <span class="badge" style="background:${r.coord?'var(--tierra)':'var(--arena-2)'};color:${r.coord?'#fff':'var(--gris)'}">${r.coord?'Coordinación':'Referente'}</span>
+            <span style="font-size:11.5px;color:${estCol};font-weight:700;display:inline-flex;align-items:center;gap:4px"><span class="semaforo" style="background:${estCol}"></span>${r.estado}</span>
+          </div>
+        </div>
+        <button onclick="editRef('${r.id}')" style="background:var(--tierra);color:#fff;border-radius:10px;padding:9px 14px;font-size:13px;font-weight:700;flex-shrink:0;display:flex;align-items:center;gap:5px"><span class="ti ti-edit" aria-hidden="true"></span> Editar</button>
+      </div>
+      <div style="margin-top:11px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;height:7px;background:var(--arena-2);border-radius:5px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${estCol}"></div></div>
+        <div style="font-size:12px;color:var(--gris);white-space:nowrap"><b style="color:var(--tinta)">${v.pos}</b> / ${r.meta} votos</div>
+      </div>
+      <div style="font-size:11.5px;color:var(--gris);margin-top:7px">👤 usuario: <b>${r.usuario}</b>${r.zona?' · 📍 '+r.zona:''}</div>
+    </div>`;
   }).join('');
 }
 function editRef(id){
@@ -1167,7 +1179,7 @@ function editRef(id){
     </div>
     <label style="display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:600;cursor:pointer">
       <input type="checkbox" id="erCoord" ${r.coord?'checked':''} style="width:18px;height:18px;accent-color:var(--tierra)">Acceso de coordinación</label>
-    <div class="form-field" style="margin-top:14px"><label>Resetear clave <span class="opt">(dejá vacío para no cambiarla)</span></label><input id="erClave" placeholder="nueva clave (opcional)"></div>`;
+    <div class="form-field" style="margin-top:14px;background:#eef4f1;border:1px solid var(--linea);border-radius:11px;padding:12px"><label style="color:var(--azul)">🔑 Cambiar la clave de acceso <span class="opt">(dejá vacío para no tocarla)</span></label><input id="erClave" placeholder="escribí una clave nueva acá"><div style="font-size:11px;color:var(--gris);margin-top:6px">Si ponés una clave nueva, la de antes deja de funcionar. Después pasásela por WhatsApp.</div></div>`;
   document.getElementById('btnBorrar').textContent='🗑 Dar de baja este referente';
   document.getElementById('btnBorrar').setAttribute('onclick','bajaRef()');
   document.getElementById('modalBg').querySelector('.btn-add').setAttribute('onclick','guardarRef()');
