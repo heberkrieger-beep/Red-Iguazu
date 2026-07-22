@@ -168,6 +168,7 @@
       <div class="panel"><h2><span class="ti ti-calendar-check"></span> Actividad del equipo — planeado vs cumplido</h2>
         <div id="actividadResumen" class="subgrid" style="margin-bottom:14px"></div>
         <div id="actividadLista"></div>
+        <div id="actividadRanking" style="margin-top:16px"></div>
       </div>
       <div class="panel"><h2><span class="ti ti-trending-up"></span> Ritmo de campaña
         <span style="margin-left:auto;font-weight:600;font-size:12px;color:var(--gris);display:flex;align-items:center;gap:8px">Fecha de elección:
@@ -373,6 +374,19 @@ function renderActividad(){
       return `<tr><td>${d.getDate()}/${d.getMonth()+1} ${e.turno||''}</td><td><b>${e.titulo}</b> <span style="font-size:11px;color:var(--gris)">${e.tipo}</span></td><td>${e.contacto_nom||'—'}</td><td>${refN(e.ref_id)}</td></tr>`;
     }).join('')+'</tbody></table>'
     :'<div class="empty">No hay actividades próximas agendadas.</div>';
+  // ranking: quiénes piden reuniones y cuántas
+  const porRef={};
+  EV.forEach(e=>{const id=e.ref_id;if(!porRef[id])porRef[id]={tot:0,hechas:0};porRef[id].tot++;if(e.hecho)porRef[id].hechas++;});
+  const filas=Object.entries(porRef).map(([id,d])=>({nom:refN(id),...d})).sort((a,b)=>b.tot-a.tot);
+  const rk=document.getElementById('actividadRanking');
+  if(rk){
+    if(!filas.length){rk.innerHTML='';return;}
+    rk.innerHTML='<div style="font-size:12.5px;font-weight:800;color:var(--selva);margin-bottom:8px">Quiénes se reúnen con vos</div>'+
+      '<table><thead><tr><th>Referente</th><th>Reuniones pedidas</th><th>Realizadas</th></tr></thead><tbody>'+
+      filas.map(f=>`<tr><td><b>${f.nom}</b></td><td>${f.tot}</td><td>${f.hechas} ${f.hechas<f.tot?'<span style="color:var(--gris);font-size:11px">('+(f.tot-f.hechas)+' pendiente'+(f.tot-f.hechas===1?'':'s')+')</span>':'✓'}</td></tr>`).join('')+
+      '</tbody></table>'+
+      '<div style="font-size:11.5px;color:var(--gris);margin-top:8px">Los referentes que no aparecen todavía no te pidieron ninguna reunión.</div>';
+  }
 }
 function setFechaEleccion(v){localStorage.setItem('ri_fecha_eleccion',v);renderRitmo();}
 function renderRitmo(){

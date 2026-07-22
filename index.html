@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v32</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v33</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -428,7 +428,21 @@
 
   <!-- AGENDA -->
   <div class="view" id="view-agenda">
-    <div class="view-head"><h2>Agenda</h2><p>Reservá un turno. Lunes a sábado, de 10 a 20hs. Si un turno ya está tomado, no aparece.</p></div>
+    <div class="view-head"><h2>Agenda</h2><p>Tu calendario de reuniones. Los referentes reservan turno para reunirse con vos. Lunes a sábado.</p></div>
+    <div id="calWrap" style="display:none;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+        <div style="display:flex;gap:6px">
+          <button id="calMes" onclick="setCalVista('mes')" class="filtro-btn active">Mes</button>
+          <button id="calSem" onclick="setCalVista('semana')" class="filtro-btn">Semana</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button onclick="calNav(-1)" style="background:var(--arena-2);border-radius:9px;width:34px;height:34px;font-size:16px;font-weight:800">‹</button>
+          <span id="calTitulo" style="font-size:14px;font-weight:800;color:var(--selva);min-width:130px;text-align:center"></span>
+          <button onclick="calNav(1)" style="background:var(--arena-2);border-radius:9px;width:34px;height:34px;font-size:16px;font-weight:800">›</button>
+        </div>
+      </div>
+      <div id="calGrid"></div>
+    </div>
     <div class="form-card" style="margin-bottom:24px">
       <div class="form-row">
         <div class="form-field"><label>Tipo</label>
@@ -453,7 +467,6 @@
       <div class="form-field full"><label>Nota <span class="opt">(opcional)</span></label><textarea id="evNota" placeholder="Llevar folletos, confirmar antes por WhatsApp..."></textarea></div>
       <button class="btn-add" onclick="addEvento()">Reservar turno</button>
     </div>
-    <select id="agFiltroRef" onchange="renderAgenda()" style="display:none;width:100%;padding:11px 14px;border:1.5px solid var(--selva);border-radius:11px;font-size:14px;font-weight:700;background:var(--blanco);color:var(--selva);margin-bottom:14px"></select>
     <div class="agenda-list" id="agendaList"></div>
   </div>
 
@@ -2006,7 +2019,8 @@ async function guardarHijo(confId){
 }
 
 /* ---- AGENDA con TURNOS ---- */
-const TURNOS=['10:00–12:00','14:00–16:00','16:00–18:00','18:00–20:00'];
+const TURNOS=['10:00–12:00','12:00–14:00','14:00–16:00','16:00–18:00','18:00–20:00','20:00–22:00','22:00–00:00'];
+const TURNO_ETIQUETA={'12:00–14:00':'🍽 almuerzo','20:00–22:00':'🍽 cena'};
 function renderTurnos(){
   const fecha=document.getElementById('evFecha').value;
   const grid=document.getElementById('turnoGrid');
@@ -2015,6 +2029,7 @@ function renderTurnos(){
   const d=new Date(fecha+'T00:00');
   if(d.getDay()===0){grid.innerHTML='<div class="empty" style="grid-column:1/-1;padding:10px;color:var(--rojo)">El domingo no hay turnos. Elegí de lunes a sábado.</div>';return;}
   grid.innerHTML=TURNOS.map(t=>{
+    const et=TURNO_ETIQUETA[t]?' <span style="font-size:10px;color:var(--tierra)">'+TURNO_ETIQUETA[t]+'</span>':'';
     const tomado=EVENTOS.find(e=>e.fecha===fecha&&e.turno===t);
     if(tomado){
       return `<div style="padding:12px;border:1.5px solid var(--linea);border-radius:11px;background:var(--arena-2);opacity:.6;text-align:center">
@@ -2022,7 +2037,7 @@ function renderTurnos(){
         <div style="font-size:10.5px;color:var(--rojo);font-weight:600;margin-top:2px">OCUPADO</div></div>`;
     }
     return `<button type="button" onclick="elegirTurno('${t}',this)" style="padding:12px;border:1.5px solid var(--linea);border-radius:11px;background:var(--arena);font-weight:700;color:var(--tinta);cursor:pointer;transition:.12s">
-      ${t}<div style="font-size:10.5px;color:var(--verde-ok);font-weight:600;margin-top:2px">libre</div></button>`;
+      ${t}${et}<div style="font-size:10.5px;color:var(--verde-ok);font-weight:600;margin-top:2px">libre</div></button>`;
   }).join('');
 }
 function elegirTurno(t,btn){
@@ -2087,24 +2102,72 @@ async function addEvento(){
   renderAgenda();
   toast('Turno reservado ✓',true);
 }
+/* ---- CALENDARIO visual (mes / semana) ---- */
+let calVista='mes', calRef=new Date();
+const DIAS_SEM=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+function setCalVista(v){calVista=v;document.getElementById('calMes').classList.toggle('active',v==='mes');document.getElementById('calSem').classList.toggle('active',v==='semana');renderCalendario();}
+function calNav(dir){if(calVista==='mes')calRef.setMonth(calRef.getMonth()+dir);else calRef.setDate(calRef.getDate()+dir*7);renderCalendario();}
+function evsDe(fechaISO){return EVENTOS.filter(e=>e.fecha===fechaISO).sort((a,b)=>(a.turno||'').localeCompare(b.turno||''));}
+function colorTipo(t){return t==='visita'?'var(--azul)':t==='reunion'?'var(--tierra)':'var(--verde-ok)';}
+function renderCalendario(){
+  const grid=document.getElementById('calGrid'),tit=document.getElementById('calTitulo');if(!grid)return;
+  const hoy=new Date().toISOString().slice(0,10);
+  const MES_NOM=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  if(calVista==='mes'){
+    tit.textContent=MES_NOM[calRef.getMonth()]+' '+calRef.getFullYear();
+    const y=calRef.getFullYear(),m=calRef.getMonth();
+    const primero=new Date(y,m,1),arranque=(primero.getDay()+6)%7; // lunes=0
+    const diasMes=new Date(y,m+1,0).getDate();
+    let celdas='';
+    DIAS_SEM.forEach(d=>celdas+=`<div style="text-align:center;font-size:10.5px;font-weight:800;color:var(--gris);padding:4px 0">${d}</div>`);
+    for(let i=0;i<arranque;i++)celdas+='<div></div>';
+    for(let dia=1;dia<=diasMes;dia++){
+      const fISO=`${y}-${String(m+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+      const evs=evsDe(fISO),esHoy=fISO===hoy;
+      const puntos=evs.slice(0,4).map(e=>`<span style="width:6px;height:6px;border-radius:50%;background:${colorTipo(e.tipo)};display:inline-block;margin:1px"></span>`).join('');
+      celdas+=`<div onclick="calDiaTap('${fISO}')" style="min-height:58px;border:1px solid var(--linea);border-radius:9px;padding:5px;cursor:pointer;background:${esHoy?'#eef4f1':'var(--blanco)'};${esHoy?'border-color:var(--selva)':''}">
+        <div style="font-size:12px;font-weight:${esHoy?'800':'600'};color:${esHoy?'var(--selva)':'var(--tinta)'}">${dia}</div>
+        <div style="display:flex;flex-wrap:wrap;margin-top:2px">${puntos}</div>
+        ${evs.length>4?'<div style="font-size:9px;color:var(--gris)">+'+(evs.length-4)+'</div>':''}</div>`;
+    }
+    grid.innerHTML=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px">${celdas}</div>
+      <div style="display:flex;gap:12px;margin-top:10px;font-size:11px;color:var(--gris)">
+        <span><span style="width:8px;height:8px;border-radius:50%;background:var(--azul);display:inline-block"></span> Visita</span>
+        <span><span style="width:8px;height:8px;border-radius:50%;background:var(--tierra);display:inline-block"></span> Reunión</span>
+        <span><span style="width:8px;height:8px;border-radius:50%;background:var(--verde-ok);display:inline-block"></span> Acto</span>
+      </div>`;
+  }else{
+    // semana
+    const base=new Date(calRef),off=(base.getDay()+6)%7;base.setDate(base.getDate()-off);
+    const finSem=new Date(base);finSem.setDate(finSem.getDate()+5);
+    tit.textContent=base.getDate()+'/'+(base.getMonth()+1)+' – '+finSem.getDate()+'/'+(finSem.getMonth()+1);
+    let html='';
+    for(let i=0;i<6;i++){ // lunes a sábado
+      const d=new Date(base);d.setDate(d.getDate()+i);
+      const fISO=d.toISOString().slice(0,10),evs=evsDe(fISO),esHoy=fISO===hoy;
+      html+=`<div style="border:1px solid var(--linea);border-radius:11px;margin-bottom:8px;overflow:hidden">
+        <div onclick="calDiaTap('${fISO}')" style="background:${esHoy?'var(--selva)':'var(--arena-2)'};color:${esHoy?'#fff':'var(--tinta)'};padding:8px 12px;font-size:13px;font-weight:800;cursor:pointer">${DIAS_SEM[i]} ${d.getDate()}/${d.getMonth()+1}${esHoy?' · hoy':''}</div>`;
+      if(evs.length){
+        html+=evs.map(e=>`<div style="padding:9px 12px;border-top:1px solid var(--arena-2);font-size:12.5px">
+          <b style="color:${colorTipo(e.tipo)}">${e.turno||''}</b> · ${e.titulo}${e.contactoNom?' <span style="color:var(--gris)">— '+e.contactoNom+'</span>':''}
+          <span style="color:var(--tierra);font-size:11px">(${e.refNom})</span>${e.hecho?' ✓':''}</div>`).join('');
+      }else{html+='<div style="padding:9px 12px;font-size:12px;color:var(--gris)">libre</div>';}
+      html+='</div>';
+    }
+    grid.innerHTML=html;
+  }
+}
+function calDiaTap(fISO){
+  // al tocar un día, precargar la fecha en el formulario de reserva
+  const f=document.getElementById('evFecha');if(f){f.value=fISO;renderTurnos();f.scrollIntoView({behavior:'smooth',block:'center'});}
+}
 function renderAgenda(){
   const isAdmin=current.role==='admin'||current.coord;
-  // llenar filtro de referente (solo admin)
-  const selF=document.getElementById('agFiltroRef');
-  if(selF){
-    if(isAdmin){
-      selF.style.display='block';
-      const actual=selF.value;
-      const refs=REFERENTES.filter(r=>r.estado!=='inactivo').sort((a,b)=>a.nombre.localeCompare(b.nombre));
-      selF.innerHTML='<option value="">📅 Ver la agenda de todos</option>'+refs.map(r=>`<option value="${r.id}">${r.nombre}</option>`).join('');
-      selF.value=actual;
-    }else{selF.style.display='none';}
-  }
+  // el calendario visual es solo para coordinación (dueño de la agenda)
+  const cw=document.getElementById('calWrap');
+  if(cw){if(isAdmin){cw.style.display='block';renderCalendario();}else{cw.style.display='none';}}
   const cont=document.getElementById('agendaList');
   let base=EVENTOS.filter(e=>isAdmin||e.ref===current.id||e.ref==='admin');
-  // filtro admin por referente
-  const fRef=document.getElementById('agFiltroRef')?document.getElementById('agFiltroRef').value:'';
-  if(fRef)base=base.filter(e=>e.ref===fRef);
   const mine=base.slice().sort((a,b)=>(a.fecha+(a.turno||'')).localeCompare(b.fecha+(b.turno||'')));
   const hoy=new Date().toISOString().slice(0,10);
   if(!mine.length){cont.innerHTML='<div style="color:var(--gris);font-size:13px">No hay nada agendado'+(fRef?' para ese referente':'')+'. Reservá un turno arriba.</div>';return;}
