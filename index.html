@@ -319,7 +319,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v33</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v34</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -1070,7 +1070,11 @@ function toast(msg, ok){
   t.textContent=msg; t.style.display='block';
   clearTimeout(window._toastT); window._toastT=setTimeout(()=>{t.style.display='none'},3500);
 }
-function renderAll(){renderDash();renderRecent();renderTree();renderAgenda();renderMapa();renderReferentes();renderFiscales();refreshUserSelect();refreshBarrios();renderLista();renderDiaD();}
+function renderAll(){
+  // cada dibujado va protegido: si uno falla, los demás siguen andando
+  const partes=[renderDash,renderRecent,renderTree,renderAgenda,renderMapa,renderReferentes,renderFiscales,refreshUserSelect,refreshBarrios,renderLista,renderDiaD];
+  partes.forEach(fn=>{try{fn();}catch(e){console.error('Error en '+fn.name+':',e);}});
+}
 function logout(){current=null;document.getElementById('app').style.display='none';document.getElementById('login').style.display='flex';}
 function refreshUserSelect(){
   // llenar el selector "¿de quién es?" en Cargar (solo para coordinación)
@@ -2170,7 +2174,7 @@ function renderAgenda(){
   let base=EVENTOS.filter(e=>isAdmin||e.ref===current.id||e.ref==='admin');
   const mine=base.slice().sort((a,b)=>(a.fecha+(a.turno||'')).localeCompare(b.fecha+(b.turno||'')));
   const hoy=new Date().toISOString().slice(0,10);
-  if(!mine.length){cont.innerHTML='<div style="color:var(--gris);font-size:13px">No hay nada agendado'+(fRef?' para ese referente':'')+'. Reservá un turno arriba.</div>';return;}
+  if(!mine.length){cont.innerHTML='<div style="color:var(--gris);font-size:13px">No hay nada agendado. Reservá un turno arriba.</div>';return;}
   // separar próximas de pasadas
   const prox=mine.filter(e=>e.fecha>=hoy&&!e.hecho);
   const hechas=mine.filter(e=>e.hecho);
