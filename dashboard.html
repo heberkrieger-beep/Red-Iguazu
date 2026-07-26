@@ -148,6 +148,7 @@
     <div class="nav-item" data-v="personas" onclick="irA('personas')"><span class="ti ti-users"></span><span>Personas</span></div>
     <div class="nav-item" data-v="moviles" onclick="irA('moviles')"><span class="ti ti-car"></span><span>Móviles</span></div>
     <div class="nav-item" data-v="fisca" onclick="irA('fisca')"><span class="ti ti-shield"></span><span>Fiscalización</span></div>
+    <div class="nav-item" data-v="agenda" onclick="irA('agenda')"><span class="ti ti-calendar"></span><span>Mi agenda</span></div>
     <div class="nav-item" data-v="analisis" onclick="irA('analisis')"><span class="ti ti-chart-line"></span><span>Análisis</span></div>
     <div class="foot"><button onclick="salirDash()"><span class="ti ti-logout"></span> Salir</button></div>
   </div>
@@ -237,6 +238,28 @@
     </div>
 
     <!-- ===== ANÁLISIS ===== -->
+    <div id="v-agenda" style="display:none">
+      <div class="page-h"><div><h1>Mi agenda</h1><div class="sub" id="agSub">Tu día a día: agendá visitas a tus contactos y llevá el registro de a quién viste.</div></div>
+        <div class="hbtns"><button class="btn" onclick="cargarTodo()"><span class="ti ti-refresh"></span> Actualizar</button>
+        <button class="btn prim" onclick="abrirVisita(null)"><span class="ti ti-plus"></span> Agendar visita</button></div></div>
+      <div class="kpis" id="agKpis"></div>
+      <div class="panel">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+          <div style="display:flex;gap:6px">
+            <button id="agMes" class="btn prim" onclick="setAgVista('mes')" style="padding:8px 16px">Mes</button>
+            <button id="agSem" class="btn" onclick="setAgVista('semana')" style="padding:8px 16px">Semana</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn" onclick="agNav(-1)" style="padding:8px 13px">‹</button>
+            <b id="agTitulo" style="font-size:14px;color:var(--selva);min-width:150px;text-align:center"></b>
+            <button class="btn" onclick="agNav(1)" style="padding:8px 13px">›</button>
+          </div>
+        </div>
+        <div id="agGrid"></div>
+      </div>
+      <div class="panel"><h2><span class="ti ti-list-check"></span> Próximas visitas</h2><div id="agLista"></div></div>
+    </div>
+
     <div id="v-analisis" style="display:none">
       <div class="page-h"><div><h1>Análisis</h1><div class="sub">Inteligencia territorial y demográfica sobre el padrón real de Iguazú.</div></div></div>
       <div class="panel"><h2><span class="ti ti-map-search"></span> Cobertura territorial — dónde sos fuerte y dónde estás ciego</h2>
@@ -267,7 +290,7 @@ const SUPABASE_URL='https://qgogamniszilcefqvtcq.supabase.co';
 const SUPABASE_KEY='sb_publishable_RtlHSBqEDAi-aCfF6ZzKAg_RHg968Cr';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let REG=[],REF=[],EV=[],AUTOS=[],FISC=[];
+let REG=[],REF=[],EV=[],AUTOS=[],FISC=[],VISI=[];
 const PESO={porconv:0,cont:0.35,prom:0.55,conf:0.80};
 let charts={},vistaActual='resumen';
 
@@ -307,6 +330,8 @@ async function cargarTodo(){
     while(true){const {data}=await sb.from('registros').select('*').range(d,d+999);regs=regs.concat(data||[]);if(!data||data.length<1000)break;d+=1000;}
     const [r2,r3,r4,r5]=await Promise.all([sb.from('usuarios').select('*'),sb.from('eventos').select('*'),sb.from('autos').select('*'),sb.from('fiscales').select('*')]);
     REG=regs;REF=(r2.data||[]);EV=r3.data||[];AUTOS=r4.data||[];FISC=r5.data||[];
+    // visitas: tabla nueva, puede no existir todavía (si no corrió el SQL) — tolerante
+    try{const rv=await sb.from('visitas').select('*');VISI=rv.data||[];}catch(e){VISI=[];}
     llenarSelects();renderTodo();
     document.getElementById('loading').style.display='none';
   }catch(e){document.getElementById('loading').innerHTML='No se pudieron cargar los datos. Probá Actualizar.';console.error(e);}
@@ -320,13 +345,14 @@ function llenarSelects(){
   document.getElementById('pBarrio').innerHTML='<option value="">Barrio: todos</option>'+barrios.map(b=>`<option>${b}</option>`).join('');
 }
 function irA(v){vistaActual=v;document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.v===v));
-  ['resumen','personas','moviles','fisca','analisis'].forEach(x=>document.getElementById('v-'+x).style.display=x===v?'block':'none');
+  ['resumen','personas','moviles','fisca','agenda','analisis'].forEach(x=>document.getElementById('v-'+x).style.display=x===v?'block':'none');
   renderTodo();}
 function renderTodo(){
   if(vistaActual==='resumen')renderResumen();
   if(vistaActual==='personas')renderPersonas();
   if(vistaActual==='moviles')renderMoviles();
   if(vistaActual==='fisca')renderFisca();
+  if(vistaActual==='agenda')renderAgenda();
   if(vistaActual==='analisis'){renderCobertura();renderEdades();renderBarrio();renderTablaRefs();}
 }
 async function upd(tabla,id,obj){const {error}=await sb.from(tabla).update(obj).eq('id',id);if(error){toast('Error al guardar: '+error.message);return false;}return true;}
@@ -455,7 +481,7 @@ function renderPersonas(){
       <option value="prom" ${p.estado==='prom'?'selected':''}>🟡 Prometió</option>
       <option value="conf" ${p.estado==='conf'?'selected':''}>🟢 Confirmado</option></select></td>
     <td>${refNom(p.ref_id)}</td>
-    <td><button class="icobtn" onclick="abrirPersona('${p.id}')">✏️</button></td></tr>`).join('');
+    <td style="white-space:nowrap"><button class="icobtn" title="Agendar visita" onclick="agendarDesde('${p.id}')">📅</button> <button class="icobtn" onclick="abrirPersona('${p.id}')">✏️</button></td></tr>`).join('');
   document.getElementById('selTodos').checked=false;
   actualizarBulk();
 }
@@ -480,7 +506,14 @@ function cerrarDrawer(){document.getElementById('drawerBg').classList.remove('op
 function abrirPersona(id){
   const p=REG.find(x=>x.id===id);if(!p)return;
   const refs=REF.filter(r=>r.estado!=='inactivo').sort((a,b)=>a.nombre.localeCompare(b.nombre));
-  abrirDrawer('Editar: '+(p.nombre||'')+' '+(p.apellido||''),`
+  const misVis=VISI.filter(v=>v.contacto_id===id).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const hechas=misVis.filter(v=>v.hecha);
+  const histHtml=misVis.length?`<div style="margin-bottom:14px;padding:12px;background:#eef4f1;border-radius:11px">
+    <div style="font-size:12.5px;font-weight:800;color:var(--selva);margin-bottom:6px">📋 Visitada ${hechas.length} ${hechas.length===1?'vez':'veces'}${misVis.length>hechas.length?' ('+(misVis.length-hechas.length)+' agendada/s)':''}</div>
+    ${misVis.slice(0,5).map(v=>{const d=new Date(v.fecha+'T00:00');return `<div style="font-size:12px;color:var(--gris);padding:3px 0">${v.hecha?'✓':'🕐'} ${d.getDate()}/${d.getMonth()+1}${v.nota?' — '+v.nota:''}</div>`;}).join('')}
+    <button class="btn" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="agendarDesde('${id}')">📅 Agendar otra visita</button>
+  </div>`:`<div style="margin-bottom:14px;padding:12px;background:var(--arena);border-radius:11px;font-size:12.5px;color:var(--gris)">Todavía no visitaste a esta persona. <button class="btn" style="margin-top:8px;padding:6px 12px;font-size:12px;display:block" onclick="agendarDesde('${id}')">📅 Agendar visita</button></div>`;
+  abrirDrawer('Editar: '+(p.nombre||'')+' '+(p.apellido||''),histHtml+`
     <div class="frow"><div class="f"><label>Nombre</label><input id="dNombre" value="${p.nombre||''}"></div>
     <div class="f"><label>Apellido</label><input id="dApellido" value="${p.apellido||''}"></div></div>
     <div class="frow"><div class="f"><label>DNI</label><input id="dDni" value="${p.dni||''}"></div>
@@ -709,6 +742,146 @@ async function borrarFiscal(id){
   const {error}=await sb.from('fiscales').delete().eq('id',id);
   if(error){toast('Error: '+error.message);return;}
   FISC=FISC.filter(f=>f.id!==id);toast('Fiscal quitado',true);cerrarDrawer();renderFisca();
+}
+
+/* ===== MI AGENDA / VISITAS ===== */
+let agVista='mes',agRef=new Date();
+const AG_TURNOS=['10:00–12:00','12:00–14:00','14:00–16:00','16:00–18:00','18:00–20:00','20:00–22:00','22:00–00:00'];
+const AG_MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const AG_DIAS=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+function vecesVisto(contactoId){return VISI.filter(v=>v.contacto_id===contactoId&&v.hecha).length;}
+function setAgVista(v){agVista=v;document.getElementById('agMes').className='btn'+(v==='mes'?' prim':'');document.getElementById('agSem').className='btn'+(v==='semana'?' prim':'');renderAgenda();}
+function agNav(dir){if(agVista==='mes')agRef.setMonth(agRef.getMonth()+dir);else agRef.setDate(agRef.getDate()+dir*7);renderAgenda();}
+function renderAgenda(){
+  const hoy=new Date().toISOString().slice(0,10);
+  const hechas=VISI.filter(v=>v.hecha).length;
+  const prox=VISI.filter(v=>!v.hecha&&v.fecha>=hoy);
+  const vencidas=VISI.filter(v=>!v.hecha&&v.fecha<hoy).length;
+  const personasVistas=new Set(VISI.filter(v=>v.hecha&&v.contacto_id).map(v=>v.contacto_id)).size;
+  document.getElementById('agKpis').innerHTML=`
+    <div class="kpi"><span class="ti ti-calendar-event" style="color:var(--azul)"></span><div class="n">${prox.length}</div><div class="l">visitas por hacer</div></div>
+    <div class="kpi"><span class="ti ti-check" style="color:var(--verde-ok)"></span><div class="n">${hechas}</div><div class="l">visitas realizadas</div></div>
+    <div class="kpi"><span class="ti ti-users" style="color:var(--selva)"></span><div class="n">${personasVistas}</div><div class="l">personas distintas vistas</div></div>
+    <div class="kpi"><span class="ti ti-alert-circle" style="color:${vencidas?'var(--rojo)':'var(--gris)'}"></span><div class="n">${vencidas}</div><div class="l">vencidas sin marcar</div></div>`;
+  renderAgCalendario();
+  // lista de próximas
+  const lista=prox.slice().sort((a,b)=>(a.fecha+(a.turno||'')).localeCompare(b.fecha+(b.turno||'')));
+  document.getElementById('agLista').innerHTML=lista.length?
+    '<table><thead><tr><th>Fecha</th><th>Turno</th><th>A quién</th><th>Nota</th><th></th></tr></thead><tbody>'+
+    lista.map(v=>{const d=new Date(v.fecha+'T00:00');const veces=v.contacto_id?vecesVisto(v.contacto_id):0;
+      return `<tr><td>${d.getDate()}/${d.getMonth()+1}</td><td>${v.turno||'—'}</td>
+        <td><b>${v.contacto_nom||'(sin nombre)'}</b>${veces?' <span class="tag t-cont">visto '+veces+'x</span>':''}</td>
+        <td style="color:var(--gris);font-size:12px">${v.nota||''}</td>
+        <td style="white-space:nowrap"><button class="btn" style="padding:6px 10px;font-size:12px" onclick="marcarVisita('${v.id}',true)">✓ Hecha</button>
+        <button class="icobtn" onclick="abrirVisita('${v.id}')">✏️</button></td></tr>`;
+    }).join('')+'</tbody></table>'
+    :'<div class="empty">No tenés visitas agendadas. Tocá «Agendar visita» o el 📅 de un contacto.</div>';
+}
+function renderAgCalendario(){
+  const grid=document.getElementById('agGrid'),tit=document.getElementById('agTitulo');if(!grid)return;
+  const hoy=new Date().toISOString().slice(0,10);
+  const visDe=f=>VISI.filter(v=>v.fecha===f);
+  if(agVista==='mes'){
+    tit.textContent=AG_MESES[agRef.getMonth()]+' '+agRef.getFullYear();
+    const y=agRef.getFullYear(),m=agRef.getMonth(),arranque=(new Date(y,m,1).getDay()+6)%7,dias=new Date(y,m+1,0).getDate();
+    let c='';AG_DIAS.forEach(d=>c+=`<div style="text-align:center;font-size:11px;font-weight:800;color:var(--gris);padding:5px 0">${d}</div>`);
+    for(let i=0;i<arranque;i++)c+='<div></div>';
+    for(let dia=1;dia<=dias;dia++){
+      const f=`${y}-${String(m+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`,vs=visDe(f),esHoy=f===hoy;
+      const chips=vs.slice(0,3).map(v=>`<div style="font-size:10px;background:${v.hecha?'#e7f4ec':'#e6eef3'};color:${v.hecha?'var(--verde-ok)':'var(--azul)'};border-radius:4px;padding:1px 4px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.hecha?'✓ ':''}${(v.contacto_nom||'visita').split(' ')[0]}</div>`).join('');
+      c+=`<div onclick="abrirVisitaDia('${f}')" style="min-height:74px;border:1px solid var(--linea);border-radius:9px;padding:5px;cursor:pointer;background:${esHoy?'#eef4f1':'#fff'};${esHoy?'border-color:var(--selva)':''}">
+        <div style="font-size:12px;font-weight:${esHoy?'800':'600'};color:${esHoy?'var(--selva)':'var(--tinta)'}">${dia}</div>${chips}${vs.length>3?'<div style="font-size:9px;color:var(--gris)">+'+(vs.length-3)+'</div>':''}</div>`;
+    }
+    grid.innerHTML=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">${c}</div>`;
+  }else{
+    const base=new Date(agRef),off=(base.getDay()+6)%7;base.setDate(base.getDate()-off);
+    const fin=new Date(base);fin.setDate(fin.getDate()+5);
+    tit.textContent=base.getDate()+'/'+(base.getMonth()+1)+' – '+fin.getDate()+'/'+(fin.getMonth()+1);
+    let html='';
+    for(let i=0;i<6;i++){const d=new Date(base);d.setDate(d.getDate()+i);
+      const f=d.toISOString().slice(0,10),vs=visDe(f),esHoy=f===hoy;
+      html+=`<div style="border:1px solid var(--linea);border-radius:11px;margin-bottom:8px;overflow:hidden">
+        <div onclick="abrirVisitaDia('${f}')" style="background:${esHoy?'var(--selva)':'var(--arena)'};color:${esHoy?'#fff':'var(--tinta)'};padding:9px 13px;font-weight:800;font-size:13px;cursor:pointer">${AG_DIAS[i]} ${d.getDate()}/${d.getMonth()+1}${esHoy?' · hoy':''} <span style="float:right;font-size:16px">＋</span></div>`;
+      html+=vs.length?vs.map(v=>`<div style="padding:9px 13px;border-top:1px solid var(--arena-2);font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <span><b>${v.turno||''}</b> · ${v.hecha?'✓ ':''}${v.contacto_nom||'visita'}${v.nota?' <span style="color:var(--gris)">— '+v.nota+'</span>':''}</span>
+        <span style="white-space:nowrap">${!v.hecha?`<button class="btn" style="padding:4px 9px;font-size:11px" onclick="event.stopPropagation();marcarVisita('${v.id}',true)">✓</button> `:''}<button class="icobtn" onclick="event.stopPropagation();abrirVisita('${v.id}')">✏️</button></span></div>`).join('')
+        :'<div style="padding:9px 13px;font-size:12px;color:var(--gris)">libre</div>';
+      html+='</div>';
+    }
+    grid.innerHTML=html;
+  }
+}
+function abrirVisitaDia(f){abrirVisita(null,f);}
+function agendarDesde(pid){
+  const p=REG.find(x=>x.id===pid);if(!p)return;
+  abrirVisita(null);
+  setTimeout(()=>elegirContactoVis(pid),50); // precargar el contacto en el drawer
+}
+function abrirVisita(id,fechaPre){
+  const v=id?VISI.find(x=>x.id===id):null;
+  const contactos=REG.filter(p=>p.tipo==='persona'||p.tipo==='conf').sort((a,b)=>(a.apellido||'').localeCompare(b.apellido||''));
+  abrirDrawer(v?'Editar visita':'Agendar visita',`
+    <div class="f"><label>¿A quién visitás?</label>
+      <input id="vBusca" placeholder="🔍 Buscar contacto por nombre..." autocomplete="off" oninput="buscarContactoVis()" style="margin-bottom:6px">
+      <div id="vBuscaRes" style="display:none;max-height:170px;overflow:auto;border:1px solid var(--linea);border-radius:9px;background:#fff"></div>
+      <input type="hidden" id="vContactoId" value="${v?(v.contacto_id||''):''}">
+      <div id="vSel" style="${v&&v.contacto_nom?'':'display:none;'}font-size:13px;margin-top:6px;padding:9px 12px;background:#eef4f1;border-radius:9px;color:var(--selva)" data-nom="${v?(v.contacto_nom||''):''}">${v&&v.contacto_nom?'✔ <b>'+v.contacto_nom+'</b> <span onclick="quitarContactoVis()" style="color:var(--rojo);cursor:pointer;margin-left:6px">✕</span>':''}</div>
+      <div style="font-size:11px;color:var(--gris);margin-top:6px">¿No está en la lista? Escribí el nombre igual y quedará registrado.</div>
+      <input id="vNomLibre" placeholder="...o escribí un nombre nuevo" style="margin-top:6px" value="${v&&!v.contacto_id?(v.contacto_nom||''):''}">
+    </div>
+    <div class="frow"><div class="f"><label>Fecha</label><input type="date" id="vFecha" value="${v?v.fecha:(fechaPre||'')}"></div>
+      <div class="f"><label>Turno</label><select id="vTurno"><option value="">—</option>${AG_TURNOS.map(t=>`<option ${v&&v.turno===t?'selected':''}>${t}</option>`).join('')}</select></div></div>
+    <div class="f"><label>Nota <span class="opt">(qué hablar, qué pasó...)</span></label><input id="vNota" value="${v?(v.nota||''):''}"></div>
+    <label class="chk"><input type="checkbox" id="vHecha" ${v&&v.hecha?'checked':''}> Ya la hice (marcar como visita realizada)</label>`,
+    `${v?`<button class="btn" style="color:var(--rojo)" onclick="borrarVisita('${id}')">Eliminar</button>`:''}
+     <button class="btn" onclick="cerrarDrawer()">Cancelar</button>
+     <button class="btn prim" style="flex:1;justify-content:center" onclick="guardarVisita('${id||''}')">Guardar</button>`);
+}
+function buscarContactoVis(){
+  const q=(document.getElementById('vBusca').value||'').toLowerCase().trim();
+  const box=document.getElementById('vBuscaRes');if(q.length<2){box.style.display='none';return;}
+  const res=REG.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&((p.nombre||'')+' '+(p.apellido||'')+' '+(p.dni||'')).toLowerCase().includes(q)).slice(0,8);
+  box.style.display='block';
+  box.innerHTML=res.length?res.map(p=>{const veces=vecesVisto(p.id);
+    return `<div onclick="elegirContactoVis('${p.id}')" style="padding:9px 12px;border-bottom:1px solid var(--arena-2);cursor:pointer;font-size:13px"><b>${p.apellido}, ${p.nombre}</b> <span style="color:var(--gris)">${p.barrio||''}</span>${veces?' <span class="tag t-cont">visto '+veces+'x</span>':''}</div>`;
+  }).join(''):'<div style="padding:10px;font-size:12px;color:var(--gris)">No aparece. Usá el campo de nombre nuevo abajo.</div>';
+}
+function elegirContactoVis(id){
+  const p=REG.find(x=>x.id===id);if(!p)return;
+  document.getElementById('vContactoId').value=id;
+  document.getElementById('vBusca').value='';document.getElementById('vBuscaRes').style.display='none';
+  document.getElementById('vNomLibre').value='';
+  const sel=document.getElementById('vSel');sel.style.display='block';sel.dataset.nom=p.nombre+' '+p.apellido;
+  sel.innerHTML=`✔ <b>${p.nombre} ${p.apellido}</b>${p.barrio?' · '+p.barrio:''} <span onclick="quitarContactoVis()" style="color:var(--rojo);cursor:pointer;margin-left:6px">✕</span>`;
+}
+function quitarContactoVis(){document.getElementById('vContactoId').value='';document.getElementById('vSel').style.display='none';document.getElementById('vSel').dataset.nom='';}
+async function guardarVisita(id){
+  const contactoId=document.getElementById('vContactoId').value||null;
+  let nom=document.getElementById('vSel').dataset.nom||'';
+  const libre=document.getElementById('vNomLibre').value.trim();
+  if(!contactoId&&libre)nom=libre;
+  const fecha=document.getElementById('vFecha').value;
+  const turno=document.getElementById('vTurno').value||null;
+  const nota=document.getElementById('vNota').value.trim()||null;
+  const hecha=document.getElementById('vHecha').checked;
+  if(!fecha){toast('Poné una fecha.');return;}
+  if(!contactoId&&!nom){toast('Elegí un contacto o escribí un nombre.');return;}
+  const obj={contacto_id:contactoId,contacto_nom:nom,fecha,turno,nota,hecha};
+  if(id){const v=VISI.find(x=>x.id===id);const {error}=await sb.from('visitas').update(obj).eq('id',id);if(error){toast('Error: '+error.message);return;}Object.assign(v,obj);}
+  else{const {data,error}=await sb.from('visitas').insert({...obj,creado_por:JSON.parse(localStorage.getItem(GATE_KEY)||'{}').id||null}).select().single();if(error){toast('Error: '+error.message);return;}VISI.push(data);}
+  toast('Visita guardada ✓',true);cerrarDrawer();renderTodo();
+}
+async function marcarVisita(id,val){
+  const v=VISI.find(x=>x.id===id);if(!v)return;v.hecha=val;
+  const {error}=await sb.from('visitas').update({hecha:val}).eq('id',id);
+  if(error){toast('Error: '+error.message);return;}
+  if(val)toast('¡Visita marcada como hecha! ✓',true);renderTodo();
+}
+async function borrarVisita(id){
+  if(!confirm('¿Eliminar esta visita del registro?'))return;
+  const {error}=await sb.from('visitas').delete().eq('id',id);
+  if(error){toast('Error: '+error.message);return;}
+  VISI=VISI.filter(x=>x.id!==id);toast('Visita eliminada',true);cerrarDrawer();renderTodo();
 }
 
 /* ===== ANÁLISIS ===== */
