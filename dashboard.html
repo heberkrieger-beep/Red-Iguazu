@@ -143,7 +143,7 @@
 
 <div class="layout" id="app" style="display:none">
   <div class="side">
-    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v36</span></div></div></div>
+    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v37</span></div></div></div>
     <div class="nav-item active" data-v="resumen" onclick="irA('resumen')"><span class="ti ti-layout-dashboard"></span><span>Resumen</span></div>
     <div class="nav-item" data-v="personas" onclick="irA('personas')"><span class="ti ti-users"></span><span>Personas</span></div>
     <div class="nav-item" data-v="moviles" onclick="irA('moviles')"><span class="ti ti-car"></span><span>Móviles</span></div>
@@ -598,6 +598,23 @@ async function guardarPersona(id){
   if(await upd('registros',id,obj)){Object.assign(p,obj);toast('Guardado ✓',true);cerrarDrawer();renderTodo();}
 }
 // Abrir formulario para cargar un familiar/conexión colgado de la persona padreId
+// Buscar un DNI en el padrón y completar el formulario de familiar
+async function buscarPadronFamiliar(){
+  const dni=(document.getElementById('fDni').value||'').replace(/\D/g,'');
+  if(dni.length<7)return; // recién con un DNI razonable
+  const aviso=document.getElementById('fPadronAviso');
+  if(aviso)aviso.textContent='Buscando en el padrón...';
+  const {data,error}=await sb.from('padron').select('apellido,nombres,domicilio,mesa').eq('dni',dni).maybeSingle();
+  if(error||!data){if(aviso)aviso.textContent='No está en el padrón (cargalo a mano).';return;}
+  // completar solo lo que esté vacío, sin pisar lo que ya escribiste
+  const nom=document.getElementById('fNombre'),ape=document.getElementById('fApellido'),
+        bar=document.getElementById('fBarrio'),mes=document.getElementById('fMesa');
+  if(data.nombres)nom.value=data.nombres;
+  if(data.apellido)ape.value=data.apellido;
+  if(data.mesa&&!mes.value)mes.value=data.mesa;
+  if(data.domicilio&&!bar.value)bar.value=data.domicilio; // el padrón trae domicilio; queda como referencia de barrio
+  if(aviso)aviso.textContent='✓ Encontrado en el padrón';
+}
 function agregarFamiliar(padreId){
   const padre=REG.find(x=>x.id===padreId);if(!padre)return;
   const refs=REF.filter(r=>r.estado!=='inactivo').sort((a,b)=>a.nombre.localeCompare(b.nombre));
@@ -605,8 +622,9 @@ function agregarFamiliar(padreId){
     <div style="margin-bottom:12px;padding:10px;background:#fbf3e6;border-radius:10px;font-size:12px;color:var(--tierra)">Esta persona va a quedar colgada de <b>${padre.nombre||''} ${padre.apellido||''}</b>.</div>
     <div class="frow"><div class="f"><label>Nombre</label><input id="fNombre" placeholder="Nombre"></div>
     <div class="f"><label>Apellido</label><input id="fApellido" value="${padre.apellido||''}"></div></div>
-    <div class="frow"><div class="f"><label>DNI</label><input id="fDni" placeholder="Opcional"></div>
+    <div class="frow"><div class="f"><label>DNI</label><input id="fDni" placeholder="Escribí el DNI y se autocompleta" onblur="buscarPadronFamiliar()" oninput="if(this.value.replace(/\\D/g,'').length>=8)buscarPadronFamiliar()"></div>
     <div class="f"><label>Teléfono</label><input id="fTel" placeholder="Opcional"></div></div>
+    <div id="fPadronAviso" style="font-size:11.5px;color:var(--gris);margin:-6px 0 8px"></div>
     <div class="frow"><div class="f"><label>Barrio</label><input id="fBarrio" value="${padre.barrio||''}"></div>
     <div class="f"><label>Mesa</label><input id="fMesa" value="${padre.mesa||''}"></div></div>
     <div class="f"><label>Estado</label><select id="fEstado">
