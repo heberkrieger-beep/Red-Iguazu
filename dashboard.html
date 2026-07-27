@@ -143,7 +143,7 @@
 
 <div class="layout" id="app" style="display:none">
   <div class="side">
-    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v37</span></div></div></div>
+    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v39</span></div></div></div>
     <div class="nav-item active" data-v="resumen" onclick="irA('resumen')"><span class="ti ti-layout-dashboard"></span><span>Resumen</span></div>
     <div class="nav-item" data-v="personas" onclick="irA('personas')"><span class="ti ti-users"></span><span>Personas</span></div>
     <div class="nav-item" data-v="moviles" onclick="irA('moviles')"><span class="ti ti-car"></span><span>Móviles</span></div>
@@ -564,7 +564,7 @@ function abrirPersona(id){
     ${traidoPor?`<div style="font-size:11.5px;color:var(--gris);margin-bottom:6px">Traída/o por: <b>${traidoPor.nombre||''} ${traidoPor.apellido||''}</b></div>`:''}
     ${familia.length?familia.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:3px 0">
       <span>• ${f.nombre||''} ${f.apellido||''} <span style="color:var(--gris)">${f.barrio||''}</span></span>
-      <button class="icobtn" title="Editar" onclick="abrirPersona('${f.id}')">✏️</button></div>`).join(''):'<div style="font-size:12px;color:var(--gris)">Nadie colgado todavía.</div>'}
+      <span style="display:flex;gap:2px"><button class="icobtn" title="Editar" onclick="abrirPersona('${f.id}')">✏️</button><button class="icobtn" title="Soltar de esta familia" onclick="soltarFamiliar('${f.id}','${id}')">✖️</button></span></div>`).join(''):'<div style="font-size:12px;color:var(--gris)">Nadie colgado todavía.</div>'}
     <button class="btn" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="agregarFamiliar('${id}')">➕ Agregar familiar / conexión</button>
   </div>`;
   abrirDrawer('Editar: '+(p.nombre||'')+' '+(p.apellido||''),histHtml+famHtml+`
@@ -598,6 +598,82 @@ async function guardarPersona(id){
   if(await upd('registros',id,obj)){Object.assign(p,obj);toast('Guardado ✓',true);cerrarDrawer();renderTodo();}
 }
 // Abrir formulario para cargar un familiar/conexión colgado de la persona padreId
+// Buscar entre las personas YA cargadas (REG) para engancharlas como familia
+let _famEngTimer=null,_famPadreActual=null;
+function buscarCargados(){
+  clearTimeout(_famEngTimer);
+  _famEngTimer=setTimeout(_ejecutarBuscaCargados,250);
+}
+function _ejecutarBuscaCargados(){
+  const cont=document.getElementById('fEngLista');if(!cont)return;
+  const q=(document.getElementById('fEngBusca').value||'').trim().toLowerCase();
+  if(q.length<2){cont.innerHTML='';return;}
+  // buscar por nombre, apellido o dni; excluir al propio padre y a los que ya cuelgan de él
+  const res=REG.filter(p=>{
+    if(p.id===_famPadreActual)return false;
+    const txt=((p.nombre||'')+' '+(p.apellido||'')+' '+(p.dni||'')).toLowerCase();
+    return txt.includes(q);
+  }).slice(0,8);
+  if(!res.length){cont.innerHTML='<div style="font-size:11.5px;color:var(--gris);padding:4px">Nadie con ese nombre en tus cargados.</div>';return;}
+  cont.innerHTML=res.map(p=>{
+    const yaCuelga=p.padre_id===_famPadreActual;
+    const otroPadre=p.padre_id&&p.padre_id!==_famPadreActual?REG.find(x=>x.id===p.padre_id):null;
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 9px;border-bottom:1px solid var(--arena-2);font-size:12px">
+      <div><b>${p.apellido||''}, ${p.nombre||''}</b> <span style="color:var(--gris)">${p.dni?'· DNI '+p.dni:''} ${p.barrio?'· '+p.barrio:''}</span>
+      ${otroPadre?`<div style="color:var(--tierra);font-size:11px">Ya cuelga de ${otroPadre.nombre||''} ${otroPadre.apellido||''}</div>`:''}</div>
+      ${yaCuelga?'<span style="color:var(--verde-ok);font-size:11.5px">✓ ya está</span>'
+        :`<button class="btn" style="padding:5px 10px;font-size:11.5px" onclick="engancharCargado('${p.id}','${_famPadreActual}')">Enganchar</button>`}
+    </div>`;
+  }).join('');
+}
+// Vincular una persona ya existente como familia del padre
+async function engancharCargado(hijoId,padreId){
+  const p=REG.find(x=>x.id===hijoId);if(!p)return;
+  if(!await upd('registros',hijoId,{padre_id:padreId})){toast('No se pudo enganchar');return;}
+  p.padre_id=padreId;
+  toast('Enganchada/o a la familia ✓',true);
+  renderTodo();
+  abrirPersona(padreId); // volver a la ficha del padre, ya con la persona colgada
+}
+// Soltar a una persona de su familia (borra el vínculo, no borra la persona)
+async function soltarFamiliar(hijoId,padreId){
+  const p=REG.find(x=>x.id===hijoId);if(!p)return;
+  if(!confirm(`¿Soltar a ${p.nombre||''} ${p.apellido||''} de esta familia? La persona no se borra, solo se desvincula.`))return;
+  if(!await upd('registros',hijoId,{padre_id:null})){toast('No se pudo soltar');return;}
+  p.padre_id=null;
+  toast('Soltada/o de la familia ✓',true);
+  renderTodo();
+  abrirPersona(padreId);
+}
+// Buscar en el padrón por apellido + nombre; muestra coincidencias para elegir
+let _famBuscaTimer=null;
+function buscarPadronNombre(){
+  clearTimeout(_famBuscaTimer);
+  _famBuscaTimer=setTimeout(_ejecutarBuscaNombre,350); // esperar a que termine de tipear
+}
+async function _ejecutarBuscaNombre(){
+  const cont=document.getElementById('fCoinc');if(!cont)return;
+  const q=(document.getElementById('fApellido').value||'').trim();
+  const qNom=(document.getElementById('fNombre').value||'').trim();
+  if(q.length<3){cont.innerHTML='';return;}
+  cont.innerHTML='<div style="font-size:11.5px;color:var(--gris);padding:4px">Buscando en el padrón...</div>';
+  let query=sb.from('padron').select('dni,apellido,nombres,domicilio,mesa').ilike('apellido','%'+q+'%');
+  if(qNom.length>=2)query=query.ilike('nombres','%'+qNom+'%');
+  const {data,error}=await query.limit(8);
+  if(error){cont.innerHTML='';return;}
+  if(!data||!data.length){cont.innerHTML='<div style="font-size:11.5px;color:var(--gris);padding:4px">Sin coincidencias en el padrón.</div>';return;}
+  cont.innerHTML=data.map(r=>`<div onclick='elegirDelPadron(${JSON.stringify(r).replace(/'/g,"&#39;")})' style="cursor:pointer;padding:7px 9px;border-bottom:1px solid var(--arena-2);font-size:12px">
+    <b>${r.apellido||''}, ${r.nombres||''}</b> <span style="color:var(--gris)">· DNI ${r.dni||'—'}${r.mesa?' · mesa '+r.mesa:''}</span>
+    ${r.domicilio?`<div style="color:var(--gris);font-size:11px">${r.domicilio}</div>`:''}</div>`).join('');
+}
+// Al tocar una coincidencia, completar el formulario
+function elegirDelPadron(r){
+  const set=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
+  set('fApellido',r.apellido);set('fNombre',r.nombres);set('fDni',r.dni);
+  set('fMesa',r.mesa);if(r.domicilio&&!document.getElementById('fBarrio').value)set('fBarrio',r.domicilio);
+  const cont=document.getElementById('fCoinc');if(cont)cont.innerHTML='<div style="font-size:11.5px;color:var(--verde-ok);padding:4px">✓ Cargado del padrón</div>';
+  const av=document.getElementById('fPadronAviso');if(av)av.textContent='';
+}
 // Buscar un DNI en el padrón y completar el formulario de familiar
 async function buscarPadronFamiliar(){
   const dni=(document.getElementById('fDni').value||'').replace(/\D/g,'');
@@ -617,24 +693,37 @@ async function buscarPadronFamiliar(){
 }
 function agregarFamiliar(padreId){
   const padre=REG.find(x=>x.id===padreId);if(!padre)return;
+  _famPadreActual=padreId;
   const refs=REF.filter(r=>r.estado!=='inactivo').sort((a,b)=>a.nombre.localeCompare(b.nombre));
-  abrirDrawer('Agregar familiar de '+(padre.nombre||'')+' '+(padre.apellido||''),`
-    <div style="margin-bottom:12px;padding:10px;background:#fbf3e6;border-radius:10px;font-size:12px;color:var(--tierra)">Esta persona va a quedar colgada de <b>${padre.nombre||''} ${padre.apellido||''}</b>.</div>
-    <div class="frow"><div class="f"><label>Nombre</label><input id="fNombre" placeholder="Nombre"></div>
-    <div class="f"><label>Apellido</label><input id="fApellido" value="${padre.apellido||''}"></div></div>
-    <div class="frow"><div class="f"><label>DNI</label><input id="fDni" placeholder="Escribí el DNI y se autocompleta" onblur="buscarPadronFamiliar()" oninput="if(this.value.replace(/\\D/g,'').length>=8)buscarPadronFamiliar()"></div>
-    <div class="f"><label>Teléfono</label><input id="fTel" placeholder="Opcional"></div></div>
-    <div id="fPadronAviso" style="font-size:11.5px;color:var(--gris);margin:-6px 0 8px"></div>
-    <div class="frow"><div class="f"><label>Barrio</label><input id="fBarrio" value="${padre.barrio||''}"></div>
-    <div class="f"><label>Mesa</label><input id="fMesa" value="${padre.mesa||''}"></div></div>
-    <div class="f"><label>Estado</label><select id="fEstado">
-      <option value="porconv">🔴 Por convencer</option>
-      <option value="cont">Contactado</option>
-      <option value="prom">🟡 Prometió</option>
-      <option value="conf" selected>🟢 Confirmado</option></select></div>
-    <div class="f"><label>Referente</label><select id="fRef">${refs.map(r=>`<option value="${r.id}" ${r.id===padre.ref_id?'selected':''}>${r.nombre}</option>`).join('')}</select></div>`,
-    `<button class="btn" onclick="abrirPersona('${padreId}')">Cancelar</button>
-     <button class="btn prim" style="flex:1;justify-content:center" onclick="guardarFamiliar('${padreId}')">Guardar familiar</button>`);
+  abrirDrawer('Agregar a la familia de '+(padre.nombre||'')+' '+(padre.apellido||''),`
+    <div style="margin-bottom:12px;padding:10px;background:#fbf3e6;border-radius:10px;font-size:12px;color:var(--tierra)">Se va a colgar de <b>${padre.nombre||''} ${padre.apellido||''}</b>.</div>
+
+    <div style="font-size:12.5px;font-weight:800;color:var(--selva);margin-bottom:6px">① ¿Ya está en tu lista? Buscala y enganchala</div>
+    <div class="f"><input id="fEngBusca" placeholder="🔍 Buscar por nombre, apellido o DNI en tus cargados" oninput="buscarCargados()" autocomplete="off"></div>
+    <div id="fEngLista" style="border-radius:9px;overflow:hidden;background:#fff;margin:4px 0 14px;max-height:240px;overflow-y:auto"></div>
+
+    <div style="border-top:1px solid var(--arena-2);margin:6px 0 12px"></div>
+    <details>
+      <summary style="cursor:pointer;font-size:12.5px;font-weight:800;color:var(--gris)">② ¿No está cargada? Crear una nueva</summary>
+      <div style="margin-top:10px">
+        <div class="frow"><div class="f"><label>Nombre</label><input id="fNombre" placeholder="Nombre" oninput="buscarPadronNombre()"></div>
+        <div class="f"><label>Apellido</label><input id="fApellido" value="${padre.apellido||''}" oninput="buscarPadronNombre()"></div></div>
+        <div id="fCoinc" style="border-radius:9px;overflow:hidden;background:#fff;margin:-4px 0 8px;max-height:220px;overflow-y:auto"></div>
+        <div class="frow"><div class="f"><label>DNI</label><input id="fDni" placeholder="Escribí el DNI y se autocompleta" onblur="buscarPadronFamiliar()" oninput="if(this.value.replace(/\\D/g,'').length>=8)buscarPadronFamiliar()"></div>
+        <div class="f"><label>Teléfono</label><input id="fTel" placeholder="Opcional"></div></div>
+        <div id="fPadronAviso" style="font-size:11.5px;color:var(--gris);margin:-6px 0 8px"></div>
+        <div class="frow"><div class="f"><label>Barrio</label><input id="fBarrio" value="${padre.barrio||''}"></div>
+        <div class="f"><label>Mesa</label><input id="fMesa" value="${padre.mesa||''}"></div></div>
+        <div class="f"><label>Estado</label><select id="fEstado">
+          <option value="porconv">🔴 Por convencer</option>
+          <option value="cont">Contactado</option>
+          <option value="prom">🟡 Prometió</option>
+          <option value="conf" selected>🟢 Confirmado</option></select></div>
+        <div class="f"><label>Referente</label><select id="fRef">${refs.map(r=>`<option value="${r.id}" ${r.id===padre.ref_id?'selected':''}>${r.nombre}</option>`).join('')}</select></div>
+        <button class="btn prim" style="width:100%;justify-content:center;margin-top:6px" onclick="guardarFamiliar('${padreId}')">Guardar persona nueva</button>
+      </div>
+    </details>`,
+    `<button class="btn" style="flex:1;justify-content:center" onclick="abrirPersona('${padreId}')">Cerrar</button>`);
 }
 async function guardarFamiliar(padreId){
   const nombre=document.getElementById('fNombre').value.trim();
