@@ -143,7 +143,7 @@
 
 <div class="layout" id="app" style="display:none">
   <div class="side">
-    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v35</span></div></div></div>
+    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v36</span></div></div></div>
     <div class="nav-item active" data-v="resumen" onclick="irA('resumen')"><span class="ti ti-layout-dashboard"></span><span>Resumen</span></div>
     <div class="nav-item" data-v="personas" onclick="irA('personas')"><span class="ti ti-users"></span><span>Personas</span></div>
     <div class="nav-item" data-v="moviles" onclick="irA('moviles')"><span class="ti ti-car"></span><span>Móviles</span></div>
@@ -524,7 +524,7 @@ function renderPersonas(){
       <option value="conf" ${p.estado==='conf'?'selected':''}>🟢 Confirmado</option></select></td>
     <td>${celdaUltimaVisita(p)}</td>
     <td>${refNom(p.ref_id)}</td>
-    <td style="white-space:nowrap"><button class="icobtn" title="Agendar visita" onclick="agendarDesde('${p.id}')">📅</button> <button class="icobtn" onclick="abrirPersona('${p.id}')">✏️</button></td></tr>`).join('');
+    <td style="white-space:nowrap"><button class="icobtn" title="Agregar familiar" onclick="agregarFamiliar('${p.id}')">👪</button> <button class="icobtn" title="Agendar visita" onclick="agendarDesde('${p.id}')">📅</button> <button class="icobtn" onclick="abrirPersona('${p.id}')">✏️</button></td></tr>`).join('');
   document.getElementById('selTodos').checked=false;
   actualizarBulk();
 }
@@ -556,7 +556,18 @@ function abrirPersona(id){
     ${misVis.slice(0,5).map(v=>{const d=new Date(v.fecha+'T00:00');return `<div style="font-size:12px;color:var(--gris);padding:3px 0">${v.hecha?'✓':'🕐'} ${d.getDate()}/${d.getMonth()+1}${v.nota?' — '+v.nota:''}</div>`;}).join('')}
     <button class="btn" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="agendarDesde('${id}')">📅 Agendar otra visita</button>
   </div>`:`<div style="margin-bottom:14px;padding:12px;background:var(--arena);border-radius:11px;font-size:12.5px;color:var(--gris)">Todavía no visitaste a esta persona. <button class="btn" style="margin-top:8px;padding:6px 12px;font-size:12px;display:block" onclick="agendarDesde('${id}')">📅 Agendar visita</button></div>`;
-  abrirDrawer('Editar: '+(p.nombre||'')+' '+(p.apellido||''),histHtml+`
+  // ----- Familia / conexiones: personas que cuelgan de esta (padre_id === id) -----
+  const familia=REG.filter(x=>x.padre_id===id).sort((a,b)=>(a.apellido||'').localeCompare(b.apellido||''));
+  const traidoPor=p.padre_id?REG.find(x=>x.id===p.padre_id):null;
+  const famHtml=`<div style="margin-bottom:14px;padding:12px;background:#fbf3e6;border-radius:11px">
+    <div style="font-size:12.5px;font-weight:800;color:var(--tierra);margin-bottom:6px">👨‍👩‍👧 Familia / conexiones (${familia.length})</div>
+    ${traidoPor?`<div style="font-size:11.5px;color:var(--gris);margin-bottom:6px">Traída/o por: <b>${traidoPor.nombre||''} ${traidoPor.apellido||''}</b></div>`:''}
+    ${familia.length?familia.map(f=>`<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:3px 0">
+      <span>• ${f.nombre||''} ${f.apellido||''} <span style="color:var(--gris)">${f.barrio||''}</span></span>
+      <button class="icobtn" title="Editar" onclick="abrirPersona('${f.id}')">✏️</button></div>`).join(''):'<div style="font-size:12px;color:var(--gris)">Nadie colgado todavía.</div>'}
+    <button class="btn" style="margin-top:8px;padding:6px 12px;font-size:12px" onclick="agregarFamiliar('${id}')">➕ Agregar familiar / conexión</button>
+  </div>`;
+  abrirDrawer('Editar: '+(p.nombre||'')+' '+(p.apellido||''),histHtml+famHtml+`
     <div class="frow"><div class="f"><label>Nombre</label><input id="dNombre" value="${p.nombre||''}"></div>
     <div class="f"><label>Apellido</label><input id="dApellido" value="${p.apellido||''}"></div></div>
     <div class="frow"><div class="f"><label>DNI</label><input id="dDni" value="${p.dni||''}"></div>
@@ -585,6 +596,49 @@ async function guardarPersona(id){
     transporte:document.getElementById('dTrans').checked,voto:document.getElementById('dVoto').checked};
   const dv=document.getElementById('dVotos');if(dv)obj.votos_pos=parseInt(dv.value)||1;
   if(await upd('registros',id,obj)){Object.assign(p,obj);toast('Guardado ✓',true);cerrarDrawer();renderTodo();}
+}
+// Abrir formulario para cargar un familiar/conexión colgado de la persona padreId
+function agregarFamiliar(padreId){
+  const padre=REG.find(x=>x.id===padreId);if(!padre)return;
+  const refs=REF.filter(r=>r.estado!=='inactivo').sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  abrirDrawer('Agregar familiar de '+(padre.nombre||'')+' '+(padre.apellido||''),`
+    <div style="margin-bottom:12px;padding:10px;background:#fbf3e6;border-radius:10px;font-size:12px;color:var(--tierra)">Esta persona va a quedar colgada de <b>${padre.nombre||''} ${padre.apellido||''}</b>.</div>
+    <div class="frow"><div class="f"><label>Nombre</label><input id="fNombre" placeholder="Nombre"></div>
+    <div class="f"><label>Apellido</label><input id="fApellido" value="${padre.apellido||''}"></div></div>
+    <div class="frow"><div class="f"><label>DNI</label><input id="fDni" placeholder="Opcional"></div>
+    <div class="f"><label>Teléfono</label><input id="fTel" placeholder="Opcional"></div></div>
+    <div class="frow"><div class="f"><label>Barrio</label><input id="fBarrio" value="${padre.barrio||''}"></div>
+    <div class="f"><label>Mesa</label><input id="fMesa" value="${padre.mesa||''}"></div></div>
+    <div class="f"><label>Estado</label><select id="fEstado">
+      <option value="porconv">🔴 Por convencer</option>
+      <option value="cont">Contactado</option>
+      <option value="prom">🟡 Prometió</option>
+      <option value="conf" selected>🟢 Confirmado</option></select></div>
+    <div class="f"><label>Referente</label><select id="fRef">${refs.map(r=>`<option value="${r.id}" ${r.id===padre.ref_id?'selected':''}>${r.nombre}</option>`).join('')}</select></div>`,
+    `<button class="btn" onclick="abrirPersona('${padreId}')">Cancelar</button>
+     <button class="btn prim" style="flex:1;justify-content:center" onclick="guardarFamiliar('${padreId}')">Guardar familiar</button>`);
+}
+async function guardarFamiliar(padreId){
+  const nombre=document.getElementById('fNombre').value.trim();
+  const apellido=document.getElementById('fApellido').value.trim();
+  if(!nombre&&!apellido){toast('Poné al menos un nombre o apellido');return;}
+  const obj={
+    tipo:'persona',
+    nombre,apellido,
+    dni:document.getElementById('fDni').value.replace(/\D/g,'')||null,
+    tel:document.getElementById('fTel').value.trim()||null,
+    barrio:document.getElementById('fBarrio').value.trim()||null,
+    mesa:document.getElementById('fMesa').value.trim()||null,
+    estado:document.getElementById('fEstado').value,
+    ref_id:document.getElementById('fRef').value,
+    padre_id:padreId
+  };
+  const {data,error}=await sb.from('registros').insert(obj).select().single();
+  if(error){toast('Error: '+error.message);return;}
+  REG.push(data);
+  toast('Familiar agregado ✓',true);
+  renderTodo();
+  abrirPersona(padreId); // volver a la ficha del padre, ya con el familiar colgado
 }
 async function borrarPersona(id){
   const p=REG.find(x=>x.id===id);if(!p)return;
