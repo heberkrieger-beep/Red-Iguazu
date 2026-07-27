@@ -143,7 +143,7 @@
 
 <div class="layout" id="app" style="display:none">
   <div class="side">
-    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando</div></div></div>
+    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v35</span></div></div></div>
     <div class="nav-item active" data-v="resumen" onclick="irA('resumen')"><span class="ti ti-layout-dashboard"></span><span>Resumen</span></div>
     <div class="nav-item" data-v="personas" onclick="irA('personas')"><span class="ti ti-users"></span><span>Personas</span></div>
     <div class="nav-item" data-v="moviles" onclick="irA('moviles')"><span class="ti ti-car"></span><span>Móviles</span></div>
@@ -203,6 +203,7 @@
           <th style="width:34px"><input type="checkbox" id="selTodos" onchange="toggleSelTodos(this.checked)"></th>
           <th onclick="pSort('apellido')">Apellido, Nombre</th><th onclick="pSort('dni')">DNI</th><th onclick="pSort('tel')">Teléfono</th>
           <th onclick="pSort('barrio')">Barrio</th><th onclick="pSort('mesa')">Mesa</th><th onclick="pSort('estado')">Estado</th>
+          <th>Última visita</th>
           <th onclick="pSort('refNom')">Referente</th><th style="width:40px"></th>
         </tr></thead><tbody></tbody></table>
       </div>
@@ -461,6 +462,47 @@ function filtrarPersonas(){
     if(pSortK==='mesa'){x=parseInt(x)||0;y=parseInt(y)||0;return pDir*(x-y);}
     return pDir*String(x).localeCompare(String(y));});
 }
+// ===== Última visita + temperatura (semáforo) para el dashboard =====
+// Usa la tabla VISI (visitas). Última visita = visita hecha más reciente de esa persona.
+function ultimaVisitaFecha(pid){
+  const v=VISI.filter(x=>x.contacto_id===pid&&x.hecha).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  return v.length?v[0].fecha:null;
+}
+function diasDesde(fISO){
+  if(!fISO)return null;
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  return Math.round((hoy-new Date(fISO+'T00:00'))/86400000);
+}
+// Semáforo: combina estado (compromiso) + días desde la última visita.
+// Umbrales de asesor: por convencer 15d, prometió 30d, confirmado 45d.
+function tempPersona(p){
+  const dv=diasDesde(ultimaVisitaFecha(p.id)); // null = nunca visitado
+  const est=p.estado;
+  let color,label;
+  if(est==='conf'){
+    if(dv!==null&&dv<=45){color='#1e9e57';label='Al día';}
+    else{color='#c9971a';label='Reforzar';}
+  }else if(est==='prom'){
+    if(dv!==null&&dv<=30){color='#c9971a';label='Seguir';}
+    else{color='#d64b3a';label='Enfriándose';}
+  }else{ // porconv o contactado
+    if(dv!==null&&dv<=15){color='#c9971a';label='En proceso';}
+    else{color='#d64b3a';label='A buscar';}
+  }
+  return {color,label,dias:dv};
+}
+// Celda de última visita: puntito + "hace X días" o "sin visita", y (Nº) veces visitado
+function celdaUltimaVisita(p){
+  const t=tempPersona(p);
+  const veces=vecesVisto(p.id);
+  const txt = t.dias===null ? 'sin visita'
+            : t.dias===0 ? 'hoy'
+            : 'hace '+t.dias+'d';
+  const vecesTxt = veces>0 ? ` <span style="color:var(--gris);font-size:11px">·&nbsp;${veces}×</span>` : '';
+  return `<span style="display:inline-flex;align-items:center;gap:6px;white-space:nowrap">
+    <span style="width:11px;height:11px;border-radius:50%;background:${t.color};flex-shrink:0" title="${t.label}"></span>
+    <span style="font-size:12.5px">${txt}${vecesTxt}</span></span>`;
+}
 function renderPersonas(){
   const list=filtrarPersonas();
   const tot=list.length,pags=Math.max(1,Math.ceil(tot/P_XPAG));
@@ -480,6 +522,7 @@ function renderPersonas(){
       <option value="cont" ${p.estado==='cont'?'selected':''}>Contactado</option>
       <option value="prom" ${p.estado==='prom'?'selected':''}>🟡 Prometió</option>
       <option value="conf" ${p.estado==='conf'?'selected':''}>🟢 Confirmado</option></select></td>
+    <td>${celdaUltimaVisita(p)}</td>
     <td>${refNom(p.ref_id)}</td>
     <td style="white-space:nowrap"><button class="icobtn" title="Agendar visita" onclick="agendarDesde('${p.id}')">📅</button> <button class="icobtn" onclick="abrirPersona('${p.id}')">✏️</button></td></tr>`).join('');
   document.getElementById('selTodos').checked=false;

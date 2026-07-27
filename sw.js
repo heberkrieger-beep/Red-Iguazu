@@ -1,29 +1,51 @@
-// Service worker mínimo para Red Iguazú.
-// La app (HTML) SIEMPRE se baja fresca de la red; solo guardamos íconos para que sea instalable.
-const CACHE = 'red-iguazu-v33';
-const ASSETS = ['./manifest.json', './icon-192.png', './icon-512.png'];
+// Red Iguazú — Service Worker v35
+// Sube el número de versión en cada cambio de la app para que los celulares
+// agarren la versión nueva y no queden con caché viejo.
+const CACHE = 'red-iguazu-v35';
 
+// Archivos del ecosistema que se guardan para que la app abra sin conexión.
+const ARCHIVOS = [
+  './',
+  './index.html',
+  './dashboard.html',
+  './conductor.html',
+  './pasajero.html',
+  './buscame.html'
+];
+
+// Al instalar la versión nueva: guardar los archivos y activarse enseguida.
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(()=>{}));
   self.skipWaiting();
+  e.waitUntil(
+    caches.open(CACHE).then(c =>
+      // addAll falla si un archivo no existe; los agrego de a uno, tolerante.
+      Promise.all(ARCHIVOS.map(a => c.add(a).catch(() => {})))
+    )
+  );
 });
 
+// Al activarse: borrar los cachés viejos (v33, v34...) y tomar control ya.
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-  ));
-  self.clients.claim();
+  e.waitUntil(
+    caches.keys().then(claves =>
+      Promise.all(claves.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
 });
 
+// Estrategia "red primero" para los HTML: siempre trae lo último si hay internet,
+// y usa el caché solo cuando estás sin conexión. Así no volvés a quedar con datos viejos.
 self.addEventListener('fetch', e => {
-  const url = e.request.url;
-  // Supabase: siempre red (datos frescos)
-  if (url.includes('supabase.co')) return;
-  // HTML / navegación / index: SIEMPRE red, nunca cache (para que nunca quede una versión vieja)
-  if (e.request.mode === 'navigate' || url.endsWith('.html') || url.endsWith('/')) {
-    e.respondWith(fetch(e.request).catch(() => caches.match('./icon-192.png')));
-    return;
-  }
-  // Íconos y manifest: cache rápido
-  e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  e.respondWith(
+    fetch(req)
+      .then(resp => {
+        // guardar copia fresca en caché
+        const copia = resp.clone();
+        caches.open(CACHE).then(c => c.put(req, copia).catch(() => {}));
+        return resp;
+      })
+      .catch(() => caches.match(req)) // sin internet: usar lo guardado
+  );
 });
