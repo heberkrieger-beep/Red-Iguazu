@@ -288,6 +288,7 @@
   .prow-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
   .dots{display:flex;gap:3px}
   .mk{width:8px;height:8px;border-radius:50%;display:inline-block}
+  .temp-dot{width:12px;height:12px;border-radius:50%;display:inline-block;flex-shrink:0;box-shadow:0 0 0 2px rgba(255,255,255,.6)}
   .prow-caret{font-size:18px;color:var(--gris);transition:transform .2s}
   .prow.expanded .prow-caret{transform:rotate(180deg)}
   .prow-actions{display:none;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 14px 14px}
@@ -319,7 +320,7 @@
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v34</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v35</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -2207,7 +2208,7 @@ function renderAgenda(){
 async function marcarHecho(id){
   const e=EVENTOS.find(x=>x.id===id);if(!e)return;
   e.hecho=!e.hecho;
-  renderAgenda();
+  renderAgenda();renderLista(); // refrescar lista: cambia el semáforo de última visita
   if(sb){const {error}=await sb.from('eventos').update({hecho:e.hecho}).eq('id',id);if(error)toast('Error: '+error.message);else if(e.hecho)toast('¡Marcada como hecha! ✓',true);}
 }
 async function borrarEvento(id){
@@ -2231,6 +2232,43 @@ function mapaDuplicados(lista){
   const cuenta={};
   lista.forEach(p=>{const k=claveDup(p);cuenta[k]=(cuenta[k]||0)+1;});
   return cuenta;
+}
+// ===== Última visita + temperatura (semáforo) =====
+// Última visita de una persona = evento tipo 'visita', marcado hecho, vinculado a ella, más reciente.
+function ultimaVisitaDe(pid){
+  const vis=EVENTOS.filter(e=>e.tipo==='visita'&&e.hecho&&e.contactoId===pid);
+  if(!vis.length)return null;
+  vis.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  return vis[0].fecha||null;
+}
+// Días transcurridos desde una fecha ISO (yyyy-mm-dd) hasta hoy
+function diasDesde(fISO){
+  if(!fISO)return null;
+  const hoy=new Date();hoy.setHours(0,0,0,0);
+  const f=new Date(fISO+'T00:00');
+  return Math.round((hoy-f)/86400000);
+}
+// Temperatura: combina compromiso (estado) + hace cuánto no se lo visita
+// Devuelve {clase, label, color} -> caliente(verde) / tibio(amarillo) / frio(rojo)
+function tempDe(p){
+  const dv=diasDesde(ultimaVisitaDe(p.id)); // null = nunca visitado
+  const est=p.estado; // 'conf' | 'prom' | 'porconv'
+  // "hace mucho" según cuán comprometido está: al confirmado le damos más margen
+  const viejoConf = dv===null || dv>45;   // confirmado: recién a los 45 días se enfría
+  const viejoProm = dv===null || dv>30;   // prometió: 30 días
+  const viejoConv = dv===null || dv>15;   // por convencer: 15 días
+  let clase,label,color;
+  if(est==='conf'){
+    if(!viejoConf){clase='cal';label='Al día';color='var(--verde-ok)';}
+    else{clase='tib';label='Reforzar';color='#c9971a';}
+  }else if(est==='prom'){
+    if(!viejoProm){clase='tib';label='Seguir';color='#c9971a';}
+    else{clase='fri';label='Enfriándose';color='var(--rojo)';}
+  }else{ // por convencer
+    if(dv!==null&&dv<=15){clase='tib';label='En proceso';color='#c9971a';}
+    else{clase='fri';label='A buscar';color='var(--rojo)';}
+  }
+  return {clase,label,color,dias:dv};
 }
 function renderLista(){
   const cont=document.getElementById('listaBody');if(!cont)return;
@@ -2293,6 +2331,8 @@ function renderLista(){
   list=listaCompleta.slice(0,window._listaCap);
   cont.innerHTML=list.map(p=>{
     const esDup=dupCount[claveDup(p)]>1;
+    const temp=tempDe(p);
+    const uVis=ultimaVisitaDe(p.id);
     const badge=p.tipo==='conf'?`<span class="badge badge-conf">trae ${p.votosPos}</span>`:'';
     const padre=p.padre?REGISTROS.find(x=>x.id===p.padre):null;
     // puntitos de marca, chiquitos
@@ -2310,11 +2350,18 @@ function renderLista(){
         </div>
         <div class="prow-right">
           <span class="dots">${dots}</span>
+          <span class="temp-dot" style="background:${temp.color}" title="${temp.label}${temp.dias!==null?' · visitado hace '+temp.dias+'d':' · sin visita'}"></span>
           <span class="tag ${estClass(p.estado)}">${estLabel(p.estado)}</span>
           <span class="ti ti-chevron-down prow-caret" aria-hidden="true"></span>
         </div>
       </div>
       <div class="prow-actions" id="act-${p.id}">
+        <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:8px 10px;background:var(--arena-2);border-radius:9px;font-size:12.5px">
+          <span class="temp-dot" style="background:${temp.color};width:10px;height:10px"></span>
+          <b style="color:${temp.color}">${temp.label}</b>
+          <span style="color:var(--gris)">·</span>
+          <span style="color:var(--gris)">${uVis?`Última visita: hace ${temp.dias} día${temp.dias!==1?'s':''} (${new Date(uVis+'T00:00').toLocaleDateString('es-AR')})`:'Sin visitas registradas'}</span>
+        </div>
         <div style="grid-column:1/-1;display:flex;gap:8px;margin-bottom:4px">
           <button onclick="setEstado('${p.id}','prom')" style="flex:1;background:${p.estado==='prom'?'#8a6a1c':'#fdf4e3'};color:${p.estado==='prom'?'#fff':'#8a6a1c'};border-radius:9px;padding:11px;font-size:13px;font-weight:700">Prometió</button>
           <button onclick="setEstado('${p.id}','conf')" style="flex:1;background:${p.estado==='conf'?'var(--verde-ok)':'#e7f4ec'};color:${p.estado==='conf'?'#fff':'var(--verde-ok)'};border-radius:9px;padding:11px;font-size:13px;font-weight:700">Confirmó ✓</button>
