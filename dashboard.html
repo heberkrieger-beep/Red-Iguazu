@@ -301,7 +301,7 @@ const SUPABASE_URL='https://qgogamniszilcefqvtcq.supabase.co';
 const SUPABASE_KEY='sb_publishable_RtlHSBqEDAi-aCfF6ZzKAg_RHg968Cr';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-let REG=[],REF=[],EV=[],AUTOS=[],FISC=[],VISI=[],SECT=[];
+let REG=[],REF=[],EV=[],AUTOS=[],FISC=[],VISI=[],SECT=[],SUBS=[];
 const PESO={porconv:0,cont:0.35,prom:0.55,conf:0.80};
 let charts={},vistaActual='resumen';
 
@@ -344,6 +344,7 @@ async function cargarTodo(){
     // visitas: tabla nueva, puede no existir todavía (si no corrió el SQL) — tolerante
     try{const rv=await sb.from('visitas').select('*');VISI=rv.data||[];}catch(e){VISI=[];}
     try{const rs=await sb.from('sectores').select('*');SECT=rs.data||[];}catch(e){SECT=[];}
+    try{const rss=await sb.from('subsectores').select('*');SUBS=rss.data||[];}catch(e){SUBS=[];}
     llenarSelects();renderTodo();
     document.getElementById('loading').style.display='none';
   }catch(e){document.getElementById('loading').innerHTML='No se pudieron cargar los datos. Probá Actualizar.';console.error(e);}
@@ -546,7 +547,8 @@ function abrirPersona(id){
       <option value="prom" ${p.estado==='prom'?'selected':''}>🟡 Prometió</option>
       <option value="conf" ${p.estado==='conf'?'selected':''}>🟢 Confirmado</option></select></div>
     <div class="f"><label>Referente</label><select id="dRef">${refs.map(r=>`<option value="${r.id}" ${r.id===p.ref_id?'selected':''}>${r.nombre}</option>`).join('')}</select></div>
-    <div class="f"><label>Sector <span class="opt">(iglesia, club, etc.)</span></label><select id="dSector"><option value="">— sin sector —</option>${SECT.map(s=>`<option value="${s.id}" ${s.id===p.sector_id?'selected':''}>${s.nombre}</option>`).join('')}</select></div>
+    <div class="f"><label>Sector <span class="opt">(iglesia, club, etc.)</span></label><select id="dSector" onchange="actualizarSubDrawer()"><option value="">— sin sector —</option>${SECT.map(s=>`<option value="${s.id}" ${s.id===p.sector_id?'selected':''}>${s.nombre}</option>`).join('')}</select></div>
+    <div class="f" id="dSubWrap" style="${p.sector_id?'':'display:none'}"><label>Subcategoría</label><select id="dSubsector"><option value="">— sin subcategoría —</option>${SUBS.filter(x=>x.sector_id===p.sector_id).map(sub=>`<option value="${sub.id}" ${sub.id===p.subsector_id?'selected':''}>${sub.nombre}</option>`).join('')}</select></div>
     ${p.tipo==='conf'?`<div class="f"><label>¿A cuánta gente trae?</label><input id="dVotos" type="number" min="1" value="${p.votos_pos||1}"></div>`:''}
     <label class="chk"><input type="checkbox" id="dTrans" ${p.transporte?'checked':''}> Necesita transporte</label>
     <label class="chk"><input type="checkbox" id="dVoto" ${p.voto?'checked':''}> Ya votó</label>`,
@@ -561,6 +563,7 @@ async function guardarPersona(id){
     barrio:document.getElementById('dBarrio').value.trim()||null,mesa:document.getElementById('dMesa').value.trim()||null,
     estado:document.getElementById('dEstado').value,ref_id:document.getElementById('dRef').value,
     sector_id:document.getElementById('dSector').value||null,
+    subsector_id:document.getElementById('dSubsector')?document.getElementById('dSubsector').value||null:null,
     transporte:document.getElementById('dTrans').checked,voto:document.getElementById('dVoto').checked};
   const dv=document.getElementById('dVotos');if(dv)obj.votos_pos=parseInt(dv.value)||1;
   if(await upd('registros',id,obj)){Object.assign(p,obj);toast('Guardado ✓',true);cerrarDrawer();renderTodo();}
@@ -766,35 +769,53 @@ async function borrarFiscal(id){
   FISC=FISC.filter(f=>f.id!==id);toast('Fiscal quitado',true);cerrarDrawer();renderFisca();
 }
 
-/* ===== SECTORES (mapa mental) ===== */
+/* ===== SECTORES + SUBCATEGORÍAS (mapa de círculos) ===== */
 const COLORES_SECTOR=['#2c5f7c','#b5491f','#2e8b57','#8a6a1c','#7a4fa3','#c0432f','#0f3d2e','#1c7a8c','#a03e6f','#5a6b2e'];
 function nomSector(id){const s=SECT.find(x=>x.id===id);return s?s.nombre:null;}
+function subsDe(sectorId){return SUBS.filter(x=>x.sector_id===sectorId);}
+function genteSector(id){return REG.filter(p=>p.sector_id===id);}
+function genteSub(id){return REG.filter(p=>p.subsector_id===id);}
 function renderSectores(){
   const conSector=REG.filter(p=>p.sector_id).length;
   const sinSector=REG.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&!p.sector_id).length;
   document.getElementById('sectKpis').innerHTML=`
-    <div class="kpi"><span class="ti ti-circles" style="color:var(--azul)"></span><div class="n">${SECT.length}</div><div class="l">sectores creados</div></div>
+    <div class="kpi"><span class="ti ti-circles" style="color:var(--azul)"></span><div class="n">${SECT.length}</div><div class="l">sectores · ${SUBS.length} subcategorías</div></div>
     <div class="kpi"><span class="ti ti-user-check" style="color:var(--verde-ok)"></span><div class="n">${conSector}</div><div class="l">personas clasificadas</div></div>
     <div class="kpi"><span class="ti ti-user-question" style="color:${sinSector?'var(--amarillo)':'var(--gris)'}"></span><div class="n">${sinSector}</div><div class="l">sin sector todavía</div></div>`;
-  const grid=document.getElementById('sectGrid');
-  if(!SECT.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Todavía no creaste ningún sector. Tocá «Nuevo sector» y empezá a agrupar tu gente (iglesia, club, cooperativa...).</div>';return;}
-  // ordenar sectores por cantidad de gente
-  const conteo=s=>REG.filter(p=>p.sector_id===s.id);
-  const orden=[...SECT].sort((a,b)=>conteo(b).length-conteo(a).length);
-  let html=orden.map(s=>{
-    const gente=conteo(s);
+  const cont=document.getElementById('sectGrid');
+  if(!SECT.length){cont.innerHTML='<div class="empty" style="grid-column:1/-1">Todavía no creaste ningún sector. Tocá «Nuevo sector» y empezá a agrupar tu gente (Iglesia, Empleado público, Club...).</div>';return;}
+  const orden=[...SECT].sort((a,b)=>genteSector(b.id).length-genteSector(a.id).length);
+  // tamaño de burbuja según cantidad (raíz para que no exploten)
+  const maxG=Math.max(1,...SECT.map(s=>genteSector(s.id).length));
+  const px=n=>Math.round(70+Math.sqrt(n/maxG)*150); // 70 a 220px
+  cont.innerHTML=orden.map(s=>{
+    const gente=genteSector(s.id);
     const v=votos(gente);
     const col=s.color||'#2c5f7c';
-    const lista=gente.slice(0,8).map(p=>`<div style="font-size:12.5px;padding:4px 0;border-top:1px solid var(--arena-2);display:flex;justify-content:space-between"><span>${p.nombre} ${p.apellido}</span><span class="tag ${p.estado==='conf'?'t-conf':p.estado==='prom'?'t-prom':p.estado==='porconv'?'t-porconv':'t-cont'}">${estLabel(p.estado).slice(0,4)}</span></div>`).join('');
-    return `<div class="auto-card" style="border-top:4px solid ${col}">
-      <div class="ah"><div><div class="an" style="display:flex;align-items:center;gap:7px"><span style="width:13px;height:13px;border-radius:50%;background:${col};display:inline-block"></span> ${s.nombre}</div>
-        <div class="am">${gente.length} personas · ~${v.proy} votos proyectados</div></div>
-        <button class="icobtn" onclick="abrirSector('${s.id}')">✏️</button></div>
-      ${gente.length?lista:'<div class="empty" style="padding:14px">Sin gente asignada. Asigná desde Personas (columna Sector).</div>'}
-      ${gente.length>8?`<div style="font-size:11.5px;color:var(--gris);text-align:center;padding-top:8px">+${gente.length-8} más — vé la lista completa en Personas filtrando por este sector</div>`:''}
+    const subs=subsDe(s.id).map(sub=>({...sub,n:genteSub(sub.id).length})).sort((a,b)=>b.n-a.n);
+    const sinSub=gente.filter(p=>!p.subsector_id).length;
+    const maxSub=Math.max(1,...subs.map(x=>x.n),sinSub);
+    const subPx=n=>Math.round(34+Math.sqrt(n/maxSub)*66); // 34 a 100px
+    const burbujas=subs.filter(x=>x.n>0).map(sub=>{
+      const d=subPx(sub.n);
+      return `<div title="${sub.nombre}: ${sub.n}" style="width:${d}px;height:${d}px;border-radius:50%;background:${col};opacity:.88;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:4px;box-shadow:0 2px 8px rgba(0,0,0,.18)">
+        <div style="font-size:${d>60?'18':'14'}px;font-weight:800;line-height:1">${sub.n}</div>
+        <div style="font-size:${d>60?'11':'9'}px;line-height:1.1;max-width:${d-8}px;overflow:hidden">${sub.nombre}</div></div>`;
+    }).join('');
+    const burbujaSinSub=sinSub>0?`<div title="Sin subcategoría: ${sinSub}" style="width:${subPx(sinSub)}px;height:${subPx(sinSub)}px;border-radius:50%;background:${col};opacity:.35;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:4px">
+        <div style="font-size:14px;font-weight:800;line-height:1">${sinSub}</div><div style="font-size:9px">sin sub</div></div>`:'';
+    return `<div class="panel" style="border-top:4px solid ${col};margin-bottom:0">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px">
+        <div><h2 style="margin:0"><span style="width:14px;height:14px;border-radius:50%;background:${col};display:inline-block"></span> ${s.nombre}</h2>
+          <div style="font-size:12px;color:var(--gris);margin-top:3px">${gente.length} personas · ~${v.proy} votos · ${subs.length} subcategorías</div></div>
+        <div style="display:flex;gap:5px">
+          <button class="btn" style="padding:7px 11px;font-size:12px" onclick="abrirSub(null,'${s.id}')"><span class="ti ti-plus"></span> Subcat.</button>
+          <button class="icobtn" onclick="abrirSector('${s.id}')">✏️</button></div>
+      </div>
+      ${(burbujas||burbujaSinSub)?`<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;padding:14px;background:var(--arena);border-radius:12px">${burbujas}${burbujaSinSub}</div>`:'<div class="empty" style="padding:14px">Sin gente. Creá subcategorías y asigná personas desde Personas.</div>'}
+      ${subs.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">${subs.map(sub=>`<span class="tag" style="background:var(--arena-2);color:var(--tinta);cursor:pointer" onclick="abrirSub('${sub.id}','${s.id}')">${sub.nombre}: <b>${sub.n}</b> ✏️</span>`).join('')}</div>`:''}
     </div>`;
   }).join('');
-  grid.innerHTML=html;
 }
 function abrirSector(id){
   const s=id?SECT.find(x=>x.id===id):null;
@@ -802,11 +823,11 @@ function abrirSector(id){
   const libre=COLORES_SECTOR.find(c=>!usados.includes(c))||COLORES_SECTOR[0];
   const colorActual=s?s.color:libre;
   const swatches=COLORES_SECTOR.map(c=>`<span onclick="document.getElementById('secColor').value='${c}';document.querySelectorAll('.sw').forEach(e=>e.style.outline='none');this.style.outline='3px solid var(--tinta)'" class="sw" style="width:30px;height:30px;border-radius:50%;background:${c};display:inline-block;cursor:pointer;${c===colorActual?'outline:3px solid var(--tinta)':''}"></span>`).join('');
-  const gente=s?REG.filter(p=>p.sector_id===s.id).length:0;
+  const gente=s?genteSector(s.id).length:0;
   abrirDrawer(s?'Editar sector':'Nuevo sector',`
-    <div class="f"><label>Nombre del sector</label><input id="secNom" value="${s?s.nombre:''}" placeholder="Ej: Iglesia Renacer, Club Mitre, Coop. de taxis"></div>
+    <div class="f"><label>Nombre del sector</label><input id="secNom" value="${s?s.nombre:''}" placeholder="Ej: Iglesia, Empleado público, Club"></div>
     <div class="f"><label>Color</label><div style="display:flex;gap:8px;flex-wrap:wrap">${swatches}</div><input type="hidden" id="secColor" value="${colorActual}"></div>
-    ${s&&gente?`<div style="font-size:12.5px;color:var(--gris);padding:10px;background:var(--arena);border-radius:9px">Este sector tiene <b>${gente}</b> persona(s). Si lo borrás, esa gente queda sin sector (no se borra).</div>`:''}`,
+    ${s?`<div style="font-size:12.5px;color:var(--gris);padding:10px;background:var(--arena);border-radius:9px">Tiene <b>${gente}</b> persona(s) y <b>${subsDe(s.id).length}</b> subcategoría(s). Si lo borrás, esa gente queda sin sector (no se borra) y se borran sus subcategorías.</div>`:''}`,
     `${s?`<button class="btn" style="color:var(--rojo)" onclick="borrarSector('${id}')">Eliminar</button>`:''}
      <button class="btn" onclick="cerrarDrawer()">Cancelar</button>
      <button class="btn prim" style="flex:1;justify-content:center" onclick="guardarSector('${id||''}')">Guardar</button>`);
@@ -820,12 +841,49 @@ async function guardarSector(id){
   toast('Sector guardado ✓',true);cerrarDrawer();llenarSelects();renderTodo();
 }
 async function borrarSector(id){
-  if(!confirm('¿Eliminar este sector? La gente que tenía queda sin sector (no se borra).'))return;
-  await sb.from('registros').update({sector_id:null}).eq('sector_id',id);
-  REG.forEach(p=>{if(p.sector_id===id)p.sector_id=null;});
+  if(!confirm('¿Eliminar este sector y sus subcategorías? La gente queda sin sector (no se borra).'))return;
+  await sb.from('registros').update({sector_id:null,subsector_id:null}).eq('sector_id',id);
+  REG.forEach(p=>{if(p.sector_id===id){p.sector_id=null;p.subsector_id=null;}});
+  await sb.from('subsectores').delete().eq('sector_id',id);
+  SUBS=SUBS.filter(x=>x.sector_id!==id);
   const {error}=await sb.from('sectores').delete().eq('id',id);
   if(error){toast('Error: '+error.message);return;}
   SECT=SECT.filter(x=>x.id!==id);toast('Sector eliminado',true);cerrarDrawer();llenarSelects();renderTodo();
+}
+function abrirSub(id,sectorId){
+  const sub=id?SUBS.find(x=>x.id===id):null;
+  const s=SECT.find(x=>x.id===(sub?sub.sector_id:sectorId));
+  const n=id?genteSub(id).length:0;
+  abrirDrawer(sub?'Editar subcategoría':'Nueva subcategoría',`
+    <div style="font-size:12.5px;color:var(--gris);margin-bottom:12px">Sector: <b style="color:var(--selva)">${s?s.nombre:''}</b></div>
+    <div class="f"><label>Nombre de la subcategoría</label><input id="subNom" value="${sub?sub.nombre:''}" placeholder="Ej: Casa de Dios, PSA, Renacer"></div>
+    ${sub&&n?`<div style="font-size:12.5px;color:var(--gris);padding:10px;background:var(--arena);border-radius:9px">Tiene <b>${n}</b> persona(s). Si la borrás, quedan en el sector pero sin subcategoría.</div>`:''}`,
+    `${sub?`<button class="btn" style="color:var(--rojo)" onclick="borrarSub('${id}')">Eliminar</button>`:''}
+     <button class="btn" onclick="cerrarDrawer()">Cancelar</button>
+     <button class="btn prim" style="flex:1;justify-content:center" onclick="guardarSub('${id||''}','${sub?sub.sector_id:sectorId}')">Guardar</button>`);
+}
+async function guardarSub(id,sectorId){
+  const nombre=document.getElementById('subNom').value.trim();
+  if(!nombre){toast('Poné un nombre.');return;}
+  if(id){const sub=SUBS.find(x=>x.id===id);const {error}=await sb.from('subsectores').update({nombre}).eq('id',id);if(error){toast('Error: '+error.message);return;}sub.nombre=nombre;}
+  else{const {data,error}=await sb.from('subsectores').insert({nombre,sector_id:sectorId}).select().single();if(error){toast('Error: '+error.message);return;}SUBS.push(data);}
+  toast('Subcategoría guardada ✓',true);cerrarDrawer();llenarSelects();renderTodo();
+}
+async function borrarSub(id){
+  if(!confirm('¿Eliminar esta subcategoría? La gente queda en el sector, sin subcategoría.'))return;
+  await sb.from('registros').update({subsector_id:null}).eq('subsector_id',id);
+  REG.forEach(p=>{if(p.subsector_id===id)p.subsector_id=null;});
+  const {error}=await sb.from('subsectores').delete().eq('id',id);
+  if(error){toast('Error: '+error.message);return;}
+  SUBS=SUBS.filter(x=>x.id!==id);toast('Subcategoría eliminada',true);cerrarDrawer();llenarSelects();renderTodo();
+}
+
+function actualizarSubDrawer(){
+  const sid=document.getElementById('dSector').value;
+  const wrap=document.getElementById('dSubWrap'),sel=document.getElementById('dSubsector');
+  if(!sid){wrap.style.display='none';sel.innerHTML='<option value="">— sin subcategoría —</option>';return;}
+  wrap.style.display='block';
+  sel.innerHTML='<option value="">— sin subcategoría —</option>'+SUBS.filter(x=>x.sector_id===sid).map(sub=>`<option value="${sub.id}">${sub.nombre}</option>`).join('');
 }
 
 /* ===== MI AGENDA / VISITAS ===== */
