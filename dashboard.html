@@ -207,7 +207,7 @@
           <th style="width:34px"><input type="checkbox" id="selTodos" onchange="toggleSelTodos(this.checked)"></th>
           <th onclick="pSort('apellido')">Apellido, Nombre</th><th onclick="pSort('dni')">DNI</th><th onclick="pSort('tel')">Teléfono</th>
           <th onclick="pSort('barrio')">Barrio</th><th onclick="pSort('mesa')">Mesa</th><th onclick="pSort('estado')">Estado</th>
-          <th onclick="pSort('refNom')">Referente</th><th>Sector</th><th>Última visita</th><th style="width:70px"></th>
+          <th onclick="pSort('refNom')">Referente</th><th onclick="pSort('sectorNom')">Sector</th><th onclick="pSort('ultimaVis')">Última visita ↕</th><th style="width:70px"></th>
         </tr></thead><tbody></tbody></table>
       </div>
       <div class="pager"><span id="pInfo"></span>
@@ -488,6 +488,13 @@ function filtrarPersonas(){
     return true;
   }).sort((a,b)=>{let x=a[pSortK==='refNom'?'ref_id':pSortK]||'',y=b[pSortK==='refNom'?'ref_id':pSortK]||'';
     if(pSortK==='refNom'){x=refNom(a.ref_id);y=refNom(b.ref_id);}
+    if(pSortK==='sectorNom'){const sn=p=>{const s=SECT.find(x=>x.id===p.sector_id);return s?s.nombre:'zzz';};x=sn(a);y=sn(b);}
+    if(pSortK==='ultimaVis'){
+      // sin visita = muy viejo, va al fondo (o arriba según dirección)
+      const fa=ultimaVisita(a.id),fb=ultimaVisita(b.id);
+      const va=fa?new Date(fa+'T00:00').getTime():0,vb=fb?new Date(fb+'T00:00').getTime():0;
+      return pDir*(va-vb);
+    }
     if(pSortK==='mesa'){x=parseInt(x)||0;y=parseInt(y)||0;return pDir*(x-y);}
     return pDir*String(x).localeCompare(String(y));});
 }
