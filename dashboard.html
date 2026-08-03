@@ -281,6 +281,9 @@
 
     <div id="v-analisis" style="display:none">
       <div class="page-h"><div><h1>Análisis</h1><div class="sub">Inteligencia territorial y demográfica sobre el padrón real de Iguazú.</div></div></div>
+      <div class="panel"><h2><span class="ti ti-circles"></span> Sectores — cuándo los viste por última vez</h2>
+        <div class="sub" style="margin-bottom:10px">La última reunión hecha con alguien de cada sector. Sirve para no dejar ningún grupo abandonado.</div>
+        <div class="chart-box" style="height:auto;max-height:480px;overflow:auto"><table id="tablaSectVis"><thead><tr><th onclick="sortSectVis('nombre')" style="cursor:pointer">Sector ↕</th><th onclick="sortSectVis('gente')" style="cursor:pointer">Gente ↕</th><th onclick="sortSectVis('ult')" style="cursor:pointer">Última reunión ↕</th><th>A quién</th></tr></thead><tbody></tbody></table></div></div>
       <div class="panel"><h2><span class="ti ti-map-search"></span> Cobertura territorial — dónde sos fuerte y dónde estás ciego</h2>
         <div class="chart-box" style="height:auto;max-height:520px;overflow:auto"><table id="tablaCob"><thead><tr><th>Barrio</th><th>Electores</th><th>Tus contactos</th><th>Penetración</th><th>Lectura</th></tr></thead><tbody></tbody></table></div></div>
       <div class="panel"><h2><span class="ti ti-cake"></span> Edades — tu red vs. el electorado</h2>
@@ -378,7 +381,7 @@ function renderTodo(){
   if(vistaActual==='fisca')renderFisca();
   if(vistaActual==='sectores')renderSectores();
   if(vistaActual==='agenda')renderAgenda();
-  if(vistaActual==='analisis'){renderCobertura();renderEdades();renderBarrio();renderTablaRefs();}
+  if(vistaActual==='analisis'){renderSectVis();renderCobertura();renderEdades();renderBarrio();renderTablaRefs();}
 }
 async function upd(tabla,id,obj){const {error}=await sb.from(tabla).update(obj).eq('id',id);if(error){toast('Error al guardar: '+error.message);return false;}return true;}
 
@@ -1238,6 +1241,42 @@ const BARRIO_KEYS=[
 const EDADES_PADRON={"16-24": 4842, "25-34": 10683, "35-44": 9715, "45-54": 7402, "55-64": 5080, "65+": 5770};
 function normTxt(s){return (s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function barrioCanon(t){const d=normTxt(t);for(const [rx,b] of BARRIO_KEYS){if(rx.test(d))return b;}return null;}
+let _sectVisSort={k:'ult',dir:1};
+function sortSectVis(k){if(_sectVisSort.k===k)_sectVisSort.dir*=-1;else{_sectVisSort.k=k;_sectVisSort.dir=1;}renderSectVis();}
+function renderSectVis(){
+  const tb=document.querySelector('#tablaSectVis tbody');if(!tb)return;
+  const hoy=Date.now();
+  const filas=SECT.map(s=>{
+    const gente=REG.filter(p=>p.sector_id===s.id);
+    // última reunión hecha con cualquiera del sector
+    let ult=null,ultNom='';
+    gente.forEach(p=>{const f=ultimaVisita(p.id);if(f&&(!ult||f>ult)){ult=f;ultNom=(p.nombre||'')+' '+(p.apellido||'');}});
+    const dias=ult?Math.floor((hoy-new Date(ult+'T00:00'))/86400000):null;
+    return {nombre:s.nombre,color:s.color||'#2c5f7c',gente:gente.length,ult,ultNom:ultNom.trim(),dias};
+  });
+  const {k,dir}=_sectVisSort;
+  filas.sort((a,b)=>{
+    let x,y;
+    if(k==='nombre'){x=a.nombre.toLowerCase();y=b.nombre.toLowerCase();}
+    else if(k==='gente'){x=a.gente;y=b.gente;}
+    else{x=a.ult||'0000';y=b.ult||'0000';} // sin visita va primero al ordenar ascendente
+    return x<y?-1*dir:x>y?1*dir:0;
+  });
+  tb.innerHTML=filas.length?filas.map(f=>{
+    let sem,txt;
+    if(f.dias===null){sem='#c0392b';txt='<b style="color:#c0392b">Nunca</b>';}
+    else if(f.dias===0){sem='#1e8f4e';txt='Hoy';}
+    else if(f.dias<=15){sem='#1e8f4e';txt=`hace ${f.dias} día${f.dias===1?'':'s'}`;}
+    else if(f.dias<=30){sem='#d19a1d';txt=`hace ${f.dias} días`;}
+    else{sem='#c0392b';txt=`hace ${f.dias} días`;}
+    const d=f.ult?new Date(f.ult+'T00:00'):null;
+    return `<tr>
+      <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:${f.color};display:inline-block"></span>${f.nombre}</span></td>
+      <td>${f.gente}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${sem};display:inline-block"></span>${txt}${d?' <span style="color:var(--gris);font-size:11px">('+d.getDate()+'/'+(d.getMonth()+1)+')</span>':''}</span></td>
+      <td style="color:var(--gris);font-size:12px">${f.ultNom||'—'}</td></tr>`;
+  }).join(''):'<tr><td colspan="4" style="color:var(--gris);padding:14px">No hay sectores cargados todavía.</td></tr>';
+}
 function renderCobertura(){
   const tb=document.querySelector('#tablaCob tbody');if(!tb)return;
   const mios={};REG.forEach(p=>{const b=barrioCanon(p.barrio||'');if(b)mios[b]=(mios[b]||0)+1;});
