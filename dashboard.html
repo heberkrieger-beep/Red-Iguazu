@@ -1084,17 +1084,20 @@ function agendarDesde(pid){
   abrirVisita(null);
   setTimeout(()=>elegirContactoVis(pid),50); // precargar el contacto en el drawer
 }
+let vSelMulti=[]; // [{id, nom}] para visita nueva; id=null si es nombre libre
 function abrirVisita(id,fechaPre){
   const v=id?VISI.find(x=>x.id===id):null;
+  vSelMulti=[]; // arranca vacío cada vez
   const contactos=REG.filter(p=>p.tipo==='persona'||p.tipo==='conf').sort((a,b)=>(a.apellido||'').localeCompare(b.apellido||''));
   abrirDrawer(v?'Editar visita':'Agendar visita',`
-    <div class="f"><label>¿A quién visitás?</label>
+    <div class="f"><label>¿A quién visitás? ${v?'':'<span class="opt">(podés agregar varios)</span>'}</label>
       <input id="vBusca" placeholder="🔍 Buscar contacto por nombre..." autocomplete="off" oninput="buscarContactoVis()" style="margin-bottom:6px">
       <div id="vBuscaRes" style="display:none;max-height:170px;overflow:auto;border:1px solid var(--linea);border-radius:9px;background:#fff"></div>
       <input type="hidden" id="vContactoId" value="${v?(v.contacto_id||''):''}">
       <div id="vSel" style="${v&&v.contacto_nom?'':'display:none;'}font-size:13px;margin-top:6px;padding:9px 12px;background:#eef4f1;border-radius:9px;color:var(--selva)" data-nom="${v?(v.contacto_nom||''):''}">${v&&v.contacto_nom?'✔ <b>'+v.contacto_nom+'</b> <span onclick="quitarContactoVis()" style="color:var(--rojo);cursor:pointer;margin-left:6px">✕</span>':''}</div>
+      <div id="vChips" style="display:${v?'none':'flex'};flex-wrap:wrap;gap:6px;margin-top:6px"></div>
       <div style="font-size:11px;color:var(--gris);margin-top:6px">¿No está en la lista? Escribí el nombre igual y quedará registrado.</div>
-      <input id="vNomLibre" placeholder="...o escribí un nombre nuevo" style="margin-top:6px" value="${v&&!v.contacto_id?(v.contacto_nom||''):''}">
+      <div style="display:flex;gap:6px;margin-top:6px"><input id="vNomLibre" placeholder="...o escribí un nombre nuevo" value="${v&&!v.contacto_id?(v.contacto_nom||''):''}" style="flex:1">${v?'':'<button class="btn" style="white-space:nowrap" onclick="agregarLibreVis()">+ Agregar</button>'}</div>
     </div>
     <div class="frow"><div class="f"><label>Fecha</label><input type="date" id="vFecha" value="${v?v.fecha:(fechaPre||'')}"></div>
       <div class="f"><label>Turno</label><select id="vTurno"><option value="">—</option>${AG_TURNOS.map(t=>`<option ${v&&v.turno===t?'selected':''}>${t}</option>`).join('')}</select></div></div>
@@ -1115,11 +1118,28 @@ function buscarContactoVis(){
 }
 function elegirContactoVis(id){
   const p=REG.find(x=>x.id===id);if(!p)return;
-  document.getElementById('vContactoId').value=id;
+  const nom=p.nombre+' '+p.apellido;
+  const editando=document.getElementById('vSel'); // en modo editar existe contacto único
+  const esEdicion=document.getElementById('vChips').style.display==='none';
   document.getElementById('vBusca').value='';document.getElementById('vBuscaRes').style.display='none';
-  document.getElementById('vNomLibre').value='';
-  const sel=document.getElementById('vSel');sel.style.display='block';sel.dataset.nom=p.nombre+' '+p.apellido;
-  sel.innerHTML=`✔ <b>${p.nombre} ${p.apellido}</b>${p.barrio?' · '+p.barrio:''} <span onclick="quitarContactoVis()" style="color:var(--rojo);cursor:pointer;margin-left:6px">✕</span>`;
+  if(esEdicion){ // comportamiento viejo: reemplaza el único contacto
+    document.getElementById('vContactoId').value=id;
+    document.getElementById('vNomLibre').value='';
+    const sel=editando;sel.style.display='block';sel.dataset.nom=nom;
+    sel.innerHTML=`✔ <b>${nom}</b>${p.barrio?' · '+p.barrio:''} <span onclick="quitarContactoVis()" style="color:var(--rojo);cursor:pointer;margin-left:6px">✕</span>`;
+    return;
+  }
+  if(!vSelMulti.some(x=>x.id===id))vSelMulti.push({id,nom:nom+(p.barrio?' · '+p.barrio:'')});
+  renderChipsVis();
+}
+function agregarLibreVis(){
+  const inp=document.getElementById('vNomLibre');const t=(inp.value||'').trim();if(!t)return;
+  if(document.getElementById('vChips').style.display==='none'){document.getElementById('vSel').dataset.nom=t;return;} // modo editar
+  vSelMulti.push({id:null,nom:t});inp.value='';renderChipsVis();
+}
+function renderChipsVis(){
+  const box=document.getElementById('vChips');
+  box.innerHTML=vSelMulti.map((c,i)=>`<span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:6px 10px;background:#eef4f1;border-radius:20px;color:var(--selva)">✔ ${c.nom}<span onclick="vSelMulti.splice(${i},1);renderChipsVis()" style="color:var(--rojo);cursor:pointer;font-weight:800">✕</span></span>`).join('');
 }
 function quitarContactoVis(){document.getElementById('vContactoId').value='';document.getElementById('vSel').style.display='none';document.getElementById('vSel').dataset.nom='';}
 async function guardarVisita(id){
@@ -1132,11 +1152,25 @@ async function guardarVisita(id){
   const nota=document.getElementById('vNota').value.trim()||null;
   const hecha=document.getElementById('vHecha').checked;
   if(!fecha){toast('Poné una fecha.');return;}
-  if(!contactoId&&!nom){toast('Elegí un contacto o escribí un nombre.');return;}
-  const obj={contacto_id:contactoId,contacto_nom:nom,fecha,turno,nota,hecha};
-  if(id){const v=VISI.find(x=>x.id===id);const {error}=await sb.from('visitas').update(obj).eq('id',id);if(error){toast('Error: '+error.message);return;}Object.assign(v,obj);}
-  else{const {data,error}=await sb.from('visitas').insert({...obj,creado_por:JSON.parse(localStorage.getItem(GATE_KEY)||'{}').id||null}).select().single();if(error){toast('Error: '+error.message);return;}VISI.push(data);}
-  toast('Visita guardada ✓',true);cerrarDrawer();renderTodo();
+  const creador=JSON.parse(localStorage.getItem(GATE_KEY)||'{}').id||null;
+  // ---- EDITAR: sigue siendo de a uno ----
+  if(id){
+    if(!contactoId&&!nom){toast('Elegí un contacto o escribí un nombre.');return;}
+    const obj={contacto_id:contactoId,contacto_nom:nom,fecha,turno,nota,hecha};
+    const v=VISI.find(x=>x.id===id);const {error}=await sb.from('visitas').update(obj).eq('id',id);
+    if(error){toast('Error: '+error.message);return;}Object.assign(v,obj);
+    toast('Visita guardada ✓',true);cerrarDrawer();renderTodo();return;
+  }
+  // ---- NUEVA: junta buscados en la lista + nombre libre pendiente ----
+  const gente=[...vSelMulti];
+  const librePend=(document.getElementById('vNomLibre').value||'').trim();
+  if(librePend)gente.push({id:null,nom:librePend});
+  if(gente.length===0){toast('Agregá al menos una persona.');return;}
+  const filas=gente.map(g=>({contacto_id:g.id,contacto_nom:g.nom.split(' · ')[0],fecha,turno,nota,hecha,creado_por:creador}));
+  const {data,error}=await sb.from('visitas').insert(filas).select();
+  if(error){toast('Error: '+error.message);return;}
+  (data||[]).forEach(d=>VISI.push(d));
+  toast(gente.length>1?`${gente.length} visitas guardadas ✓`:'Visita guardada ✓',true);cerrarDrawer();renderTodo();
 }
 async function marcarVisita(id,val){
   const v=VISI.find(x=>x.id===id);if(!v)return;v.hecha=val;
