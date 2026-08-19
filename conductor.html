@@ -102,7 +102,11 @@ function render(){
     <div class="r"><div class="n" style="color:var(--azul)">${PAS.filter(p=>p.abordo&&!p.voto).length}</div><div class="l">a bordo</div></div>
     <div class="r"><div class="n" style="color:var(--verde-ok)">${PAS.filter(p=>p.voto).length}</div><div class="l">ya votaron</div></div>`;
   if(!PAS.length){l.innerHTML='<div class="empty">Todavía no te asignaron pasajeros.<br>Tocá "Actualizar lista" en un rato.</div>';return;}
-  const orden=[...PAS].sort((a,b)=>(a.voto?1:0)-(b.voto?1:0));
+  const horaFr=f=>{if(!f)return 99;const h=parseInt(String(f).split('-')[0]);return isNaN(h)?99:h;};
+  const orden=[...PAS].sort((a,b)=>{
+    if((a.voto?1:0)!==(b.voto?1:0))return (a.voto?1:0)-(b.voto?1:0); // votados al fondo
+    return horaFr(a.franja_voto)-horaFr(b.franja_voto); // después por horario de voto
+  });
   l.innerHTML=orden.map(p=>{
     const dom=DOMS[String(p.dni||'').replace(/\D/g,'')]||'';
     // si el pasajero marcó su ubicación exacta, usamos coordenadas (Google nunca falla); si no, la dirección de texto
@@ -111,7 +115,7 @@ function render(){
     const wa=waLink(p.tel);
     const numMapa=(p.dom_lat&&p.dom_lng&&!p.voto)?PAS.filter(x=>x.dom_lat&&x.dom_lng&&!x.voto).indexOf(p)+1:null;
     return `<div class="card ${p.voto?'done':''}">
-      <div class="nm">${numMapa?'<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:#b5491f;color:#fff;font-size:12px;font-weight:800;align-items:center;justify-content:center;margin-right:6px;vertical-align:middle">'+numMapa+'</span>':''}${p.nombre} ${p.apellido}</div>
+      <div class="nm">${numMapa?'<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:#b5491f;color:#fff;font-size:12px;font-weight:800;align-items:center;justify-content:center;margin-right:6px;vertical-align:middle">'+numMapa+'</span>':''}${p.nombre} ${p.apellido}${p.franja_voto?'<span style="float:right;font-size:12px;font-weight:800;background:#e6eef3;color:#1c4e6b;padding:3px 10px;border-radius:20px">🕐 '+p.franja_voto+'hs</span>':'<span style=\"float:right;font-size:11px;color:#999\">sin horario</span>'}</div>
       <div class="dir">📍 ${dom||('Barrio '+(p.barrio||'—')+' (sin dirección del padrón)')}</div>
       ${p.mesa?`<div class="mesa">Vota en mesa ${p.mesa}${p.circuito?' · '+p.circuito:''}</div>`:'<div style="margin-bottom:10px"></div>'}
       <div class="fila">

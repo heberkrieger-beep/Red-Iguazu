@@ -147,6 +147,14 @@ async function guardarMiUbicacion(lat,lng){
   _ubiGuardada=true;
   try{await sb.from('registros').update({dom_lat:lat,dom_lng:lng}).eq('id',PID);}catch(e){}
 }
+const FRANJAS=['8-10','10-12','12-14','14-16','16-18'];
+async function elegirFranja(fr){
+  if(!PID)return;
+  try{
+    await sb.from('registros').update({franja_voto:fr}).eq('id',PID);
+    actualizar();
+  }catch(e){}
+}
 async function actualizar(){
   const sheet=document.getElementById('sheetBody');
   if(!PID){setEstado('⚠','Link inválido','Pedí que te lo reenvíen','var(--rojo)');sheet.innerHTML='';return;}
@@ -174,6 +182,13 @@ async function actualizar(){
     '</div>'+
     (a.dominio?'<div style="margin-top:12px;padding:11px;background:var(--noche);border-radius:11px;text-align:center"><div style="font-size:10.5px;color:var(--txt-2);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Buscá este auto</div><div style="font-size:18px;font-weight:800;margin-top:3px">'+(a.modelo?a.modelo+' · ':'')+'<span style="letter-spacing:2px">'+a.dominio+'</span></div></div>':'')+
     (yo.mesa?'<div class="mesa">Votás en la <b>mesa '+yo.mesa+'</b>'+(yo.circuito?' · '+yo.circuito:'')+' — llevá tu <b>DNI</b>.</div>':'')+
+    '<div style="margin-top:12px;padding:12px;background:var(--noche);border-radius:11px">'+
+      '<div style="font-size:11px;color:var(--txt-2);font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">¿A qué hora podés votar?</div>'+
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px" id="franjas">'+
+      FRANJAS.map(function(fr){var sel=yo.franja_voto===fr;return '<button onclick="elegirFranja(\''+fr+'\')" style="padding:9px 4px;border-radius:9px;font-size:12.5px;font-weight:700;border:1.5px solid '+(sel?'var(--verde-ok)':'var(--linea)')+';background:'+(sel?'rgba(49,196,111,.15)':'transparent')+';color:'+(sel?'var(--verde-ok)':'var(--txt)')+';cursor:pointer">'+fr+'</button>';}).join('')+
+      '</div>'+
+      '<div style="font-size:10.5px;color:var(--txt-2);margin-top:7px">Esto ayuda a que te pasen a buscar a la hora que te queda cómoda.</div>'+
+    '</div>'+
     (wa?'<button class="wa" onclick="window.open(\''+wa+'\',\'_blank\')"><span class="ti ti-brand-whatsapp"></span> Hablar con '+a.conductor.split(' ')[0]+'</button>':'')+
     '<div style="text-align:center;font-size:11px;color:var(--txt-2);margin-top:12px;padding-top:11px;border-top:1px solid var(--linea)">Red Iguazú · Te acercamos a votar 🗳️</div>'+
   '</div>';
