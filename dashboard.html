@@ -164,7 +164,7 @@
 
 <div class="layout" id="app" style="display:none">
   <div class="side">
-    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v48</span></div></div></div>
+    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v49</span></div></div></div>
     <div class="nav-item active" data-v="resumen" onclick="irA('resumen')"><span class="ti ti-layout-dashboard"></span><span>Resumen</span></div>
     <div class="nav-item" data-v="plan" onclick="irA('plan')"><span class="ti ti-flag"></span><span>Plan de campaña</span></div>
     <div class="nav-item" data-v="estrategia" onclick="irA('estrategia')"><span class="ti ti-target-arrow"></span><span>Estrategia</span></div>
@@ -862,7 +862,7 @@ function armarArbol(){
     // votos únicos de todo lo que cuelga (sin contar dos veces a quien está en un sector y con un referente)
     const R=new Set(),S=new Set(),juntar=x=>{(x.kind==='r'?R:S).add(x.id);x.hijos.forEach(juntar);};juntar(n);
     const v=votos(REG.filter(p=>R.has(p.ref_id)||S.has(p.sector_id)));n.v=v.proy;n.firmes=v.firmes;
-    n.pros=esProspecto(n.o);n.propio=!n.pros&&n.kind==='s'?(n.o.caudal||0):0;n.dice=n.propio+n.hijos.reduce((a,h)=>a+h.dice,0);
+    n.pros=n.kind==='r'&&esProspecto(n.o);n.propio=!n.pros&&n.kind==='s'?(n.o.caudal||0):0;n.dice=n.propio+n.hijos.reduce((a,h)=>a+h.dice,0);
     n.proyP=n.pros?Number(n.kind==='r'?n.o.meta:n.o.caudal)||0:0;n.proyec=n.proyP+n.hijos.reduce((a,h)=>a+h.proyec,0);
     n.suyos=votos(REG.filter(p=>n.kind==='r'?p.ref_id===n.id:p.sector_id===n.id)).proy;n.hojas=n.hijos.length?n.hijos.reduce((a,h)=>a+h.hojas,0):1;};
   raices.forEach(n=>crecer(n,1));
@@ -920,17 +920,17 @@ function renderRed(){
   document.getElementById('redLeyenda').innerHTML=
     Object.values(CAT_REF).map(([l,c])=>`<span><span class="sem" style="background:${c}"></span>${l} (círculo)</span>`).join('')+
     [...new Set(SECT.map(s=>s.tipo))].map(t=>{const [l,c]=TIPOS_SECT[t]||TIPOS_SECT.otro;return `<span><span class="sem" style="background:${c};border-radius:2px"></span>${l} (cuadrado)</span>`;}).join('')+
-    '<span>Relleno: votos verificados · Borde punteado: votos prometidos que todavía no están cargados · Blanco con línea cortada: todavía no confirmado (proyección)</span>'+
+    '<span>Relleno: votos verificados · Borde punteado: votos prometidos que todavía no están cargados · Círculo blanco con línea cortada: referente todavía no confirmado (proyección)</span>'+
     (RED_OK?'':'<span style="color:var(--rojo);font-weight:700">Falta correr el SQL de la Red en Supabase.</span>');
   // lista de sectores
   const porId={};todos.forEach(n=>porId[n.kind+n.id]=n);
   // resumen: dónde se suman los votos
-  const V=votos(REG),prom=suma(SECT.filter(x=>!esProspecto(x)),'caudal'),proyTot=completo.reduce((a,n)=>a+n.proyec,0),vSect=votos(REG.filter(p=>p.sector_id)).proy;
+  const V=votos(REG),prom=suma(SECT,'caudal'),proyTot=completo.reduce((a,n)=>a+n.proyec,0),vSect=votos(REG.filter(p=>p.sector_id)).proy;
   const pct=prom?Math.round(vSect/prom*100):null;
   document.getElementById('redResumen').innerHTML=[
     [nro(V.proy),'votos verificados (personas cargadas, proyectados)',null],[nro(V.firmes),'votos firmes (confirmados con DNI)',null],
     [nro(prom),'votos prometidos por los sectores (van aparte, no se mezclan con los verificados)',null],[pct==null?'—':pct+'%','de lo prometido ya está cargado con nombre y apellido',pct==null?null:pct>=50],
-    [nro(proyTot),'votos en proyección: referentes y sectores que todavía no están confirmados',null],
+    [nro(proyTot),'votos en proyección: referentes que todavía no están confirmados',null],
     [nro(aritmetica().objetivo),`votos objetivo del plan · verificados cubren el ${Math.round(V.proy/aritmetica().objetivo*100)}%`,null]]
     .map(([n,l,ok])=>`<div class="mini"><div class="n" style="color:${ok==null?'var(--tinta)':ok?'var(--verde-ok)':'var(--rojo)'}">${n}</div><div class="l">${l}</div></div>`).join('');
   const refsN=todos.filter(n=>n.kind==='r').sort((a,b)=>b.v-a.v);
@@ -990,7 +990,6 @@ function abrirSector(id){
     <div class="f"><label for="sTipo">Tipo</label><select id="sTipo">${Object.entries(TIPOS_SECT).map(([k,[l]])=>`<option value="${k}"${s.tipo===k?' selected':''}>${l}</option>`).join('')}</select></div>
     <div class="f"><label for="sPadre">Lo trae / pertenece a</label><select id="sPadre">${opcionesPadre('s',id,s.sector_padre?'s:'+s.sector_padre:s.ref_id?'r:'+s.ref_id:'')}</select></div>
     <div class="frow">${campo('sLider','Líder / contacto','text',s.lider,'placeholder="Ej: Pastor Juan"')}${campo('sTel','Teléfono','tel',s.tel)}</div>
-    ${compromisoSel('sComp',s.compromiso)}
     ${campo('sCaudal','Votos que dice que trae','',s.caudal)}
     <div style="font-size:12px;color:var(--gris);margin:-4px 0 12px">Los verificados salen de las personas asignadas a este sector (en Personas, seleccioná y elegí el sector).</div>
     <div class="f"><label for="sNotas">Notas</label><textarea id="sNotas" rows="3">${esc(s.notas)}</textarea></div>`,
@@ -999,7 +998,7 @@ function abrirSector(id){
 function guardarSector(id){
   const g=k=>document.getElementById(k).value.trim(),caudal=numCampo('sCaudal',true),[pk,pid]=(g('sPadre')||':').split(':');
   if(Number.isNaN(caudal)){toast('Los votos que dice que trae tienen que ser un número entero');return;}
-  const obj={nombre:g('sNombre'),tipo:g('sTipo'),ref_id:pk==='r'?pid:null,sector_padre:pk==='s'?pid:null,lider:g('sLider')||null,tel:g('sTel')||null,caudal,compromiso:g('sComp'),notas:g('sNotas')||null};
+  const obj={nombre:g('sNombre'),tipo:g('sTipo'),ref_id:pk==='r'?pid:null,sector_padre:pk==='s'?pid:null,lider:g('sLider')||null,tel:g('sTel')||null,caudal,notas:g('sNotas')||null};
   if(!obj.nombre){toast('Poné el nombre del sector');return;}
   if(!TIPOS_SECT[obj.tipo]){toast('Elegí el tipo');return;}
   guardarFila('red_sectores',SECT,id,obj);
