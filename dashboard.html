@@ -136,6 +136,8 @@
   .barra{height:7px;background:var(--arena-2);border-radius:4px;overflow:hidden;min-width:90px}
   .barra i{display:block;height:100%}
   /* mapas: tiles de OpenStreetMap (sin API key) oscurecidos para el estilo del panel */
+  /* el mapa queda por debajo del panel lateral y de los avisos */
+  #mapaEquipo,#mapaCmd{position:relative;z-index:0;isolation:isolate}
   #mapaEquipo .leaflet-tile-pane,#mapaCmd .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
   @media(max-width:900px){.etapas,.subgrid{grid-template-columns:1fr 1fr}}
 </style>
@@ -159,7 +161,7 @@
 
 <div class="layout" id="app" style="display:none">
   <div class="side">
-    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v42</span></div></div></div>
+    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v44</span></div></div></div>
     <div class="nav-item active" data-v="resumen" onclick="irA('resumen')"><span class="ti ti-layout-dashboard"></span><span>Resumen</span></div>
     <div class="nav-item" data-v="plan" onclick="irA('plan')"><span class="ti ti-flag"></span><span>Plan de campaña</span></div>
     <div class="nav-item" data-v="personas" onclick="irA('personas')"><span class="ti ti-users"></span><span>Personas</span></div>
@@ -233,6 +235,7 @@
       <div class="bulkbar" id="bulkbar">
         <b id="bulkN"></b>
         <span>→ mover a</span><select id="bulkRef"></select>
+        <span>o sector</span><select id="bulkSector"></select>
         <span>o estado</span><select id="bulkEstado"><option value="">—</option><option value="porconv">Por convencer</option><option value="cont">Contactado</option><option value="prom">Prometió</option><option value="conf">Confirmado</option></select>
         <button onclick="aplicarBulk()">Aplicar</button>
         <button style="background:rgba(255,255,255,.2)" onclick="limpiarSel()">Cancelar</button>
@@ -259,16 +262,22 @@
         <button class="btn" onclick="abrirColab(null)"><span class="ti ti-user-plus"></span> Colaborador</button>
         <button class="btn verde" onclick="abrirReferente(null)"><span class="ti ti-plus"></span> Referente</button></div></div>
       <div class="kpis" id="eqKpis"></div>
-      <div class="panel"><h2><span class="ti ti-map-pin"></span> Dónde está parado el equipo</h2>
-        <div id="eqUbicando" style="display:none;margin-bottom:10px;padding:10px 12px;background:#fbf3e6;border-radius:10px;font-size:12.5px;color:var(--tierra)"></div>
-        <div id="mapaEquipo" style="height:420px;border-radius:12px;border:1px solid var(--linea);background:#12181c;overflow:hidden"></div>
-        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--gris)">
-          <span>🟢 Referente activo</span><span>🟡 Referente pendiente / capacitado</span><span>🔵 Colaborador</span></div></div>
+      <div class="panel"><h2><span class="ti ti-affiliate"></span> Red de influencia
+        <span style="margin-left:auto;display:flex;gap:8px"><button class="btn" onclick="abrirSector(null)"><span class="ti ti-plus"></span> Sector</button></span></h2>
+        <div style="font-size:12.5px;color:var(--gris);margin-bottom:10px">Quién trae a quién. El tamaño es la cantidad de votos proyectados que suma cada uno con toda la gente que cuelga de él. Tocá un círculo o un cuadrado para abrir su ficha.</div>
+        <div id="redGrafo" style="border:1px solid var(--linea);border-radius:12px;background:#fbfaf6;overflow:hidden"></div>
+        <div id="redLeyenda" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--gris)"></div>
+        <div style="overflow:auto;max-height:360px;margin-top:16px"><table><thead><tr><th>Sector</th><th>Lo trae</th><th>Líder / contacto</th><th>Dice que trae</th><th>Verificados</th><th>Peso</th><th></th></tr></thead><tbody id="redSectores"></tbody></table></div></div>
       <div class="panel"><h2><span class="ti ti-map-2"></span> Cobertura: barrios con y sin gente</h2>
         <div style="overflow:auto;max-height:420px"><table><thead><tr><th>Barrio</th><th>Electores</th><th>Referentes</th><th>Colaboradores</th><th>Lectura</th></tr></thead><tbody id="eqCob"></tbody></table></div></div>
       <div class="panel"><h2><span class="ti ti-users"></span> Referentes</h2>
         <div style="overflow:auto"><table><thead><tr><th>Nombre</th><th>Zona</th><th>Estado</th><th>Contactos</th><th>Votos proy.</th><th>Última carga</th><th></th></tr></thead><tbody id="eqRefs"></tbody></table></div></div>
       <div class="panel"><h2><span class="ti ti-heart-handshake"></span> Colaboradores</h2><div id="eqColabs"></div></div>
+      <div class="panel"><h2><span class="ti ti-map-pin"></span> Dónde está parado el equipo</h2>
+        <div id="eqUbicando" style="display:none;margin-bottom:10px;padding:10px 12px;background:#fbf3e6;border-radius:10px;font-size:12.5px;color:var(--tierra)"></div>
+        <div id="mapaEquipo" style="height:420px;border-radius:12px;border:1px solid var(--linea);background:#12181c;overflow:hidden"></div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--gris)">
+          <span>🟢 Referente activo</span><span>🟡 Referente pendiente / capacitado</span><span>🔵 Colaborador</span></div></div>
     </div>
 
     <div id="v-moviles" style="display:none">
@@ -394,6 +403,7 @@ async function cargarTodo(){
     try{const rc=await sb.from('colaboradores').select('*');COLAB=rc.error?[]:(rc.data||[]);}catch(e){COLAB=[];}
     try{const [ra,rp]=await Promise.all([sb.from('actividades').select('*'),sb.from('plan_config').select('datos').eq('id',1).maybeSingle()]);
       PLAN_OK=!ra.error&&!rp.error;ACTS=ra.data||[];PLAN=rp.data?.datos||null;}catch(e){PLAN_OK=false;ACTS=[];}
+    try{const rs=await sb.from('red_sectores').select('*');RED_OK=!rs.error;SECT=rs.data||[];}catch(e){RED_OK=false;SECT=[];}
     llenarSelects();renderTodo();
     document.getElementById('loading').style.display='none';
   }catch(e){document.getElementById('loading').innerHTML='No se pudieron cargar los datos. Probá Actualizar.';console.error(e);}
@@ -403,6 +413,7 @@ function llenarSelects(){
   const opts=refs.map(r=>`<option value="${r.id}">${r.nombre}</option>`).join('');
   document.getElementById('pRef').innerHTML='<option value="">Referente: todos</option>'+opts;
   document.getElementById('bulkRef').innerHTML='<option value="">—</option>'+opts;
+  document.getElementById('bulkSector').innerHTML='<option value="">—</option><option value="ninguno">Sin sector</option>'+[...SECT].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(x=>`<option value="${x.id}">${esc(x.nombre)}</option>`).join('');
   const barrios=[...new Set(REG.map(p=>p.barrio).filter(Boolean))].sort();
   document.getElementById('pBarrio').innerHTML='<option value="">Barrio: todos</option>'+barrios.map(b=>`<option>${b}</option>`).join('');
 }
@@ -452,6 +463,7 @@ function renderEquipo(){
       <span><b>${esc(c.nombre)}</b> <span style="color:var(--gris)">· ${ROLES_COLAB[c.rol]||esc(c.rol||'')}${c.zona?' · '+esc(c.zona):''}${c.tel?' · '+esc(c.tel):''}</span></span>
       <span style="white-space:nowrap">${wa?`<a class="icobtn" title="WhatsApp" href="${wa}" target="_blank" rel="noopener" style="text-decoration:none">💬</a> `:''}<button class="icobtn" title="Ubicar en el mapa" onclick="ubicar('col','${c.id}')">📍</button> <button class="icobtn" onclick="abrirColab('${c.id}')">✏️</button></span></div>`;}).join('')
     :'<div class="empty">Sin colaboradores todavía. Sumá choferes, fiscales, quien presta un lugar, voluntarios…</div>';
+  renderRed();
   iniciarMapaEquipo();
 }
 
@@ -507,6 +519,7 @@ function abrirReferente(id){
     <div class="f"><label>Teléfono</label><input id="rTel" value="${esc(r?.tel)}" placeholder="3757..."></div></div>
     <div class="frow"><div class="f"><label>Zona / barrio</label><input id="rZona" list="eqZonas" value="${esc(r?.zona)}"></div>
     <div class="f"><label>Meta de votos</label><input id="rMeta" type="number" min="0" value="${r?.meta??100}"></div></div>
+    <div class="f"><label for="rPadre">Lo trajo</label><select id="rPadre">${opcionesPadre('r',r?.id,r?.referido_por?'r:'+r.referido_por:'')}</select></div>
     <div class="frow"><div class="f"><label>Tipo</label><select id="rCat">${Object.entries(cats).map(([k,v])=>`<option value="${k}" ${r?.categoria===k?'selected':''}>${v}</option>`).join('')}</select></div>
     ${r&&capaDe(r)!=='activo'?`<div class="f"><label>Capacitación</label><select id="rCapa"><option value="pendiente" ${capaDe(r)==='pendiente'?'selected':''}>Pendiente</option><option value="capacitado" ${capaDe(r)==='capacitado'?'selected':''}>Capacitado</option></select></div>`:'<div></div>'}</div>`;
   window._uTocado=false;
@@ -517,12 +530,12 @@ function abrirReferente(id){
 async function guardarReferente(id){
   const g=k=>document.getElementById(k);
   const nombre=g('rNombre').value.trim();if(!nombre){toast('Poné el nombre');return;}
-  const datos={nombre,zona:g('rZona').value.trim()||null,categoria:g('rCat').value,meta:parseInt(g('rMeta').value)||0};
+  const datos={nombre,zona:g('rZona').value.trim()||null,categoria:g('rCat').value,meta:parseInt(g('rMeta').value)||0},padre=g('rPadre').value.slice(2)||null;
   const tel=g('rTel').value.trim()||null;
   if(id){
-    const r=REF.find(x=>x.id===id);const obj={...datos,tel};if(g('rCapa'))obj.capacitacion=g('rCapa').value;
+    const r=REF.find(x=>x.id===id);const obj={...datos,tel,referido_por:padre};if(g('rCapa'))obj.capacitacion=g('rCapa').value;
     if(await upd('usuarios',id,obj)){Object.assign(r,obj);toast('Guardado ✓',true);cerrarDrawer();llenarSelects();renderTodo();}
-    else toast('Si el error habla de columnas, corré primero el SQL de Equipo.');
+    else toast('Si el error habla de columnas, corré el SQL de Equipo y el de la Red.');
     return;
   }
   const usuario=g('rUsuario').value.trim().toLowerCase();
@@ -534,7 +547,7 @@ async function guardarReferente(id){
   if(error){toast('No se pudo crear: '+error.message);return;}
   const {data:nuevo}=await sb.from('usuarios').select('*').eq('usuario',usuario).maybeSingle();
   if(nuevo){
-    const extra={capacitacion:'pendiente',tel};
+    const extra={capacitacion:'pendiente',tel,referido_por:padre};
     if(!await upd('usuarios',nuevo.id,extra))toast('Creado, pero falta correr el SQL de Equipo para guardar estado y teléfono.');
     Object.assign(nuevo,extra);REF.push(nuevo);
   }
@@ -717,7 +730,7 @@ async function guardarFila(tabla,arr,id,obj){
   toast('Guardado ✓',true);cerrarDrawer();renderTodo();
 }
 async function borrarFila(tabla,arr,id,pregunta){
-  if(!confirm(pregunta))return;const {error}=await sb.from(tabla).delete().eq('id',id);
+  if(pregunta&&!confirm(pregunta))return;const {error}=await sb.from(tabla).delete().eq('id',id);
   if(error){toast('Error: '+error.message);return;}arr.splice(arr.findIndex(x=>x.id===id),1);toast('Borrado ✓',true);cerrarDrawer();renderTodo();
 }
 function pieForm(id,guardar,borrar){return (id?`<button class="btn" aria-label="Borrar" onclick="${borrar}">🗑</button>`:`<button class="btn" onclick="cerrarDrawer()">Cancelar</button>`)+`<button class="btn verde" style="flex:1;justify-content:center" onclick="${guardar}">Guardar</button>`;}
@@ -779,6 +792,109 @@ async function guardarPlan(reset){
 // navegación del menú también con teclado
 document.querySelectorAll('.nav-item').forEach(n=>{n.tabIndex=0;n.setAttribute('role','button');n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}});});
 
+/* ===== RED DE INFLUENCIA: quién trae a quién ===== */
+let SECT=[],RED_OK=true;
+const TIPOS_SECT={iglesia:['Iglesia / comunidad de fe','#7b4fa0'],club:['Club / deporte','#2e8b57'],gremio:['Gremio / sindicato','#8a6a1c'],comercio:['Comercio / emprendedores','#d4971f'],vecinal:['Comisión vecinal','#3b82c4'],educacion:['Educación','#0f766e'],jovenes:['Jóvenes','#c05686'],jubilados:['Jubilados','#6b756f'],familia:['Familia','#a0522d'],otro:['Otro','#9aa3a0']};
+const CAT_REF={politico:['Referente político','#b5491f'],barrial:['Referente barrial','#2c5f7c'],sectorial:['Referente sectorial','#16573f']};
+const pesoTxt=v=>v>=200?'Grande':v>=50?'Mediano':v>0?'Chico':'—';
+// hijos directos de un nodo de la red (referentes y sectores)
+function hijosRed(kind,id){
+  const refs=kind==='r'?refsEquipo().filter(r=>r.referido_por===id&&r.id!==id):[];
+  const secs=SECT.filter(s=>kind==='r'?s.ref_id===id&&!s.sector_padre:s.sector_padre===id&&s.id!==id);
+  return refs.map(r=>({kind:'r',id:r.id,o:r})).concat(secs.map(s=>({kind:'s',id:s.id,o:s})));
+}
+function armarArbol(){
+  const refIds=new Set(refsEquipo().map(r=>r.id)),secIds=new Set(SECT.map(s=>s.id)),vistos=new Set();
+  const raices=refsEquipo().filter(r=>!refIds.has(r.referido_por)||r.referido_por===r.id).map(r=>({kind:'r',id:r.id,o:r}))
+    .concat(SECT.filter(s=>!(s.sector_padre&&secIds.has(s.sector_padre))&&!(s.ref_id&&refIds.has(s.ref_id))).map(s=>({kind:'s',id:s.id,o:s})));
+  const crecer=(n,d)=>{vistos.add(n.kind+n.id);n.d=d;n.hijos=hijosRed(n.kind,n.id).filter(h=>!vistos.has(h.kind+h.id));n.hijos.forEach(h=>crecer(h,d+1));
+    // votos únicos de todo lo que cuelga (sin contar dos veces a quien está en un sector y con un referente)
+    const R=new Set(),S=new Set(),juntar=x=>{(x.kind==='r'?R:S).add(x.id);x.hijos.forEach(juntar);};juntar(n);
+    const v=votos(REG.filter(p=>R.has(p.ref_id)||S.has(p.sector_id)));n.v=v.proy;n.firmes=v.firmes;
+    n.dice=n.kind==='s'?(n.o.caudal||0):0;n.hojas=n.hijos.length?n.hijos.reduce((a,h)=>a+h.hojas,0):1;};
+  raices.forEach(n=>crecer(n,1));
+  return raices;
+}
+function renderRed(){
+  const cont=document.getElementById('redGrafo');if(!cont)return;
+  const raices=armarArbol(),todos=[];const rec=n=>{todos.push(n);n.hijos.forEach(rec);};raices.forEach(rec);
+  if(!todos.length){cont.innerHTML='<div class="empty">Cargá referentes y sectores para ver la red.</div>';}
+  else{
+    const prof=Math.max(...todos.map(n=>n.d)),anillo=Math.min(170,420/prof),hojas=raices.reduce((a,n)=>a+n.hojas,0);
+    const ubicar=(n,a0,span)=>{const a=a0+span/2;n.x=Math.cos(a)*anillo*n.d;n.y=Math.sin(a)*anillo*n.d;n.a=a;let ac=a0;n.hijos.forEach(h=>{const s=span*h.hojas/n.hojas;ubicar(h,ac,s);ac+=s;});};
+    let ac=-Math.PI/2;raices.forEach(n=>{const s=2*Math.PI*n.hojas/hojas;ubicar(n,ac,s);ac+=s;});
+    const radio=n=>Math.min(40,7+3*Math.sqrt(n.v||n.dice||0));
+    let lineas='',nodos='';
+    const dibujar=(n,px,py)=>{
+      lineas+=`<line x1="${px.toFixed(1)}" y1="${py.toFixed(1)}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}" stroke="#d6d0c2" stroke-width="1.5"/>`;
+      const rr=radio(n),promesa=n.kind==='s'&&!n.v&&n.dice;
+      const col=n.kind==='r'?(CAT_REF[n.o.categoria]||CAT_REF.barrial)[1]:(TIPOS_SECT[n.o.tipo]||TIPOS_SECT.otro)[1];
+      const forma=n.kind==='r'?`<circle r="${rr}"`:`<rect x="${-rr}" y="${-rr}" width="${2*rr}" height="${2*rr}" rx="${rr*.3}"`;
+      const der=Math.cos(n.a)>=0,nom=esc(n.o.nombre||''),info=`${nom}: ${nro(n.v)} votos proyectados en su red`+(n.kind==='s'?`, dice que trae ${nro(n.dice)}`:'');
+      nodos+=`<g class="rnodo" transform="translate(${n.x.toFixed(1)},${n.y.toFixed(1)})" tabindex="0" role="button" aria-label="${info}" onclick="${n.kind==='r'?'abrirReferente':'abrirSector'}('${n.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.onclick()}">
+        <title>${info}</title>${forma} fill="${col}" fill-opacity="${promesa?.25:.9}" stroke="${col}" stroke-width="2" ${promesa?'stroke-dasharray="4 3"':''}/>
+        <text ${n.hijos.length?`x="0" y="${(rr+13).toFixed(1)}" text-anchor="middle"`:`x="${der?rr+5:-rr-5}" y="4" text-anchor="${der?'start':'end'}"`} font-size="11" font-weight="600" fill="#1c2a23">${nom.length>22?nom.slice(0,21)+'…':nom}${n.v?` · ${nro(n.v)}`:''}</text></g>`;
+      n.hijos.forEach(h=>dibujar(h,n.x,n.y));};
+    raices.forEach(n=>dibujar(n,0,0));
+    const tot=votos(REG).proy,xs=[0,...todos.map(n=>n.x)],ys=[0,...todos.map(n=>n.y)];
+    const x0=Math.min(...xs)-190,y0=Math.min(...ys)-60,w=Math.max(...xs)+190-x0,h=Math.max(...ys)+70-y0;
+    cont.innerHTML=`<svg viewBox="${x0.toFixed(0)} ${y0.toFixed(0)} ${w.toFixed(0)} ${h.toFixed(0)}" style="width:100%;height:auto;max-height:640px;display:block" role="img" aria-label="Red de influencia de la campaña">
+      <style>.rnodo{cursor:pointer}.rnodo:hover circle,.rnodo:hover rect,.rnodo:focus circle,.rnodo:focus rect{stroke:#1c2a23;stroke-width:3}.rnodo:focus{outline:none}</style>
+      ${lineas}<g><circle r="30" fill="#0f3d2e"/><text y="-2" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">RED</text><text y="13" text-anchor="middle" font-size="10" fill="#9db8ab">${nro(tot)}</text></g>${nodos}</svg>`;
+  }
+  document.getElementById('redLeyenda').innerHTML=
+    Object.values(CAT_REF).map(([l,c])=>`<span><span class="sem" style="background:${c}"></span>${l} (círculo)</span>`).join('')+
+    [...new Set(SECT.map(s=>s.tipo))].map(t=>{const [l,c]=TIPOS_SECT[t]||TIPOS_SECT.otro;return `<span><span class="sem" style="background:${c};border-radius:2px"></span>${l} (cuadrado)</span>`;}).join('')+
+    '<span>Borde punteado: sector que todavía no tiene votos verificados (solo lo que dice que trae)</span>'+
+    (RED_OK?'':'<span style="color:var(--rojo);font-weight:700">Falta correr el SQL de la Red en Supabase.</span>');
+  // lista de sectores
+  const porId={};todos.forEach(n=>porId[n.kind+n.id]=n);
+  document.getElementById('redSectores').innerHTML=SECT.length?[...SECT].sort((a,b)=>(porId['s'+b.id]?.v||0)-(porId['s'+a.id]?.v||0)).map(s=>{
+    const n=porId['s'+s.id]||{v:0},padre=s.sector_padre?(SECT.find(x=>x.id===s.sector_padre)?.nombre||'—'):s.ref_id?refNom(s.ref_id):'—';
+    const brecha=s.caudal&&n.v<s.caudal*0.5;
+    return `<tr><td><b>${esc(s.nombre)}</b><div style="font-size:11px;color:var(--gris)">${(TIPOS_SECT[s.tipo]||TIPOS_SECT.otro)[0]}</div></td><td>${esc(padre)}</td>
+      <td>${esc(s.lider||'—')}${s.tel?`<div style="font-size:11px;color:var(--gris)">${esc(s.tel)}</div>`:''}</td><td>${s.caudal?nro(s.caudal):'—'}</td>
+      <td style="color:${brecha?'var(--rojo)':'inherit'};font-weight:${brecha?700:400}">${nro(n.v)}${brecha?' ⚠':''}</td><td>${pesoTxt(n.v)}</td>
+      <td><button class="icobtn" aria-label="Editar sector" onclick="abrirSector('${s.id}')">✏️</button></td></tr>`;}).join('')
+    :'<tr><td colspan="7" class="empty">Todavía no hay sectores. Cargá iglesias, clubes, gremios… y quién los trae con "+ Sector".</td></tr>';
+}
+// ids que cuelgan de un nodo (para no permitir ciclos)
+function descendientes(kind,id){const out=new Set(),rec=(k,i)=>hijosRed(k,i).forEach(h=>{if(!out.has(h.kind+h.id)){out.add(h.kind+h.id);rec(h.kind,h.id);}});rec(kind,id);return out;}
+function opcionesPadre(kind,id,actual){
+  const prohib=id?descendientes(kind,id):new Set();if(id)prohib.add(kind+id);
+  const refs=refsEquipo().filter(r=>!prohib.has('r'+r.id)).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const secs=kind==='s'?SECT.filter(s=>!prohib.has('s'+s.id)).sort((a,b)=>a.nombre.localeCompare(b.nombre)):[];
+  return `<option value="">— Nadie (va directo a la red) —</option><optgroup label="Referentes">${refs.map(r=>`<option value="r:${r.id}"${actual==='r:'+r.id?' selected':''}>${esc(r.nombre)}</option>`).join('')}</optgroup>`
+    +(secs.length?`<optgroup label="Sectores">${secs.map(s=>`<option value="s:${s.id}"${actual==='s:'+s.id?' selected':''}>${esc(s.nombre)}</option>`).join('')}</optgroup>`:'');
+}
+function abrirSector(id){
+  const s=id?SECT.find(x=>x.id===id):{tipo:'iglesia'};const n=id?armarArbol():null;
+  let v=0;if(id){const busca=l=>{for(const x of l){if(x.kind==='s'&&x.id===id)return x;const h=busca(x.hijos);if(h)return h;}};v=busca(n)?.v||0;}
+  abrirDrawer(id?s.nombre:'Nuevo sector',(id?`<div style="margin-bottom:14px;padding:12px;background:var(--arena);border-radius:11px;font-size:12.5px">Dice que trae <b>${nro(s.caudal||0)}</b> · verificados <b>${nro(v)}</b> votos proyectados</div>`:'')+`
+    ${campo('sNombre','Nombre','text',s.nombre,'required placeholder="Ej: Iglesia Pentecostal Villa Alta"')}
+    <div class="f"><label for="sTipo">Tipo</label><select id="sTipo">${Object.entries(TIPOS_SECT).map(([k,[l]])=>`<option value="${k}"${s.tipo===k?' selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="f"><label for="sPadre">Lo trae / pertenece a</label><select id="sPadre">${opcionesPadre('s',id,s.sector_padre?'s:'+s.sector_padre:s.ref_id?'r:'+s.ref_id:'')}</select></div>
+    <div class="frow">${campo('sLider','Líder / contacto','text',s.lider,'placeholder="Ej: Pastor Juan"')}${campo('sTel','Teléfono','tel',s.tel)}</div>
+    ${campo('sCaudal','Votos que dice que trae','',s.caudal)}
+    <div style="font-size:12px;color:var(--gris);margin:-4px 0 12px">Los verificados salen de las personas asignadas a este sector (en Personas, seleccioná y elegí el sector).</div>
+    <div class="f"><label for="sNotas">Notas</label><textarea id="sNotas" rows="3">${esc(s.notas)}</textarea></div>`,
+    pieForm(id,`guardarSector(${id?`'${id}'`:'null'})`,`borrarSector('${id}')`));
+}
+function guardarSector(id){
+  const g=k=>document.getElementById(k).value.trim(),caudal=numCampo('sCaudal',true),[pk,pid]=(g('sPadre')||':').split(':');
+  if(Number.isNaN(caudal)){toast('Los votos que dice que trae tienen que ser un número entero');return;}
+  const obj={nombre:g('sNombre'),tipo:g('sTipo'),ref_id:pk==='r'?pid:null,sector_padre:pk==='s'?pid:null,lider:g('sLider')||null,tel:g('sTel')||null,caudal,notas:g('sNotas')||null};
+  if(!obj.nombre){toast('Poné el nombre del sector');return;}
+  if(!TIPOS_SECT[obj.tipo]){toast('Elegí el tipo');return;}
+  guardarFila('red_sectores',SECT,id,obj);
+}
+async function borrarSector(id){
+  if(SECT.some(s=>s.sector_padre===id)){toast('Primero mové o borrá los sectores que cuelgan de este.');return;}
+  const n=REG.filter(p=>p.sector_id===id).length;
+  if(!confirm(n?`¿Borrar este sector? Las ${n} personas asignadas quedan sin sector (no se borran).`:'¿Borrar este sector?'))return;
+  if(n){const {error}=await sb.from('registros').update({sector_id:null}).eq('sector_id',id);if(error){toast('Error: '+error.message);return;}REG.forEach(p=>{if(p.sector_id===id)p.sector_id=null;});}
+  borrarFila('red_sectores',SECT,id,null);
+}
 /* ===== RESUMEN ===== */
 function renderResumen(){
   const V=votos(REG),meta=REF.reduce((s,r)=>s+(r.meta||0),0)||1,pct=Math.min(100,Math.round(V.proy/meta*100));
@@ -955,13 +1071,13 @@ function toggleSelTodos(on){const list=filtrarPersonas().slice(pPag*P_XPAG,(pPag
 function limpiarSel(){PSEL.clear();renderPersonas();}
 function actualizarBulk(){const b=document.getElementById('bulkbar');b.style.display=PSEL.size?'flex':'none';document.getElementById('bulkN').textContent=PSEL.size+' seleccionada'+(PSEL.size===1?'':'s');}
 async function aplicarBulk(){
-  const r=document.getElementById('bulkRef').value,e=document.getElementById('bulkEstado').value;
-  if(!r&&!e){toast('Elegí referente o estado para aplicar.');return;}
-  const obj={};if(r)obj.ref_id=r;if(e)obj.estado=e;
+  const r=document.getElementById('bulkRef').value,e=document.getElementById('bulkEstado').value,sc=document.getElementById('bulkSector').value;
+  if(!r&&!e&&!sc){toast('Elegí referente, sector o estado para aplicar.');return;}
+  const obj={};if(r)obj.ref_id=r;if(e)obj.estado=e;if(sc)obj.sector_id=sc==='ninguno'?null:sc;
   const ids=[...PSEL];
   const {error}=await sb.from('registros').update(obj).in('id',ids);
   if(error){toast('Error: '+error.message);return;}
-  ids.forEach(id=>{const p=REG.find(x=>x.id===id);if(p){if(r)p.ref_id=r;if(e)p.estado=e;}});
+  ids.forEach(id=>{const p=REG.find(x=>x.id===id);if(p){if(r)p.ref_id=r;if(e)p.estado=e;if(sc)p.sector_id=obj.sector_id;}});
   toast(ids.length+' actualizadas ✓',true);limpiarSel();
 }
 /* drawer persona */
