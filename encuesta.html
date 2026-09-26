@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Encuesta — Red Iguazú</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--selva:#0f3d2e;--tierra:#b5491f;--arena:#f5f1e8;--arena-2:#ece5d6;--tinta:#1c2a23;--gris:#6b756f;--linea:#d8d0bf;--verde-ok:#2e8b57;--rojo:#c0432f;--blanco:#fffdf8}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:linear-gradient(160deg,var(--selva),#16573f);min-height:100vh;padding:18px 14px 40px;color:var(--tinta)}
+  .card{background:var(--blanco);border-radius:20px;padding:22px 18px;max-width:480px;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  h1{font-size:20px;color:var(--selva)}
+  .sub{color:var(--gris);font-size:13.5px;margin:8px 0 18px;line-height:1.5}
+  fieldset{border:none;margin-bottom:20px}
+  legend,label.l{display:block;font-size:13px;font-weight:800;color:var(--selva);margin-bottom:8px}
+  legend small{font-weight:400;color:var(--gris)}
+  .ops{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ops.una{grid-template-columns:1fr}
+  .ops input{position:absolute;opacity:0;pointer-events:none}
+  .ops label{display:block;padding:13px 10px;border:1.5px solid var(--linea);border-radius:12px;background:var(--arena);font-size:14.5px;text-align:center;cursor:pointer}
+  .ops input:checked+label{background:var(--selva);border-color:var(--selva);color:#fff;font-weight:700}
+  .ops input:focus-visible+label{outline:3px solid var(--tierra);outline-offset:2px}
+  select,input.t,textarea{width:100%;padding:13px;border:1.5px solid var(--linea);border-radius:12px;font-size:16px;background:var(--arena);font-family:inherit}
+  select:focus,input.t:focus,textarea:focus{outline:none;border-color:var(--tierra)}
+  button.main{width:100%;padding:16px;background:var(--tierra);color:#fff;border:none;border-radius:13px;font-size:16.5px;font-weight:800;cursor:pointer;font-family:inherit}
+  button.main:disabled{opacity:.6}
+  button.link{background:none;border:none;color:var(--gris);font-size:13px;text-decoration:underline;cursor:pointer;margin-top:14px;font-family:inherit}
+  .err{display:none;background:#fbe9e6;color:var(--rojo);padding:10px 13px;border-radius:10px;font-size:13.5px;margin-bottom:14px}
+  .ok{display:none;background:#e7f4ec;color:var(--verde-ok);padding:12px 14px;border-radius:10px;font-size:14px;font-weight:700;margin-bottom:16px}
+  .guia{background:var(--arena);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--gris);line-height:1.5;margin-bottom:18px}
+  .cab{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+  .cont{font-size:12.5px;color:var(--gris)}
+</style>
+</head>
+<body>
+<main class="card">
+
+  <!-- acceso -->
+  <section id="vLogin">
+    <h1>📋 Encuesta de barrio</h1>
+    <p class="sub">Entrá con el mismo usuario y clave de Red Iguazú.</p>
+    <div class="err" id="lErr" role="alert"></div>
+    <label class="l" for="lUsuario">Usuario</label>
+    <input class="t" id="lUsuario" autocomplete="username" autocapitalize="none" style="margin-bottom:14px">
+    <label class="l" for="lClave">Clave</label>
+    <input class="t" id="lClave" type="password" autocomplete="current-password" style="margin-bottom:18px">
+    <button class="main" id="lBtn" onclick="entrar()">Entrar</button>
+  </section>
+
+  <!-- encuesta -->
+  <section id="vEnc" hidden>
+    <div class="cab"><h1>📋 Encuesta de barrio</h1><span class="cont" id="contador"></span></div>
+    <div class="guia">Presentate, contá que es una encuesta corta y <b>anónima</b>: no se pide nombre, DNI ni teléfono. Leé las preguntas tal cual y en este orden, sin opinar ni sugerir respuestas. Encuestá a vecinos al azar, no solo a conocidos.</div>
+    <div class="ok" id="ok" role="status"></div>
+    <div class="err" id="eErr" role="alert"></div>
+
+    <fieldset><label class="l" for="barrio">1. Barrio donde vive</label>
+      <select id="barrio"><option value="">Elegí el barrio…</option></select></fieldset>
+
+    <fieldset><legend>2. Edad</legend><div class="ops" id="edad"></div></fieldset>
+
+    <fieldset><legend>3. ¿Cuál es el principal problema de su barrio?</legend><div class="ops" id="problema"></div></fieldset>
+
+    <fieldset><legend>4. Si hoy fueran las elecciones para intendente, ¿a quién votaría? <small>(leé las opciones)</small></legend><div class="ops una" id="voto"></div></fieldset>
+
+    <fieldset><legend>5. ¿Conoce a Heber Krieger?</legend><div class="ops una" id="conoce"></div></fieldset>
+
+    <fieldset id="fImagen"><legend>6. ¿Qué opinión tiene de él?</legend><div class="ops" id="imagen"></div></fieldset>
+
+    <fieldset><label class="l" for="comentario">Comentario <small style="font-weight:400;color:var(--gris)">(opcional)</small></label>
+      <textarea id="comentario" rows="2" maxlength="300" placeholder="Algo que haya dicho y valga la pena anotar"></textarea></fieldset>
+
+    <button class="main" id="eBtn" onclick="guardar()">Guardar y empezar otra</button>
+    <button class="link" onclick="salir()">Salir</button>
+  </section>
+</main>
+
+<script>
+const sb=window.supabase.createClient('https://qgogamniszilcefqvtcq.supabase.co','sb_publishable_RtlHSBqEDAi-aCfF6ZzKAg_RHg968Cr');
+const SES='ri_encuesta_sesion',DIAS=30;
+const BARRIOS=["Villa Alta","Belén","1º de Mayo","Santa Rosa","Villa Nueva","Las Leñas","Villa 14","Malvinas","Villa Florida","Las Orquídeas","Unión","Centro","Itá","Obrero","Primavera","Almirante Brown","2000 Hectáreas","300 Viviendas","155 Viviendas","120 Viviendas","Santa María","San Cayetano","Zona Portuaria","1000 Viviendas","IPRODHA","73 Viviendas","Calle Río Paraná","Otro"];
+const OPS={
+  edad:[['16-29','16 a 29'],['30-44','30 a 44'],['45-64','45 a 64'],['65+','65 o más']],
+  problema:[['calles','Calles'],['agua','Agua'],['luz','Luz / iluminación'],['seguridad','Seguridad'],['trabajo','Trabajo'],['salud','Salud'],['transporte','Transporte'],['otro','Otro']],
+  voto:[['heber','Heber Krieger (Comunidad Organizada)'],['oficialismo','Candidato del oficialismo'],['lla','La Libertad Avanza'],['otro','Otro candidato'],['indeciso','No sabe todavía'],['no_vota','No va a votar'],['nc','No contesta']],
+  conoce:[['si','Sí, lo conoce'],['de_nombre','Lo escuchó nombrar'],['no','No lo conoce']],
+  imagen:[['positiva','Buena'],['regular','Regular'],['negativa','Mala'],['ns','No sabe']]
+};
+let yo=null,hoyN=0;
+const $=id=>document.getElementById(id);
+const valor=g=>document.querySelector(`input[name="${g}"]:checked`)?.value||null;
+
+Object.entries(OPS).forEach(([g,ops])=>{$(g).innerHTML=ops.map(([v,t],i)=>`<input type="radio" name="${g}" id="${g}${i}" value="${v}"><label for="${g}${i}">${t}</label>`).join('');});
+$('barrio').innerHTML+=BARRIOS.map(b=>`<option>${b}</option>`).join('');
+document.addEventListener('change',e=>{if(e.target.name==='conoce')$('fImagen').hidden=e.target.value==='no';});
+
+function mostrar(){ $('vLogin').hidden=!!yo; $('vEnc').hidden=!yo; if(yo)$('contador').textContent=`${yo.nombre} · hoy: ${hoyN}`; }
+function sesion(){try{const s=JSON.parse(localStorage.getItem(SES)||'null');return s&&Date.now()<s.exp?s:null;}catch(e){return null;}}
+
+async function entrar(){
+  const u=$('lUsuario').value.trim().toLowerCase(),c=$('lClave').value,err=$('lErr'),btn=$('lBtn');err.style.display='none';
+  if(!u||!c){err.textContent='Poné usuario y clave.';err.style.display='block';return;}
+  btn.disabled=true;btn.textContent='Entrando...';
+  try{
+    const {data,error}=await sb.rpc('login_usuario',{p_usuario:u,p_clave:c});if(error)throw error;
+    if(!data||!data.length){err.textContent='Usuario o clave incorrectos.';err.style.display='block';return;}
+    yo={id:data[0].id,nombre:data[0].nombre,exp:Date.now()+DIAS*86400000};localStorage.setItem(SES,JSON.stringify(yo));$('lClave').value='';mostrar();
+  }catch(e){err.textContent='No se pudo entrar: '+(e.message||e);err.style.display='block';}
+  finally{btn.disabled=false;btn.textContent='Entrar';}
+}
+function salir(){localStorage.removeItem(SES);yo=null;mostrar();}
+
+async function guardar(){
+  const err=$('eErr'),ok=$('ok'),btn=$('eBtn');err.style.display='none';ok.style.display='none';
+  const conoce=valor('conoce');
+  const obj={encuestador:yo.id,barrio:$('barrio').value,edad:valor('edad'),problema:valor('problema'),voto:valor('voto'),conoce,
+    imagen:conoce==='no'?null:valor('imagen'),comentario:$('comentario').value.trim().slice(0,300)||null};
+  const falta=[!obj.barrio&&'el barrio',!obj.voto&&'a quién votaría',!obj.conoce&&'si lo conoce'].filter(Boolean);
+  if(falta.length){err.textContent='Falta completar: '+falta.join(', ')+'.';err.style.display='block';window.scrollTo({top:0,behavior:'smooth'});return;}
+  btn.disabled=true;btn.textContent='Guardando...';
+  const {error}=await sb.from('encuestas').insert(obj);
+  btn.disabled=false;btn.textContent='Guardar y empezar otra';
+  if(error){err.textContent=/does not exist|schema cache/i.test(error.message)?'Falta crear la tabla de encuestas en Supabase. Avisale a coordinación.':'No se pudo guardar: '+error.message;err.style.display='block';return;}
+  hoyN++;localStorage.setItem(SES+'_hoy',JSON.stringify({d:new Date().toDateString(),n:hoyN}));
+  document.querySelectorAll('#vEnc input[type=radio]').forEach(i=>i.checked=false);$('comentario').value='';$('fImagen').hidden=false;
+  ok.textContent=`Guardada ✓ Llevás ${hoyN} hoy. Siguiente vecino.`;ok.style.display='block';mostrar();window.scrollTo({top:0,behavior:'smooth'});
+}
+$('lClave').addEventListener('keydown',e=>{if(e.key==='Enter')entrar();});
+yo=sesion();try{const h=JSON.parse(localStorage.getItem(SES+'_hoy')||'null');hoyN=h&&h.d===new Date().toDateString()?h.n:0;}catch(e){}
+mostrar();
+</script>
+</body>
+</html>

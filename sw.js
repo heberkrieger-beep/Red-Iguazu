@@ -1,7 +1,7 @@
-// Red Iguazú — Service Worker v44
+// Red Iguazú — Service Worker v48
 // Sube el número de versión en cada cambio de la app para que los celulares
 // agarren la versión nueva y no queden con caché viejo.
-const CACHE = 'red-iguazu-v44';
+const CACHE = 'red-iguazu-v48';
 
 // Archivos del ecosistema que se guardan para que la app abra sin conexión.
 const ARCHIVOS = [
@@ -10,7 +10,8 @@ const ARCHIVOS = [
   './dashboard.html',
   './conductor.html',
   './pasajero.html',
-  './buscame.html'
+  './buscame.html',
+  './encuesta.html'
 ];
 
 // Al instalar la versión nueva: guardar los archivos y activarse enseguida.

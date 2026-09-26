@@ -139,6 +139,9 @@
   /* el mapa queda por debajo del panel lateral y de los avisos */
   #mapaEquipo,#mapaCmd{position:relative;z-index:0;isolation:isolate}
   #mapaEquipo .leaflet-tile-pane,#mapaCmd .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
+  .zoomctl{position:absolute;top:10px;left:10px;display:flex;flex-direction:column;gap:6px;z-index:2}
+  .zoomctl button{width:36px;height:36px;border-radius:9px;background:#fff;border:1px solid var(--linea);font-size:18px;font-weight:700;color:var(--selva);box-shadow:var(--sombra)}
+  .zoomctl button:focus-visible{outline:2px solid var(--tierra-claro);outline-offset:2px}
   @media(max-width:900px){.etapas,.subgrid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
@@ -161,9 +164,11 @@
 
 <div class="layout" id="app" style="display:none">
   <div class="side">
-    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v44</span></div></div></div>
+    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v48</span></div></div></div>
     <div class="nav-item active" data-v="resumen" onclick="irA('resumen')"><span class="ti ti-layout-dashboard"></span><span>Resumen</span></div>
     <div class="nav-item" data-v="plan" onclick="irA('plan')"><span class="ti ti-flag"></span><span>Plan de campaña</span></div>
+    <div class="nav-item" data-v="estrategia" onclick="irA('estrategia')"><span class="ti ti-target-arrow"></span><span>Estrategia</span></div>
+    <div class="nav-item" data-v="tareas" onclick="irA('tareas')"><span class="ti ti-checklist"></span><span>Tareas</span></div>
     <div class="nav-item" data-v="personas" onclick="irA('personas')"><span class="ti ti-users"></span><span>Personas</span></div>
     <div class="nav-item" data-v="equipo" onclick="irA('equipo')"><span class="ti ti-users-group"></span><span>Equipo</span></div>
     <div class="nav-item" data-v="moviles" onclick="irA('moviles')"><span class="ti ti-car"></span><span>Móviles</span></div>
@@ -220,6 +225,40 @@
         <div style="overflow:auto;max-height:440px"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Actividad</th><th>Barrio / sector</th><th>Asist.</th><th>Nuevos</th><th>Hecha</th><th></th></tr></thead><tbody id="planActs"></tbody></table></div></div>
     </div>
 
+    <!-- ===== ESTRATEGIA ===== -->
+    <div id="v-estrategia" style="display:none">
+      <div class="page-h"><div><h1>Estrategia</h1><div class="sub">Dónde conviene poner el tiempo del candidato y del equipo, y qué dice la gente en cada barrio.</div></div>
+        <div class="hbtns"><button class="btn" onclick="cargarTodo()"><span class="ti ti-refresh"></span> Actualizar</button>
+        <button class="btn" onclick="copiarLinkEncuesta()"><span class="ti ti-link"></span> Copiar link de la encuesta</button>
+        <a class="btn prim" href="encuesta.html" target="_blank" rel="noopener" style="text-decoration:none"><span class="ti ti-clipboard-list"></span> Abrir encuesta</a></div></div>
+      <div id="estAviso"></div>
+      <div class="panel"><h2><span class="ti ti-target-arrow"></span> Prioridad por barrio</h2>
+        <div style="font-size:12.5px;color:var(--gris);margin-bottom:12px">La prioridad sube en barrios con muchos electores, poco avance contra su meta de identificados y mucha gente disputable (indecisos + los que ya te votan) según la encuesta. Baja un poco si ya hubo actividades en los últimos 30 días. La meta de cada barrio es la parte que le toca de los identificados necesarios del plan, según su peso en el padrón.</div>
+        <div style="overflow:auto;max-height:560px"><table><thead><tr><th>Barrio</th><th>Electores</th><th>Identificados / meta</th><th>Referentes</th><th>Encuesta</th><th>Activ. 30 días</th><th>Prioridad</th><th>Qué hacer</th></tr></thead><tbody id="estPrioridad"></tbody></table></div></div>
+      <div class="panel"><h2><span class="ti ti-clipboard-data"></span> Resultados de la encuesta
+        <select id="encBarrio" onchange="renderEncuesta()" aria-label="Filtrar por barrio" style="margin-left:auto;padding:7px 10px;border:1.5px solid var(--linea);border-radius:9px;font-size:12.5px;background:var(--arena)"></select></h2>
+        <div id="encAviso" style="font-size:12px;color:var(--gris);margin-bottom:12px"></div>
+        <div class="grid2" id="encGraf"></div>
+        <div id="encComentarios" style="margin-top:6px"></div></div>
+    </div>
+
+    <!-- ===== TAREAS ===== -->
+    <div id="v-tareas" style="display:none">
+      <div class="page-h"><div><h1>Tareas y responsabilidades</h1><div class="sub">Cada área tiene un responsable y sus tareas repartidas entre referentes y colaboradores.</div></div>
+        <div class="hbtns"><button class="btn" onclick="cargarTodo()"><span class="ti ti-refresh"></span> Actualizar</button>
+        <button class="btn" onclick="abrirArea(null)"><span class="ti ti-category-plus"></span> Área</button>
+        <button class="btn verde" onclick="abrirTarea(null,null)"><span class="ti ti-plus"></span> Tarea</button></div></div>
+      <div id="tarAviso"></div>
+      <div class="kpis" id="tarKpis"></div>
+      <div class="toolbar">
+        <select id="tarResp" onchange="renderTareas()" aria-label="Filtrar por responsable"></select>
+        <select id="tarEstado" onchange="renderTareas()" aria-label="Filtrar por estado"><option value="abiertas">Abiertas</option><option value="vencidas">Vencidas</option><option value="hecha">Hechas</option><option value="">Todas</option></select>
+      </div>
+      <div id="tarAreas" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:18px"></div>
+      <div class="panel"><h2><span class="ti ti-users"></span> Carga por persona</h2>
+        <div style="overflow:auto"><table><thead><tr><th>Persona</th><th>Áreas a cargo</th><th>Abiertas</th><th>Vencidas</th><th>Hechas (30 días)</th></tr></thead><tbody id="tarCarga"></tbody></table></div></div>
+    </div>
+
     <!-- ===== PERSONAS ===== -->
     <div id="v-personas" style="display:none">
       <div class="page-h"><div><h1>Personas</h1><div class="sub" id="perSub"></div></div>
@@ -264,9 +303,12 @@
       <div class="kpis" id="eqKpis"></div>
       <div class="panel"><h2><span class="ti ti-affiliate"></span> Red de influencia
         <span style="margin-left:auto;display:flex;gap:8px"><button class="btn" onclick="abrirSector(null)"><span class="ti ti-plus"></span> Sector</button></span></h2>
-        <div style="font-size:12.5px;color:var(--gris);margin-bottom:10px">Quién trae a quién. El tamaño es la cantidad de votos proyectados que suma cada uno con toda la gente que cuelga de él. Tocá un círculo o un cuadrado para abrir su ficha.</div>
-        <div id="redGrafo" style="border:1px solid var(--linea);border-radius:12px;background:#fbfaf6;overflow:hidden"></div>
+        <div style="font-size:12.5px;color:var(--gris);margin-bottom:10px">Quién trae a quién. El relleno son los votos verificados de cada uno con toda la gente que cuelga de él; el borde punteado, lo que prometieron y todavía no está cargado. Tocá un círculo o un cuadrado para abrir su ficha.</div>
+        <div class="subgrid" id="redResumen" style="margin-bottom:14px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))"></div>
+        <div id="redFoco" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"></div>
+        <div id="redGrafo" style="position:relative;border:1px solid var(--linea);border-radius:12px;background:#fbfaf6;overflow:hidden"></div>
         <div id="redLeyenda" style="display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--gris)"></div>
+        <div style="overflow:auto;max-height:360px;margin-top:16px"><table><thead><tr><th>Referente</th><th>Votos propios</th><th>Votos de toda su red</th><th>Prometidos (sectores)</th><th>Verificado</th><th>Peso</th></tr></thead><tbody id="redRanking"></tbody></table></div>
         <div style="overflow:auto;max-height:360px;margin-top:16px"><table><thead><tr><th>Sector</th><th>Lo trae</th><th>Líder / contacto</th><th>Dice que trae</th><th>Verificados</th><th>Peso</th><th></th></tr></thead><tbody id="redSectores"></tbody></table></div></div>
       <div class="panel"><h2><span class="ti ti-map-2"></span> Cobertura: barrios con y sin gente</h2>
         <div style="overflow:auto;max-height:420px"><table><thead><tr><th>Barrio</th><th>Electores</th><th>Referentes</th><th>Colaboradores</th><th>Lectura</th></tr></thead><tbody id="eqCob"></tbody></table></div></div>
@@ -403,6 +445,8 @@ async function cargarTodo(){
     try{const rc=await sb.from('colaboradores').select('*');COLAB=rc.error?[]:(rc.data||[]);}catch(e){COLAB=[];}
     try{const [ra,rp]=await Promise.all([sb.from('actividades').select('*'),sb.from('plan_config').select('datos').eq('id',1).maybeSingle()]);
       PLAN_OK=!ra.error&&!rp.error;ACTS=ra.data||[];PLAN=rp.data?.datos||null;}catch(e){PLAN_OK=false;ACTS=[];}
+    try{const [ra,rt]=await Promise.all([sb.from('tareas_areas').select('*'),sb.from('tareas').select('*')]);TAR_OK=!ra.error&&!rt.error;AREAS=ra.data||[];TAREAS=rt.data||[];}catch(e){TAR_OK=false;AREAS=[];TAREAS=[];}
+    try{const re=await sb.from('encuestas').select('*');ENC_OK=!re.error;ENC=re.data||[];}catch(e){ENC_OK=false;ENC=[];}
     try{const rs=await sb.from('red_sectores').select('*');RED_OK=!rs.error;SECT=rs.data||[];}catch(e){RED_OK=false;SECT=[];}
     llenarSelects();renderTodo();
     document.getElementById('loading').style.display='none';
@@ -434,7 +478,7 @@ function renderEquipo(){
   const act=refs.filter(r=>capaDe(r)==='activo').length;
   const pend=refs.filter(r=>capaDe(r)==='pendiente').length;
   const zRef={},zCol={};
-  refs.forEach(r=>{const b=barrioCanon(r.zona||'');if(b)zRef[b]=(zRef[b]||0)+1;});
+  refs.filter(r=>!esProspecto(r)).forEach(r=>{const b=barrioCanon(r.zona||'');if(b)zRef[b]=(zRef[b]||0)+1;});
   COLAB.forEach(c=>{const b=barrioCanon(c.zona||'');if(b)zCol[b]=(zCol[b]||0)+1;});
   const filas=Object.entries(ELECTORES_BARRIO).sort((a,b)=>b[1]-a[1]);
   const grandesSinRef=filas.filter(([b,e])=>e>=700&&!zRef[b]).length;
@@ -513,12 +557,13 @@ function abrirReferente(id){
       <span style="color:var(--gris)">Última carga: ${haceDias(st.ult)} · Meta: ${r.meta||'—'}</span></div>`;}
   else cab=`<div style="margin-bottom:14px;padding:10px;background:#fbf3e6;border-radius:10px;font-size:12px;color:var(--tierra)">Se carga <b>sin acceso</b>. Cuando lo capacites, tocá 🔑 "Dar acceso" y le mandás la clave por WhatsApp.</div>`;
   const cats={barrial:'Referente Barrial',politico:'Referente Político',sectorial:'Referente Sectorial'};
-  const body=cab+zonasDatalist()+`
+  const body=cab+(r?`<button class="btn" style="margin:-4px 0 14px" onclick="enfocarRed('r${r.id}')">🔎 Ver solo su red</button>`:'')+zonasDatalist()+`
     <div class="f"><label>Nombre y apellido</label><input id="rNombre" value="${esc(r?.nombre)}" ${r?'':`oninput="if(!window._uTocado)document.getElementById('rUsuario').value=sugerirUsuario(this.value)"`}></div>
     <div class="frow"><div class="f"><label>Usuario</label><input id="rUsuario" value="${esc(r?.usuario)}" ${r?'disabled':'oninput="window._uTocado=true"'}></div>
     <div class="f"><label>Teléfono</label><input id="rTel" value="${esc(r?.tel)}" placeholder="3757..."></div></div>
     <div class="frow"><div class="f"><label>Zona / barrio</label><input id="rZona" list="eqZonas" value="${esc(r?.zona)}"></div>
     <div class="f"><label>Meta de votos</label><input id="rMeta" type="number" min="0" value="${r?.meta??100}"></div></div>
+    ${compromisoSel('rComp',r?.compromiso)}
     <div class="f"><label for="rPadre">Lo trajo</label><select id="rPadre">${opcionesPadre('r',r?.id,r?.referido_por?'r:'+r.referido_por:'')}</select></div>
     <div class="frow"><div class="f"><label>Tipo</label><select id="rCat">${Object.entries(cats).map(([k,v])=>`<option value="${k}" ${r?.categoria===k?'selected':''}>${v}</option>`).join('')}</select></div>
     ${r&&capaDe(r)!=='activo'?`<div class="f"><label>Capacitación</label><select id="rCapa"><option value="pendiente" ${capaDe(r)==='pendiente'?'selected':''}>Pendiente</option><option value="capacitado" ${capaDe(r)==='capacitado'?'selected':''}>Capacitado</option></select></div>`:'<div></div>'}</div>`;
@@ -533,7 +578,7 @@ async function guardarReferente(id){
   const datos={nombre,zona:g('rZona').value.trim()||null,categoria:g('rCat').value,meta:parseInt(g('rMeta').value)||0},padre=g('rPadre').value.slice(2)||null;
   const tel=g('rTel').value.trim()||null;
   if(id){
-    const r=REF.find(x=>x.id===id);const obj={...datos,tel,referido_por:padre};if(g('rCapa'))obj.capacitacion=g('rCapa').value;
+    const r=REF.find(x=>x.id===id);const obj={...datos,tel,referido_por:padre,compromiso:g('rComp').value};if(g('rCapa'))obj.capacitacion=g('rCapa').value;
     if(await upd('usuarios',id,obj)){Object.assign(r,obj);toast('Guardado ✓',true);cerrarDrawer();llenarSelects();renderTodo();}
     else toast('Si el error habla de columnas, corré el SQL de Equipo y el de la Red.');
     return;
@@ -547,7 +592,7 @@ async function guardarReferente(id){
   if(error){toast('No se pudo crear: '+error.message);return;}
   const {data:nuevo}=await sb.from('usuarios').select('*').eq('usuario',usuario).maybeSingle();
   if(nuevo){
-    const extra={capacitacion:'pendiente',tel,referido_por:padre};
+    const extra={capacitacion:'pendiente',tel,referido_por:padre,compromiso:g('rComp').value};
     if(!await upd('usuarios',nuevo.id,extra))toast('Creado, pero falta correr el SQL de Equipo para guardar estado y teléfono.');
     Object.assign(nuevo,extra);REF.push(nuevo);
   }
@@ -605,11 +650,13 @@ async function borrarColab(id){
 }
 
 function irA(v){vistaActual=v;document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.v===v));
-  ['resumen','plan','personas','equipo','moviles','fisca','agenda','analisis'].forEach(x=>document.getElementById('v-'+x).style.display=x===v?'block':'none');
+  ['resumen','plan','estrategia','tareas','personas','equipo','moviles','fisca','agenda','analisis'].forEach(x=>document.getElementById('v-'+x).style.display=x===v?'block':'none');
   renderTodo();}
 function renderTodo(){
   if(vistaActual==='resumen')renderResumen();
   if(vistaActual==='plan')renderPlan();
+  if(vistaActual==='estrategia')renderEstrategia();
+  if(vistaActual==='tareas')renderTareas();
   if(vistaActual==='personas')renderPersonas();
   if(vistaActual==='equipo')renderEquipo();
   if(vistaActual==='moviles')renderMoviles();
@@ -644,7 +691,7 @@ function indicadores(i){
   const P=plan(),e=P.etapas[i],prev=P.etapas[i-1],f=avance(e),A=aritmetica(),fisc=P.mesas*P.fiscalesMesa;
   const tramo=(k,tot)=>{const ant=prev?(tot?tot*prev[k]/100:prev[k]):0,meta=tot?tot*e[k]/100:e[k];return ant+(meta-ant)*f;};
   const grandes=Object.keys(ELECTORES_BARRIO).filter(b=>ELECTORES_BARRIO[b]>=700);
-  const zonas=new Set(refsEquipo().map(r=>barrioCanon(r.zona||'')));
+  const zonas=new Set(refsEquipo().filter(r=>!esProspecto(r)).map(r=>barrioCanon(r.zona||'')));
   const hechas=t=>ACTS.filter(a=>a.hecho&&a.tipo===t&&a.fecha>=e.ini&&a.fecha<=e.fin).length;
   return [
     {k:'Referentes activos',real:refsEquipo().filter(r=>capaDe(r)==='activo').length,esp:tramo('referentes'),meta:e.referentes},
@@ -793,7 +840,11 @@ async function guardarPlan(reset){
 document.querySelectorAll('.nav-item').forEach(n=>{n.tabIndex=0;n.setAttribute('role','button');n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}});});
 
 /* ===== RED DE INFLUENCIA: quién trae a quién ===== */
-let SECT=[],RED_OK=true;
+let SECT=[],RED_OK=true,RED_FOCO=null,RED_VIEW=null;
+const COMPROMISO={confirmado:'Confirmado: está con nosotros',conversando:'En conversación',posible:'Posible: todavía no está'};
+const COMP_CORTO={conversando:'en conversación',posible:'posible'};
+const esProspecto=o=>!!o&&!!o.compromiso&&o.compromiso!=='confirmado';
+const compromisoSel=(id,v)=>`<div class="f"><label for="${id}">Compromiso</label><select id="${id}">${Object.entries(COMPROMISO).map(([k,l])=>`<option value="${k}"${(v||'confirmado')===k?' selected':''}>${l}</option>`).join('')}</select></div>`;
 const TIPOS_SECT={iglesia:['Iglesia / comunidad de fe','#7b4fa0'],club:['Club / deporte','#2e8b57'],gremio:['Gremio / sindicato','#8a6a1c'],comercio:['Comercio / emprendedores','#d4971f'],vecinal:['Comisión vecinal','#3b82c4'],educacion:['Educación','#0f766e'],jovenes:['Jóvenes','#c05686'],jubilados:['Jubilados','#6b756f'],familia:['Familia','#a0522d'],otro:['Otro','#9aa3a0']};
 const CAT_REF={politico:['Referente político','#b5491f'],barrial:['Referente barrial','#2c5f7c'],sectorial:['Referente sectorial','#16573f']};
 const pesoTxt=v=>v>=200?'Grande':v>=50?'Mediano':v>0?'Chico':'—';
@@ -811,44 +862,82 @@ function armarArbol(){
     // votos únicos de todo lo que cuelga (sin contar dos veces a quien está en un sector y con un referente)
     const R=new Set(),S=new Set(),juntar=x=>{(x.kind==='r'?R:S).add(x.id);x.hijos.forEach(juntar);};juntar(n);
     const v=votos(REG.filter(p=>R.has(p.ref_id)||S.has(p.sector_id)));n.v=v.proy;n.firmes=v.firmes;
-    n.dice=n.kind==='s'?(n.o.caudal||0):0;n.hojas=n.hijos.length?n.hijos.reduce((a,h)=>a+h.hojas,0):1;};
+    n.pros=esProspecto(n.o);n.propio=!n.pros&&n.kind==='s'?(n.o.caudal||0):0;n.dice=n.propio+n.hijos.reduce((a,h)=>a+h.dice,0);
+    n.proyP=n.pros?Number(n.kind==='r'?n.o.meta:n.o.caudal)||0:0;n.proyec=n.proyP+n.hijos.reduce((a,h)=>a+h.proyec,0);
+    n.suyos=votos(REG.filter(p=>n.kind==='r'?p.ref_id===n.id:p.sector_id===n.id)).proy;n.hojas=n.hijos.length?n.hijos.reduce((a,h)=>a+h.hojas,0):1;};
   raices.forEach(n=>crecer(n,1));
   return raices;
 }
 function renderRed(){
   const cont=document.getElementById('redGrafo');if(!cont)return;
-  const raices=armarArbol(),todos=[];const rec=n=>{todos.push(n);n.hijos.forEach(rec);};raices.forEach(rec);
-  if(!todos.length){cont.innerHTML='<div class="empty">Cargá referentes y sectores para ver la red.</div>';}
+  const completo=armarArbol(),full=[];const recF=n=>{full.push(n);n.hijos.forEach(recF);};completo.forEach(recF);
+  let raices=completo,foco=null;
+  if(RED_FOCO){foco=full.find(n=>n.kind+n.id===RED_FOCO)||null;
+    if(foco){const rd=(n,d)=>{n.d=d;n.hijos.forEach(h=>rd(h,d+1));};foco.hijos.forEach(h=>rd(h,1));raices=foco.hijos;}else RED_FOCO=null;}
+  const todos=[];const rec=n=>{todos.push(n);n.hijos.forEach(rec);};raices.forEach(rec);
+  const conHijos=full.filter(n=>n.hijos.length).sort((a,b)=>a.o.nombre.localeCompare(b.o.nombre));
+  document.getElementById('redFoco').innerHTML=`<label for="redFocoSel" style="font-size:12.5px;font-weight:700;color:var(--selva)">Ver:</label>
+    <select id="redFocoSel" onchange="enfocarRed(this.value)" style="padding:7px 10px;border:1.5px solid var(--linea);border-radius:9px;font-size:12.5px;background:var(--arena);max-width:260px">
+      <option value="">Toda la red</option>${conHijos.map(n=>`<option value="${n.kind+n.id}"${RED_FOCO===n.kind+n.id?' selected':''}>Red de ${esc(n.o.nombre)}</option>`).join('')}</select>
+    ${foco?`<span style="font-size:12.5px;color:var(--gris)">${nro(foco.v)} verificados · ${nro(foco.dice)} prometidos · ${nro(foco.proyec)} en proyección</span>`:''}`;
+  if(!todos.length){cont.innerHTML=`<div class="empty">${foco?'Todavía no tiene a nadie colgando de su red.':'Cargá referentes y sectores para ver la red.'}</div>`;}
   else{
-    const prof=Math.max(...todos.map(n=>n.d)),anillo=Math.min(170,420/prof),hojas=raices.reduce((a,n)=>a+n.hojas,0);
+    const prof=Math.max(...todos.map(n=>n.d)),hojas=raices.reduce((a,n)=>a+n.hojas,0);
+    // separación entre anillos: crece si hay muchos nodos para que no se encimen (el dibujo se ajusta solo al recuadro)
+    const anillo=Math.max(140,raices.length*80/(2*Math.PI),hojas*70/(2*Math.PI*prof));
     const ubicar=(n,a0,span)=>{const a=a0+span/2;n.x=Math.cos(a)*anillo*n.d;n.y=Math.sin(a)*anillo*n.d;n.a=a;let ac=a0;n.hijos.forEach(h=>{const s=span*h.hojas/n.hojas;ubicar(h,ac,s);ac+=s;});};
     let ac=-Math.PI/2;raices.forEach(n=>{const s=2*Math.PI*n.hojas/hojas;ubicar(n,ac,s);ac+=s;});
-    const radio=n=>Math.min(40,7+3*Math.sqrt(n.v||n.dice||0));
+    const radio=v=>Math.min(44,6+3*Math.sqrt(v||0));
     let lineas='',nodos='';
     const dibujar=(n,px,py)=>{
-      lineas+=`<line x1="${px.toFixed(1)}" y1="${py.toFixed(1)}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}" stroke="#d6d0c2" stroke-width="1.5"/>`;
-      const rr=radio(n),promesa=n.kind==='s'&&!n.v&&n.dice;
+      lineas+=`<line x1="${px.toFixed(1)}" y1="${py.toFixed(1)}" x2="${n.x.toFixed(1)}" y2="${n.y.toFixed(1)}" stroke="#d6d0c2" stroke-width="1.5"${n.pros?' stroke-dasharray="3 4"':''}/>`;
+      // relleno = votos verificados · borde punteado = votos prometidos (si superan a los verificados)
+      const rv=radio(n.pros?Math.max(n.v,n.proyP):n.v),rp=!n.pros&&n.dice>n.v?radio(n.dice):0,rr=Math.max(rv,rp);
       const col=n.kind==='r'?(CAT_REF[n.o.categoria]||CAT_REF.barrial)[1]:(TIPOS_SECT[n.o.tipo]||TIPOS_SECT.otro)[1];
-      const forma=n.kind==='r'?`<circle r="${rr}"`:`<rect x="${-rr}" y="${-rr}" width="${2*rr}" height="${2*rr}" rx="${rr*.3}"`;
-      const der=Math.cos(n.a)>=0,nom=esc(n.o.nombre||''),info=`${nom}: ${nro(n.v)} votos proyectados en su red`+(n.kind==='s'?`, dice que trae ${nro(n.dice)}`:'');
+      const forma=r=>n.kind==='r'?`<circle r="${r.toFixed(1)}"`:`<rect x="${(-r).toFixed(1)}" y="${(-r).toFixed(1)}" width="${(2*r).toFixed(1)}" height="${(2*r).toFixed(1)}" rx="${(r*.3).toFixed(1)}"`;
+      const der=Math.cos(n.a)>=0,nom=esc(n.o.nombre||'');
+      const info=`${nom}${n.pros?` (${COMP_CORTO[n.o.compromiso]})`:''}: ${nro(n.v)} votos verificados en su red`+(n.dice?`, ${nro(n.dice)} prometidos`:'')+(n.proyec?`, ${nro(n.proyec)} en proyección`:'');
+      const cifras=n.pros?`${COMP_CORTO[n.o.compromiso]}${n.proyP?' · proy. '+nro(n.proyP):''}`:(n.v?nro(n.v):'')+(n.dice>n.v?`${n.v?' · ':''}prom. ${nro(n.dice)}`:'');
+      const tx=n.hijos.length?0:(der?rr+5:-rr-5);
+      const etiqueta=`${nom.length>20?nom.slice(0,19)+'…':nom}${cifras?`<tspan x="${tx.toFixed(1)}" dy="12" font-weight="400" fill="#6b756f">${cifras}</tspan>`:''}`;
       nodos+=`<g class="rnodo" transform="translate(${n.x.toFixed(1)},${n.y.toFixed(1)})" tabindex="0" role="button" aria-label="${info}" onclick="${n.kind==='r'?'abrirReferente':'abrirSector'}('${n.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.onclick()}">
-        <title>${info}</title>${forma} fill="${col}" fill-opacity="${promesa?.25:.9}" stroke="${col}" stroke-width="2" ${promesa?'stroke-dasharray="4 3"':''}/>
-        <text ${n.hijos.length?`x="0" y="${(rr+13).toFixed(1)}" text-anchor="middle"`:`x="${der?rr+5:-rr-5}" y="4" text-anchor="${der?'start':'end'}"`} font-size="11" font-weight="600" fill="#1c2a23">${nom.length>22?nom.slice(0,21)+'…':nom}${n.v?` · ${nro(n.v)}`:''}</text></g>`;
+        <title>${info}</title>
+        ${rp?`${forma(rp)} fill="${col}" fill-opacity=".12" stroke="${col}" stroke-width="1.5" stroke-dasharray="4 3"/>`:''}
+        ${forma(rv)} fill="${n.pros?'#fff':col}" fill-opacity="${n.pros?1:n.v?.9:.35}" stroke="${col}" stroke-width="${n.pros?2.5:2}"${n.pros?' stroke-dasharray="2 3"':''}/>
+        <text x="${tx.toFixed(1)}" ${n.hijos.length?`y="${(rr+13).toFixed(1)}" text-anchor="middle"`:`y="${cifras?-2:4}" text-anchor="${der?'start':'end'}"`} font-size="11" font-weight="600" fill="#1c2a23">${etiqueta}</text></g>`;
       n.hijos.forEach(h=>dibujar(h,n.x,n.y));};
     raices.forEach(n=>dibujar(n,0,0));
     const tot=votos(REG).proy,xs=[0,...todos.map(n=>n.x)],ys=[0,...todos.map(n=>n.y)];
-    const x0=Math.min(...xs)-190,y0=Math.min(...ys)-60,w=Math.max(...xs)+190-x0,h=Math.max(...ys)+70-y0;
-    cont.innerHTML=`<svg viewBox="${x0.toFixed(0)} ${y0.toFixed(0)} ${w.toFixed(0)} ${h.toFixed(0)}" style="width:100%;height:auto;max-height:640px;display:block" role="img" aria-label="Red de influencia de la campaña">
+    let x0=Math.min(...xs)-200,y0=Math.min(...ys)-60,w=Math.max(...xs)+200-x0,h=Math.max(...ys)+80-y0;
+    if(w<900){x0-=(900-w)/2;w=900;} if(h<520){y0-=(520-h)/2;h=520;} // redes chicas no se ven gigantes
+    const cN=foco?esc(foco.o.nombre.length>14?foco.o.nombre.slice(0,13)+'…':foco.o.nombre):'RED',cV=foco?foco.v:tot;
+    cont.innerHTML=`<div class="zoomctl"><button type="button" aria-label="Acercar" onclick="zoomRed(1/1.3)">+</button><button type="button" aria-label="Alejar" onclick="zoomRed(1.3)">−</button><button type="button" aria-label="Ver todo" title="Ver todo" onclick="RED_VIEW=null;renderRed()">⤢</button></div>
+      <svg viewBox="${x0.toFixed(0)} ${y0.toFixed(0)} ${w.toFixed(0)} ${h.toFixed(0)}" style="width:100%;height:auto;max-height:640px;display:block;touch-action:none;cursor:grab" role="img" aria-label="Red de influencia de la campaña. Arrastrá para mover, rueda o pellizco para acercar.">
       <style>.rnodo{cursor:pointer}.rnodo:hover circle,.rnodo:hover rect,.rnodo:focus circle,.rnodo:focus rect{stroke:#1c2a23;stroke-width:3}.rnodo:focus{outline:none}</style>
-      ${lineas}<g><circle r="30" fill="#0f3d2e"/><text y="-2" text-anchor="middle" font-size="11" font-weight="800" fill="#fff">RED</text><text y="13" text-anchor="middle" font-size="10" fill="#9db8ab">${nro(tot)}</text></g>${nodos}</svg>`;
+      ${lineas}<g><circle r="30" fill="#0f3d2e"/><text y="-2" text-anchor="middle" font-size="${foco?9:11}" font-weight="800" fill="#fff">${cN}</text><text y="13" text-anchor="middle" font-size="10" fill="#9db8ab">${nro(cV)}</text></g>${nodos}</svg>`;
+    activarZoomRed(cont.querySelector('svg'),{x:x0,y:y0,w,h});
   }
   document.getElementById('redLeyenda').innerHTML=
     Object.values(CAT_REF).map(([l,c])=>`<span><span class="sem" style="background:${c}"></span>${l} (círculo)</span>`).join('')+
     [...new Set(SECT.map(s=>s.tipo))].map(t=>{const [l,c]=TIPOS_SECT[t]||TIPOS_SECT.otro;return `<span><span class="sem" style="background:${c};border-radius:2px"></span>${l} (cuadrado)</span>`;}).join('')+
-    '<span>Borde punteado: sector que todavía no tiene votos verificados (solo lo que dice que trae)</span>'+
+    '<span>Relleno: votos verificados · Borde punteado: votos prometidos que todavía no están cargados · Blanco con línea cortada: todavía no confirmado (proyección)</span>'+
     (RED_OK?'':'<span style="color:var(--rojo);font-weight:700">Falta correr el SQL de la Red en Supabase.</span>');
   // lista de sectores
   const porId={};todos.forEach(n=>porId[n.kind+n.id]=n);
+  // resumen: dónde se suman los votos
+  const V=votos(REG),prom=suma(SECT.filter(x=>!esProspecto(x)),'caudal'),proyTot=completo.reduce((a,n)=>a+n.proyec,0),vSect=votos(REG.filter(p=>p.sector_id)).proy;
+  const pct=prom?Math.round(vSect/prom*100):null;
+  document.getElementById('redResumen').innerHTML=[
+    [nro(V.proy),'votos verificados (personas cargadas, proyectados)',null],[nro(V.firmes),'votos firmes (confirmados con DNI)',null],
+    [nro(prom),'votos prometidos por los sectores (van aparte, no se mezclan con los verificados)',null],[pct==null?'—':pct+'%','de lo prometido ya está cargado con nombre y apellido',pct==null?null:pct>=50],
+    [nro(proyTot),'votos en proyección: referentes y sectores que todavía no están confirmados',null],
+    [nro(aritmetica().objetivo),`votos objetivo del plan · verificados cubren el ${Math.round(V.proy/aritmetica().objetivo*100)}%`,null]]
+    .map(([n,l,ok])=>`<div class="mini"><div class="n" style="color:${ok==null?'var(--tinta)':ok?'var(--verde-ok)':'var(--rojo)'}">${n}</div><div class="l">${l}</div></div>`).join('');
+  const refsN=todos.filter(n=>n.kind==='r').sort((a,b)=>b.v-a.v);
+  document.getElementById('redRanking').innerHTML=refsN.length?refsN.map(n=>{const vp=n.dice?Math.round(n.v/n.dice*100):null;
+    return `<tr><td><b>${esc(n.o.nombre)}</b>${n.pros?` <span class="tag t-prom">${COMP_CORTO[n.o.compromiso]}</span>`:''}</td><td>${nro(n.suyos)}</td><td><b>${nro(n.v)}</b></td><td>${n.dice?nro(n.dice):'—'}</td>
+      <td style="color:${vp==null?'inherit':vp>=50?'var(--verde-ok)':'var(--rojo)'};font-weight:600">${vp==null?'—':vp+'%'}</td><td>${pesoTxt(n.v)}</td></tr>`;}).join('')
+    :'<tr><td colspan="6" class="empty">Sin referentes todavía.</td></tr>';
   document.getElementById('redSectores').innerHTML=SECT.length?[...SECT].sort((a,b)=>(porId['s'+b.id]?.v||0)-(porId['s'+a.id]?.v||0)).map(s=>{
     const n=porId['s'+s.id]||{v:0},padre=s.sector_padre?(SECT.find(x=>x.id===s.sector_padre)?.nombre||'—'):s.ref_id?refNom(s.ref_id):'—';
     const brecha=s.caudal&&n.v<s.caudal*0.5;
@@ -858,6 +947,32 @@ function renderRed(){
       <td><button class="icobtn" aria-label="Editar sector" onclick="abrirSector('${s.id}')">✏️</button></td></tr>`;}).join('')
     :'<tr><td colspan="7" class="empty">Todavía no hay sectores. Cargá iglesias, clubes, gremios… y quién los trae con "+ Sector".</td></tr>';
 }
+// zoom y arrastre sin librerías: mouse (rueda + arrastrar) y táctil (un dedo mueve, dos dedos pellizcan)
+let _zoomSvg=null,_zoomBase=null;
+function zoomRed(f,cx,cy){
+  const svg=_zoomSvg;if(!svg)return;const vb=RED_VIEW||{..._zoomBase},r=svg.getBoundingClientRect();
+  const px=cx==null?vb.x+vb.w/2:vb.x+(cx-r.left)/r.width*vb.w,py=cy==null?vb.y+vb.h/2:vb.y+(cy-r.top)/r.height*vb.h;
+  const nw=Math.min(_zoomBase.w*1.5,Math.max(_zoomBase.w/15,vb.w*f)),k=nw/vb.w;
+  RED_VIEW={x:px-(px-vb.x)*k,y:py-(py-vb.y)*k,w:nw,h:vb.h*k};svg.setAttribute('viewBox',`${RED_VIEW.x} ${RED_VIEW.y} ${RED_VIEW.w} ${RED_VIEW.h}`);
+}
+function activarZoomRed(svg,base){
+  _zoomSvg=svg;_zoomBase=base;if(RED_VIEW)svg.setAttribute('viewBox',`${RED_VIEW.x} ${RED_VIEW.y} ${RED_VIEW.w} ${RED_VIEW.h}`);
+  svg.addEventListener('wheel',e=>{e.preventDefault();zoomRed(e.deltaY>0?1.15:1/1.15,e.clientX,e.clientY);},{passive:false});
+  const P=new Map();let movio=false,dist0=0;
+  svg.addEventListener('pointerdown',e=>{P.set(e.pointerId,{x:e.clientX,y:e.clientY});movio=false;if(P.size===2){const [a,b]=[...P.values()];dist0=Math.hypot(a.x-b.x,a.y-b.y);}});
+  const mover=e=>{
+    if(!P.has(e.pointerId))return;const ant=P.get(e.pointerId),act={x:e.clientX,y:e.clientY};P.set(e.pointerId,act);
+    if(P.size===1){const dx=act.x-ant.x,dy=act.y-ant.y;if(Math.abs(dx)+Math.abs(dy)<1)return;if(!movio&&Math.hypot(dx,dy)<3)return;movio=true;svg.style.cursor='grabbing';
+      const vb=RED_VIEW||{..._zoomBase},r=svg.getBoundingClientRect();RED_VIEW={...vb,x:vb.x-dx*vb.w/r.width,y:vb.y-dy*vb.h/r.height};
+      svg.setAttribute('viewBox',`${RED_VIEW.x} ${RED_VIEW.y} ${RED_VIEW.w} ${RED_VIEW.h}`);}
+    else if(P.size===2){const [a,b]=[...P.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(dist0){zoomRed(dist0/d,(a.x+b.x)/2,(a.y+b.y)/2);movio=true;}dist0=d;}
+  };
+  const soltar=e=>{P.delete(e.pointerId);dist0=0;svg.style.cursor='grab';};
+  svg.addEventListener('pointermove',mover);svg.addEventListener('pointerup',soltar);svg.addEventListener('pointercancel',soltar);svg.addEventListener('pointerleave',soltar);
+  // si arrastró, no abrir la ficha del nodo donde soltó
+  svg.addEventListener('click',e=>{if(movio){e.stopPropagation();e.preventDefault();movio=false;}},true);
+}
+function enfocarRed(k){RED_FOCO=k||null;RED_VIEW=null;cerrarDrawer();if(vistaActual!=='equipo')irA('equipo');else renderRed();document.getElementById('redFoco')?.scrollIntoView({behavior:'smooth',block:'start'});}
 // ids que cuelgan de un nodo (para no permitir ciclos)
 function descendientes(kind,id){const out=new Set(),rec=(k,i)=>hijosRed(k,i).forEach(h=>{if(!out.has(h.kind+h.id)){out.add(h.kind+h.id);rec(h.kind,h.id);}});rec(kind,id);return out;}
 function opcionesPadre(kind,id,actual){
@@ -870,11 +985,12 @@ function opcionesPadre(kind,id,actual){
 function abrirSector(id){
   const s=id?SECT.find(x=>x.id===id):{tipo:'iglesia'};const n=id?armarArbol():null;
   let v=0;if(id){const busca=l=>{for(const x of l){if(x.kind==='s'&&x.id===id)return x;const h=busca(x.hijos);if(h)return h;}};v=busca(n)?.v||0;}
-  abrirDrawer(id?s.nombre:'Nuevo sector',(id?`<div style="margin-bottom:14px;padding:12px;background:var(--arena);border-radius:11px;font-size:12.5px">Dice que trae <b>${nro(s.caudal||0)}</b> · verificados <b>${nro(v)}</b> votos proyectados</div>`:'')+`
+  abrirDrawer(id?s.nombre:'Nuevo sector',(id?`<button class="btn" style="margin-bottom:12px" onclick="enfocarRed('s${id}')">🔎 Ver solo su red</button>`:'')+(id?`<div style="margin-bottom:14px;padding:12px;background:var(--arena);border-radius:11px;font-size:12.5px">Dice que trae <b>${nro(s.caudal||0)}</b> · verificados <b>${nro(v)}</b> votos proyectados</div>`:'')+`
     ${campo('sNombre','Nombre','text',s.nombre,'required placeholder="Ej: Iglesia Pentecostal Villa Alta"')}
     <div class="f"><label for="sTipo">Tipo</label><select id="sTipo">${Object.entries(TIPOS_SECT).map(([k,[l]])=>`<option value="${k}"${s.tipo===k?' selected':''}>${l}</option>`).join('')}</select></div>
     <div class="f"><label for="sPadre">Lo trae / pertenece a</label><select id="sPadre">${opcionesPadre('s',id,s.sector_padre?'s:'+s.sector_padre:s.ref_id?'r:'+s.ref_id:'')}</select></div>
     <div class="frow">${campo('sLider','Líder / contacto','text',s.lider,'placeholder="Ej: Pastor Juan"')}${campo('sTel','Teléfono','tel',s.tel)}</div>
+    ${compromisoSel('sComp',s.compromiso)}
     ${campo('sCaudal','Votos que dice que trae','',s.caudal)}
     <div style="font-size:12px;color:var(--gris);margin:-4px 0 12px">Los verificados salen de las personas asignadas a este sector (en Personas, seleccioná y elegí el sector).</div>
     <div class="f"><label for="sNotas">Notas</label><textarea id="sNotas" rows="3">${esc(s.notas)}</textarea></div>`,
@@ -883,7 +999,7 @@ function abrirSector(id){
 function guardarSector(id){
   const g=k=>document.getElementById(k).value.trim(),caudal=numCampo('sCaudal',true),[pk,pid]=(g('sPadre')||':').split(':');
   if(Number.isNaN(caudal)){toast('Los votos que dice que trae tienen que ser un número entero');return;}
-  const obj={nombre:g('sNombre'),tipo:g('sTipo'),ref_id:pk==='r'?pid:null,sector_padre:pk==='s'?pid:null,lider:g('sLider')||null,tel:g('sTel')||null,caudal,notas:g('sNotas')||null};
+  const obj={nombre:g('sNombre'),tipo:g('sTipo'),ref_id:pk==='r'?pid:null,sector_padre:pk==='s'?pid:null,lider:g('sLider')||null,tel:g('sTel')||null,caudal,compromiso:g('sComp'),notas:g('sNotas')||null};
   if(!obj.nombre){toast('Poné el nombre del sector');return;}
   if(!TIPOS_SECT[obj.tipo]){toast('Elegí el tipo');return;}
   guardarFila('red_sectores',SECT,id,obj);
@@ -895,6 +1011,174 @@ async function borrarSector(id){
   if(n){const {error}=await sb.from('registros').update({sector_id:null}).eq('sector_id',id);if(error){toast('Error: '+error.message);return;}REG.forEach(p=>{if(p.sector_id===id)p.sector_id=null;});}
   borrarFila('red_sectores',SECT,id,null);
 }
+/* ===== ESTRATEGIA: prioridad por barrio + encuesta ===== */
+let ENC=[],ENC_OK=true;
+const ENC_OPS={
+  voto:[['heber','Heber Krieger','var(--verde-ok)'],['oficialismo','Oficialismo','#8a949a'],['lla','La Libertad Avanza','#7b4fa0'],['otro','Otro','#b8b2a3'],['indeciso','No sabe todavía','var(--amarillo)'],['no_vota','No va a votar','#d6d0c2'],['nc','No contesta','#e3ded2']],
+  conoce:[['si','Lo conoce','var(--verde-ok)'],['de_nombre','Lo escuchó nombrar','var(--amarillo)'],['no','No lo conoce','var(--rojo)']],
+  imagen:[['positiva','Buena','var(--verde-ok)'],['regular','Regular','var(--amarillo)'],['negativa','Mala','var(--rojo)'],['ns','No sabe','#b8b2a3']],
+  problema:[['calles','Calles'],['agua','Agua'],['luz','Luz / iluminación'],['seguridad','Seguridad'],['trabajo','Trabajo'],['salud','Salud'],['transporte','Transporte'],['otro','Otro']]
+};
+const ENC_MIN=15; // encuestas mínimas por barrio para tomar en cuenta el resultado
+const barrioDe=t=>barrioCanon(t||'')||t||'';
+function prioridadBarrios(){
+  const A=aritmetica(),totE=Object.values(ELECTORES_BARRIO).reduce((a,b)=>a+b,0),hace30=new Date(Date.now()-30*864e5).toISOString().slice(0,10);
+  const filas=Object.entries(ELECTORES_BARRIO).filter(([,e])=>e>=100).map(([b,e])=>{
+    const ident=REG.filter(p=>p.dni&&barrioDe(p.barrio)===b).length,meta=Math.max(1,Math.round(A.necesarios*e/totE));
+    const refs=refsEquipo().filter(r=>!esProspecto(r)&&barrioDe(r.zona)===b).length,enc=ENC.filter(x=>x.barrio===b),n=enc.length;
+    const tuyo=n?enc.filter(x=>x.voto==='heber').length/n:0,indec=n?enc.filter(x=>x.voto==='indeciso'||x.voto==='nc').length/n:0;
+    const acts=ACTS.filter(a=>a.hecho&&a.fecha>=hace30&&barrioDe(a.barrio)===b).length,avance=ident/meta;
+    const disputa=n>=ENC_MIN?Math.min(1,(tuyo+indec)*1.5):0.5; // sin encuestas suficientes cuenta como neutro
+    return {b,e,ident,meta,refs,n,tuyo,indec,acts,avance,score:(e/totE)*(1-Math.min(1,avance))*(0.5+disputa)*(acts?0.8:1)};
+  });
+  const max=Math.max(...filas.map(f=>f.score),1e-9);filas.forEach(f=>f.p=Math.round(f.score/max*100));
+  filas.sort((a,b)=>b.p-a.p);
+  filas.forEach((f,i)=>{
+    f.hacer=f.avance>=1?'Meta cumplida: sostener y pasar a confirmar'
+      :!f.refs&&f.e>=700?'Reclutar un referente antes de poner tiempo del candidato'
+      :f.n>=ENC_MIN&&f.tuyo<0.08&&f.indec<0.2?'Terreno difícil: no es prioridad ahora'
+      :i<5?'Prioridad: recorrida del candidato + timbreo'
+      :'Que el referente siga identificando';
+    if(f.n<ENC_MIN)f.hacer+=` · faltan encuestas (${f.n}/${ENC_MIN})`;
+  });
+  return filas;
+}
+function renderEstrategia(){
+  document.getElementById('estAviso').innerHTML=ENC_OK?'':'<div class="veredicto v-amarillo" role="alert"><span class="ti ti-database-off" style="font-size:24px"></span><div><b>Falta correr el SQL de la encuesta en Supabase</b>La prioridad por barrio funciona igual, pero sin los datos de la encuesta.</div></div>';
+  document.getElementById('estPrioridad').innerHTML=prioridadBarrios().map(f=>{const col=f.p>=60?'var(--rojo)':f.p>=30?'var(--amarillo)':'var(--verde-ok)',av=Math.min(100,Math.round(f.avance*100));
+    return `<tr><td><b>${esc(f.b)}</b></td><td>${nro(f.e)}</td>
+      <td>${nro(f.ident)} / ${nro(f.meta)}<div class="barra" style="margin-top:4px" role="img" aria-label="${av}% de la meta"><i style="width:${av}%;background:var(--selva)"></i></div></td>
+      <td style="color:${f.refs?'inherit':'var(--rojo)'};font-weight:${f.refs?400:700}">${f.refs}</td>
+      <td style="font-size:12px">${f.n?`${f.n} enc. · te vota ${Math.round(f.tuyo*100)}% · indecisos ${Math.round(f.indec*100)}%`:'—'}</td>
+      <td>${f.acts}</td><td><b style="color:${col}">${f.p}</b></td><td style="font-size:12.5px">${f.hacer}</td></tr>`;}).join('');
+  const sel=document.getElementById('encBarrio'),act=sel.value;
+  const bs=[...new Set(ENC.map(x=>x.barrio))].sort();
+  sel.innerHTML='<option value="">Todos los barrios</option>'+bs.map(b=>`<option${b===act?' selected':''}>${esc(b)}</option>`).join('');
+  renderEncuesta();
+}
+function barras(lista,ops){const n=lista.length||1;return ops.map(([k,l,c])=>{const q=lista.filter(x=>x===k).length,p=Math.round(q/n*100);
+  return `<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px"><span>${l}</span><b>${p}% <span style="color:var(--gris);font-weight:400">(${q})</span></b></div><div class="barra"><i style="width:${p}%;background:${c||'var(--tierra)'}"></i></div></div>`;}).join('');}
+function renderEncuesta(){
+  const b=document.getElementById('encBarrio').value,L=ENC.filter(x=>!b||x.barrio===b),n=L.length;
+  document.getElementById('encAviso').innerHTML=`<b>${nro(n)}</b> encuestas${b?' en '+esc(b):''}. `+
+    (n<ENC_MIN?`<span style="color:var(--rojo);font-weight:700">Todavía son pocas: con menos de ${ENC_MIN} no saques conclusiones.</span> `:'')+
+    'La hace tu equipo: sirve para comparar barrios y ver tendencias, no reemplaza una encuesta profesional.';
+  if(!n){document.getElementById('encGraf').innerHTML='<div class="empty" style="grid-column:1/-1">Sin encuestas todavía. Pasales el link a tus referentes con "Copiar link de la encuesta".</div>';document.getElementById('encComentarios').innerHTML='';return;}
+  const conocen=L.filter(x=>x.conoce!=='no');
+  const probs=ENC_OPS.problema.map(([k,l])=>[k,l]).sort((x,y)=>L.filter(e=>e.problema===y[0]).length-L.filter(e=>e.problema===x[0]).length);
+  document.getElementById('encGraf').innerHTML=`
+    <div><h3 style="font-size:13px;color:var(--selva);margin-bottom:10px">Intención de voto</h3>${barras(L.map(x=>x.voto),ENC_OPS.voto)}</div>
+    <div><h3 style="font-size:13px;color:var(--selva);margin-bottom:10px">¿Te conocen?</h3>${barras(L.map(x=>x.conoce),ENC_OPS.conoce)}
+      <h3 style="font-size:13px;color:var(--selva);margin:16px 0 10px">Opinión (entre los que te conocen: ${conocen.length})</h3>${barras(conocen.map(x=>x.imagen).filter(Boolean),ENC_OPS.imagen)}</div>
+    <div style="grid-column:1/-1"><h3 style="font-size:13px;color:var(--selva);margin:6px 0 10px">Principal problema del barrio</h3>${barras(L.map(x=>x.problema),probs)}</div>`;
+  const com=L.filter(x=>x.comentario).sort((a,b)=>(b.creado_en||'').localeCompare(a.creado_en||'')).slice(0,12);
+  document.getElementById('encComentarios').innerHTML=com.length?'<h3 style="font-size:13px;color:var(--selva);margin:10px 0 8px">Últimos comentarios</h3>'+
+    com.map(c=>`<div style="padding:8px 0;border-bottom:1px solid var(--arena-2);font-size:13px">“${esc(c.comentario)}” <span style="color:var(--gris);font-size:11.5px">— ${esc(c.barrio)}</span></div>`).join(''):'';
+}
+async function copiarLinkEncuesta(){
+  const url=new URL('encuesta.html',location.href).href;
+  try{await navigator.clipboard.writeText(url);toast('Link copiado ✓ Mandáselo a tus referentes',true);}
+  catch(e){prompt('Copiá este link:',url);}
+}
+
+/* ===== TAREAS Y RESPONSABILIDADES ===== */
+let AREAS=[],TAREAS=[],TAR_OK=true;
+const EST_TAR={pendiente:'Pendiente',en_curso:'En curso',hecha:'Hecha'};
+// responsable: 'r:<id>' referente · 'c:<id>' colaborador
+function respObj(k){if(!k)return null;const [t,id]=k.split(':');return (t==='r'?REF:COLAB).find(x=>x.id===id)||null;}
+const respNom=k=>respObj(k)?.nombre||'Sin responsable';
+function opcionesResp(actual){
+  const o=(l,t)=>l.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(x=>`<option value="${t}:${x.id}"${actual===t+':'+x.id?' selected':''}>${esc(x.nombre)}</option>`).join('');
+  return `<option value="">— Sin responsable —</option><optgroup label="Referentes">${o(refsEquipo(),'r')}</optgroup>${COLAB.length?`<optgroup label="Colaboradores">${o(COLAB,'c')}</optgroup>`:''}`;
+}
+const vencida=t=>t.estado!=='hecha'&&t.vence&&t.vence<hoyISO();
+function renderTareas(){
+  document.getElementById('tarAviso').innerHTML=TAR_OK?'':'<div class="veredicto v-amarillo" role="alert"><span class="ti ti-database-off" style="font-size:24px"></span><div><b>Falta correr el SQL de Tareas en Supabase</b>Hasta entonces no se pueden cargar áreas ni tareas.</div></div>';
+  const selR=document.getElementById('tarResp'),fr=selR.value,fe=document.getElementById('tarEstado').value;
+  selR.innerHTML=opcionesResp(fr).replace('— Sin responsable —','Todas las personas');
+  const hace30=new Date(Date.now()-30*864e5).toISOString(),ab=TAREAS.filter(t=>t.estado!=='hecha');
+  document.getElementById('tarKpis').innerHTML=[
+    ['ti-list-check','var(--azul)',ab.length,'tareas abiertas'],['ti-alarm','var(--rojo)',ab.filter(vencida).length,'vencidas'],
+    ['ti-user-question','var(--amarillo)',ab.filter(t=>!respObj(t.responsable)).length,'sin responsable'],
+    ['ti-circle-check','var(--verde-ok)',TAREAS.filter(t=>t.estado==='hecha'&&(t.hecha_en||'')>=hace30).length,'hechas en 30 días']]
+    .map(([i,c,n,l])=>`<div class="kpi"><span class="ti ${i}" style="color:${c}"></span><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+  const pasa=t=>(!fr||t.responsable===fr)&&(fe===''||(fe==='abiertas'?t.estado!=='hecha':fe==='vencidas'?vencida(t):t.estado===fe));
+  const orden=(a,b)=>(a.estado==='hecha')-(b.estado==='hecha')||(a.vence||'9999').localeCompare(b.vence||'9999');
+  const cols=[...AREAS].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(a=>({a,l:TAREAS.filter(t=>t.area_id===a.id)}));
+  const sinArea=TAREAS.filter(t=>!AREAS.some(a=>a.id===t.area_id));if(sinArea.length)cols.push({a:{id:'',nombre:'Sin área'},l:sinArea});
+  document.getElementById('tarAreas').innerHTML=cols.length?cols.map(({a,l})=>{
+    const vis=l.filter(pasa).sort(orden),abiertas=l.filter(t=>t.estado!=='hecha').length,venc=l.filter(vencida).length;
+    return `<div class="panel" style="margin:0">
+      <h2 style="margin-bottom:4px"><span class="ti ti-folder"></span> ${esc(a.nombre)}
+        ${a.id?`<button class="icobtn" style="margin-left:auto" aria-label="Editar área ${esc(a.nombre)}" onclick="abrirArea('${a.id}')">✏️</button>`:''}</h2>
+      <div style="font-size:12px;color:var(--gris);margin-bottom:12px">Responsable del área: <b style="color:var(--tinta)">${esc(respNom(a.responsable))}</b> · ${abiertas} abiertas${venc?` · <b style="color:var(--rojo)">${venc} vencidas</b>`:''}</div>
+      ${vis.length?vis.map(filaTarea).join(''):'<div style="font-size:12.5px;color:var(--gris);padding:6px 0 10px">Nada para mostrar con este filtro.</div>'}
+      ${a.id?`<button class="btn" style="margin-top:10px;width:100%;justify-content:center" onclick="abrirTarea(null,'${a.id}')"><span class="ti ti-plus"></span> Tarea en ${esc(a.nombre)}</button>`:''}
+    </div>`;}).join('')
+    :'<div class="panel empty" style="grid-column:1/-1">Todavía no hay áreas. Creá la primera con "+ Área" (Iglesias, Actividades sociales, Comunicación…).</div>';
+  // carga por persona
+  const pers={};const suma1=(k,c)=>{if(!k)return;pers[k]=pers[k]||{ab:0,ve:0,he:0,ar:0};pers[k][c]++;};
+  AREAS.forEach(a=>suma1(a.responsable,'ar'));
+  TAREAS.forEach(t=>{if(t.estado!=='hecha'){suma1(t.responsable,'ab');if(vencida(t))suma1(t.responsable,'ve');}else if((t.hecha_en||'')>=hace30)suma1(t.responsable,'he');});
+  const filas=Object.entries(pers).filter(([k])=>respObj(k)).sort((x,y)=>y[1].ab-x[1].ab);
+  document.getElementById('tarCarga').innerHTML=filas.length?filas.map(([k,p])=>`<tr><td><b>${esc(respNom(k))}</b> <span style="font-size:11px;color:var(--gris)">${k[0]==='r'?'referente':'colaborador'}</span></td><td>${p.ar}</td><td>${p.ab}</td><td style="color:${p.ve?'var(--rojo)':'inherit'};font-weight:${p.ve?700:400}">${p.ve}</td><td>${p.he}</td></tr>`).join('')
+    :'<tr><td colspan="5" class="empty">Todavía no hay tareas repartidas.</td></tr>';
+}
+function filaTarea(t){
+  const r=respObj(t.responsable),v=vencida(t),hecha=t.estado==='hecha';
+  const wa=r&&!hecha?waLink(r.tel,`Hola ${r.nombre}! Te paso una tarea de la campaña: *${t.titulo}*`+(t.vence?` (para el ${fFecha(t.vence)})`:'')+(t.notas?`. ${t.notas}`:'')):null;
+  return `<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--arena-2)">
+    <input type="checkbox" style="margin-top:3px;width:17px;height:17px" aria-label="Marcar como hecha: ${esc(t.titulo)}" ${hecha?'checked':''} onchange="marcarTarea('${t.id}',this.checked)">
+    <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13.5px;${hecha?'text-decoration:line-through;color:var(--gris)':''}">${esc(t.titulo)}</div>
+      <div style="font-size:11.5px;color:var(--gris);margin-top:2px">${esc(respNom(t.responsable))}${t.vence?` · <span style="color:${v?'var(--rojo)':'inherit'};font-weight:${v?700:400}">${v?'venció el ':'para el '}${fFecha(t.vence)}</span>`:''}${t.estado==='en_curso'?' · <b style="color:var(--azul)">en curso</b>':''}</div></div>
+    ${wa?`<a class="icobtn" href="${wa}" target="_blank" rel="noopener" style="text-decoration:none" aria-label="Mandar por WhatsApp">💬</a>`:''}
+    <button class="icobtn" aria-label="Editar tarea" onclick="abrirTarea('${t.id}')">✏️</button></div>`;
+}
+async function marcarTarea(id,val){
+  const obj={estado:val?'hecha':'pendiente',hecha_en:val?new Date().toISOString():null};
+  if(await upd('tareas',id,obj)){Object.assign(TAREAS.find(x=>x.id===id),obj);renderTareas();}
+}
+function abrirTarea(id,areaId){
+  const t=id?TAREAS.find(x=>x.id===id):{area_id:areaId||AREAS[0]?.id||'',estado:'pendiente'};
+  if(!AREAS.length){toast('Primero creá un área');return;}
+  abrirDrawer(id?'Editar tarea':'Nueva tarea',`
+    ${campo('tTitulo','Qué hay que hacer','text',t.titulo,'required placeholder="Ej: Reunión con pastores de zona norte"')}
+    <div class="f"><label for="tArea">Área</label><select id="tArea">${[...AREAS].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(a=>`<option value="${a.id}"${t.area_id===a.id?' selected':''}>${esc(a.nombre)}</option>`).join('')}</select></div>
+    <div class="f"><label for="tResp">Responsable</label><select id="tResp">${opcionesResp(t.responsable||'')}</select></div>
+    <div class="frow">${campo('tVence','Para cuándo','date',t.vence)}
+    <div class="f"><label for="tEstado">Estado</label><select id="tEstado">${Object.entries(EST_TAR).map(([k,v])=>`<option value="${k}"${t.estado===k?' selected':''}>${v}</option>`).join('')}</select></div></div>
+    <div class="f"><label for="tNotas">Detalle</label><textarea id="tNotas" rows="3" placeholder="Lo que tiene que saber quien la hace">${esc(t.notas)}</textarea></div>`,
+    pieForm(id,`guardarTarea(${id?`'${id}'`:'null'})`,`borrarFila('tareas',TAREAS,'${id}','¿Borrar esta tarea?')`));
+}
+function guardarTarea(id){
+  const g=k=>document.getElementById(k).value.trim(),estado=g('tEstado'),prev=id?TAREAS.find(x=>x.id===id):null;
+  const obj={titulo:g('tTitulo'),area_id:g('tArea')||null,responsable:g('tResp')||null,vence:g('tVence')||null,estado,notas:g('tNotas')||null,
+    hecha_en:estado==='hecha'?(prev?.hecha_en||new Date().toISOString()):null};
+  if(!obj.titulo){toast('Escribí qué hay que hacer');return;}
+  if(obj.vence&&!fechaOk(obj.vence)){toast('La fecha no es válida');return;}
+  if(!EST_TAR[estado]){toast('Elegí el estado');return;}
+  guardarFila('tareas',TAREAS,id,obj);
+}
+function abrirArea(id){
+  const a=id?AREAS.find(x=>x.id===id):{};
+  abrirDrawer(id?'Editar área':'Nueva área',`
+    ${campo('arNombre','Nombre del área','text',a.nombre,'required placeholder="Ej: Iglesias, Comunicación, Jóvenes"')}
+    <div class="f"><label for="arResp">Responsable del área</label><select id="arResp">${opcionesResp(a.responsable||'')}</select></div>
+    <div style="font-size:12px;color:var(--gris)">El responsable del área coordina y hace seguimiento; cada tarea puede tener otra persona a cargo.</div>`,
+    pieForm(id,`guardarArea(${id?`'${id}'`:'null'})`,`borrarArea('${id}')`));
+}
+function guardarArea(id){
+  const obj={nombre:document.getElementById('arNombre').value.trim(),responsable:document.getElementById('arResp').value||null};
+  if(!obj.nombre){toast('Poné el nombre del área');return;}
+  if(AREAS.some(a=>a.id!==id&&a.nombre.toLowerCase()===obj.nombre.toLowerCase())){toast('Ya existe un área con ese nombre');return;}
+  guardarFila('tareas_areas',AREAS,id,obj);
+}
+function borrarArea(id){
+  const n=TAREAS.filter(t=>t.area_id===id).length;
+  if(n){toast(`Esta área tiene ${n} tareas: movelas a otra área o borralas primero.`);return;}
+  borrarFila('tareas_areas',AREAS,id,'¿Borrar esta área?');
+}
+
 /* ===== RESUMEN ===== */
 function renderResumen(){
   const V=votos(REG),meta=REF.reduce((s,r)=>s+(r.meta||0),0)||1,pct=Math.min(100,Math.round(V.proy/meta*100));
