@@ -122,6 +122,22 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .empty{text-align:center;color:var(--gris);padding:30px;font-size:13px}
   @media(max-width:900px){.side{width:64px}.side .bn,.side .bs,.nav-item span:last-child{display:none}.main{margin-left:64px;max-width:calc(100% - 64px);padding:18px 14px}.grid2{grid-template-columns:1fr}.kpi.hero{grid-column:span 1}}
+  /* ===== plan de campaña ===== */
+  .etapas{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+  .etapa{background:var(--blanco);border:1.5px solid var(--linea);border-radius:14px;padding:14px;text-align:left;color:inherit}
+  .etapa.ver{border-color:var(--tierra);box-shadow:0 0 0 3px rgba(181,73,31,.12)}
+  .etapa .en{font-size:11px;font-weight:800;color:var(--gris);text-transform:uppercase;letter-spacing:.05em}
+  .etapa .et{font-size:15px;font-weight:800;color:var(--selva);margin:4px 0 2px}
+  .etapa .ef{font-size:11.5px;color:var(--gris)}
+  .etapa:focus-visible,.nav-item:focus-visible,.btn:focus-visible{outline:2px solid var(--tierra-claro);outline-offset:2px}
+  .veredicto{border-radius:12px;padding:14px 16px;margin-bottom:14px;display:flex;gap:14px;align-items:center;font-size:13px}
+  .veredicto b{font-size:16px;display:block;margin-bottom:2px}
+  .v-verde{background:#e7f4ec;color:var(--verde-ok)}.v-amarillo{background:#fdf4e3;color:#8a6a1c}.v-rojo{background:#fbe9e6;color:var(--rojo)}.v-gris{background:var(--arena);color:var(--gris)}
+  .barra{height:7px;background:var(--arena-2);border-radius:4px;overflow:hidden;min-width:90px}
+  .barra i{display:block;height:100%}
+  /* mapas: tiles de OpenStreetMap (sin API key) oscurecidos para el estilo del panel */
+  #mapaEquipo .leaflet-tile-pane,#mapaCmd .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9)}
+  @media(max-width:900px){.etapas,.subgrid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -143,8 +159,9 @@
 
 <div class="layout" id="app" style="display:none">
   <div class="side">
-    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v40</span></div></div></div>
+    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v42</span></div></div></div>
     <div class="nav-item active" data-v="resumen" onclick="irA('resumen')"><span class="ti ti-layout-dashboard"></span><span>Resumen</span></div>
+    <div class="nav-item" data-v="plan" onclick="irA('plan')"><span class="ti ti-flag"></span><span>Plan de campaña</span></div>
     <div class="nav-item" data-v="personas" onclick="irA('personas')"><span class="ti ti-users"></span><span>Personas</span></div>
     <div class="nav-item" data-v="equipo" onclick="irA('equipo')"><span class="ti ti-users-group"></span><span>Equipo</span></div>
     <div class="nav-item" data-v="moviles" onclick="irA('moviles')"><span class="ti ti-car"></span><span>Móviles</span></div>
@@ -178,6 +195,27 @@
         <div id="ritmoResumen" class="subgrid" style="margin-bottom:14px"></div>
         <div class="chart-box" style="height:220px"><canvas id="chartRitmo"></canvas></div>
       </div>
+    </div>
+
+    <!-- ===== PLAN DE CAMPAÑA ===== -->
+    <div id="v-plan" style="display:none">
+      <div class="page-h"><div><h1>Plan de campaña</h1><div class="sub" id="planSub"></div></div>
+        <div class="hbtns"><button class="btn" onclick="cargarTodo()"><span class="ti ti-refresh"></span> Actualizar</button>
+        <button class="btn" onclick="abrirPlan()"><span class="ti ti-adjustments"></span> Ajustar plan</button>
+        <button class="btn verde" onclick="abrirAct(null)"><span class="ti ti-plus"></span> Actividad</button></div></div>
+      <div id="planAviso"></div>
+      <div class="etapas" id="planEtapas"></div>
+      <div class="panel"><h2><span class="ti ti-traffic-lights"></span> Semáforo de la etapa</h2>
+        <div id="planVeredicto"></div>
+        <div style="overflow:auto"><table><thead><tr><th>Indicador</th><th>Real</th><th>Esperado a hoy</th><th>Meta de la etapa</th><th>Avance</th></tr></thead><tbody id="planInd"></tbody></table></div>
+        <div style="font-size:11.5px;color:var(--gris);margin-top:10px">"Esperado a hoy" es la parte de la meta que corresponde a los días ya transcurridos de la etapa. Contactos no es lo mismo que votos: los identificados con DNI miden trabajo territorial, no adhesión.</div></div>
+      <div class="grid2">
+        <div class="panel"><h2><span class="ti ti-calculator"></span> Aritmética electoral</h2><div class="subgrid" id="planArit"></div><div id="planAritMsg" style="margin-top:12px"></div></div>
+        <div class="panel"><h2><span class="ti ti-filter"></span> Embudo de la gente identificada</h2><div id="planEmbudo"></div></div>
+      </div>
+      <div class="panel"><h2><span class="ti ti-calendar-event"></span> Reuniones y actividades</h2>
+        <div class="subgrid" id="planSemana" style="margin-bottom:14px"></div>
+        <div style="overflow:auto;max-height:440px"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Actividad</th><th>Barrio / sector</th><th>Asist.</th><th>Nuevos</th><th>Hecha</th><th></th></tr></thead><tbody id="planActs"></tbody></table></div></div>
     </div>
 
     <!-- ===== PERSONAS ===== -->
@@ -354,6 +392,8 @@ async function cargarTodo(){
     // visitas: tabla nueva, puede no existir todavía (si no corrió el SQL) — tolerante
     try{const rv=await sb.from('visitas').select('*');VISI=rv.data||[];}catch(e){VISI=[];}
     try{const rc=await sb.from('colaboradores').select('*');COLAB=rc.error?[]:(rc.data||[]);}catch(e){COLAB=[];}
+    try{const [ra,rp]=await Promise.all([sb.from('actividades').select('*'),sb.from('plan_config').select('datos').eq('id',1).maybeSingle()]);
+      PLAN_OK=!ra.error&&!rp.error;ACTS=ra.data||[];PLAN=rp.data?.datos||null;}catch(e){PLAN_OK=false;ACTS=[];}
     llenarSelects();renderTodo();
     document.getElementById('loading').style.display='none';
   }catch(e){document.getElementById('loading').innerHTML='No se pudieron cargar los datos. Probá Actualizar.';console.error(e);}
@@ -422,7 +462,7 @@ function iniciarMapaEquipo(){
   if(!document.getElementById('mapaEquipo')||typeof L==='undefined')return;
   if(!_mapE){
     _mapE=L.map('mapaEquipo').setView([-25.599,-54.573],13);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(_mapE);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(_mapE);
     _capaE=L.layerGroup().addTo(_mapE);
     _mapE.on('click',e=>{if(_ubicando)guardarUbicacion(e.latlng);});
   }
@@ -552,10 +592,11 @@ async function borrarColab(id){
 }
 
 function irA(v){vistaActual=v;document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.v===v));
-  ['resumen','personas','equipo','moviles','fisca','agenda','analisis'].forEach(x=>document.getElementById('v-'+x).style.display=x===v?'block':'none');
+  ['resumen','plan','personas','equipo','moviles','fisca','agenda','analisis'].forEach(x=>document.getElementById('v-'+x).style.display=x===v?'block':'none');
   renderTodo();}
 function renderTodo(){
   if(vistaActual==='resumen')renderResumen();
+  if(vistaActual==='plan')renderPlan();
   if(vistaActual==='personas')renderPersonas();
   if(vistaActual==='equipo')renderEquipo();
   if(vistaActual==='moviles')renderMoviles();
@@ -564,6 +605,179 @@ function renderTodo(){
   if(vistaActual==='analisis'){renderCobertura();renderEdades();renderBarrio();renderTablaRefs();}
 }
 async function upd(tabla,id,obj){const {error}=await sb.from(tabla).update(obj).eq('id',id);if(error){toast('Error al guardar: '+error.message);return false;}return true;}
+
+/* ===== PLAN DE CAMPAÑA: control por etapa ===== */
+let ACTS=[],PLAN=null,PLAN_OK=true,ETAPA_VER=null;
+const PLAN_BASE={eleccion:'2027-05-31',padron:43492,participacion:65,metaVotos:11000,margen:15,cumplimiento:70,mesas:125,fiscalesMesa:2,
+  etapas:[
+    {nombre:'Armado',ini:'2026-09-01',fin:'2026-10-31',referentes:15,cobertura:50,reuMes:8,actMes:4,identif:10,fiscales:0},
+    {nombre:'Consolidación',ini:'2026-11-01',fin:'2027-01-31',referentes:20,cobertura:80,reuMes:12,actMes:4,identif:40,fiscales:30},
+    {nombre:'Expansión',ini:'2027-02-01',fin:'2027-03-31',referentes:25,cobertura:100,reuMes:12,actMes:6,identif:75,fiscales:70},
+    {nombre:'Campaña formal',ini:'2027-04-01',fin:'2027-05-31',referentes:25,cobertura:100,reuMes:12,actMes:8,identif:100,fiscales:100}]};
+const TIPOS_ACT={reunion_sectorial:'Reunión sectorial',actividad_comunitaria:'Actividad comunitaria',mesa_chica:'Mesa chica',reunion_zona:'Reunión de zona',reunion_general:'Reunión general',acto:'Acto / evento',timbreo:'Timbreo / recorrida',otro:'Otro'};
+const COLV={verde:'var(--verde-ok)',amarillo:'var(--amarillo)',rojo:'var(--rojo)',gris:'var(--linea)'};
+const plan=()=>PLAN?{...PLAN_BASE,...PLAN,etapas:PLAN.etapas||PLAN_BASE.etapas}:PLAN_BASE;
+const hoyISO=()=>new Date().toISOString().slice(0,10);
+const dia=s=>new Date(s+'T00:00');
+const fFecha=s=>{const d=dia(s);return d.getDate()+'/'+(d.getMonth()+1)+'/'+String(d.getFullYear()).slice(2);};
+const nro=n=>Math.round(n||0).toLocaleString('es-AR');
+const suma=(l,k)=>l.reduce((s,x)=>s+Number(x[k]||0),0);
+const mesesE=e=>((dia(e.fin)-dia(e.ini))/86400000+1)/30.44;
+function avance(e){const a=dia(e.ini).getTime(),b=dia(e.fin).getTime()+86400000;return Math.max(0,Math.min(1,(Date.now()-a)/(b-a)));}
+function etapaHoy(){const E=plan().etapas,h=hoyISO(),i=E.findIndex(e=>h<=e.fin);return i<0?E.length-1:i;}
+function aritmetica(){const P=plan(),objetivo=Math.round(P.metaVotos*(1+P.margen/100));
+  return {votan:Math.round(P.padron*P.participacion/100),objetivo,necesarios:Math.round(objetivo/(P.cumplimiento/100))};}
+function indicadores(i){
+  const P=plan(),e=P.etapas[i],prev=P.etapas[i-1],f=avance(e),A=aritmetica(),fisc=P.mesas*P.fiscalesMesa;
+  const tramo=(k,tot)=>{const ant=prev?(tot?tot*prev[k]/100:prev[k]):0,meta=tot?tot*e[k]/100:e[k];return ant+(meta-ant)*f;};
+  const grandes=Object.keys(ELECTORES_BARRIO).filter(b=>ELECTORES_BARRIO[b]>=700);
+  const zonas=new Set(refsEquipo().map(r=>barrioCanon(r.zona||'')));
+  const hechas=t=>ACTS.filter(a=>a.hecho&&a.tipo===t&&a.fecha>=e.ini&&a.fecha<=e.fin).length;
+  return [
+    {k:'Referentes activos',real:refsEquipo().filter(r=>capaDe(r)==='activo').length,esp:tramo('referentes'),meta:e.referentes},
+    {k:'Barrios grandes con referente',de:grandes.length,real:grandes.filter(b=>zonas.has(b)).length,esp:tramo('cobertura',grandes.length),meta:Math.round(grandes.length*e.cobertura/100)},
+    {k:'Reuniones sectoriales hechas',real:hechas('reunion_sectorial'),esp:e.reuMes*mesesE(e)*f,meta:Math.round(e.reuMes*mesesE(e))},
+    {k:'Actividades comunitarias hechas',real:hechas('actividad_comunitaria'),esp:e.actMes*mesesE(e)*f,meta:Math.round(e.actMes*mesesE(e))},
+    {k:'Identificados con DNI (acumulado)',real:REG.filter(p=>p.dni).length,esp:tramo('identif',A.necesarios),meta:Math.round(A.necesarios*e.identif/100)},
+    {k:'Fiscales reclutados (acumulado)',real:FISC.length,esp:tramo('fiscales',fisc),meta:Math.round(fisc*e.fiscales/100)}
+  ].map(x=>({...x,ratio:x.esp<0.5?1:x.real/x.esp}));
+}
+function colorInd(x){return x.ratio>=0.9?'verde':x.ratio>=0.6?'amarillo':'rojo';}
+function veredicto(ind){
+  const ej=ind.reduce((s,x)=>s+Math.min(1,x.ratio),0)/ind.length;
+  if(ej>=0.9)return{c:'verde',t:'Verde: objetivos cumplidos',d:'Mantenemos el ritmo o ampliamos con confianza.',ej};
+  if(ej<0.6)return{c:'rojo',t:'Rojo: poca ejecución',d:'Frenamos la expansión y reorganizamos.',ej};
+  return{c:'amarillo',t:'Amarillo: cumplimiento parcial',d:'Corregimos antes de seguir creciendo.',ej};
+}
+function renderPlan(){
+  const P=plan(),E=P.etapas,iHoy=etapaHoy(),hoy=hoyISO(),A=aritmetica();
+  if(ETAPA_VER==null||ETAPA_VER>=E.length)ETAPA_VER=iHoy;
+  const e=E[ETAPA_VER],fut=hoy<e.ini,diasEl=Math.max(0,Math.ceil((dia(P.eleccion)-dia(hoy))/86400000));
+  document.getElementById('planSub').textContent=`Etapa ${iHoy+1} · ${E[iHoy].nombre} · quedan ${Math.max(0,Math.ceil((dia(E[iHoy].fin)-dia(hoy))/86400000))} días de etapa · ${diasEl} días a la elección (fecha de trabajo: ${fFecha(P.eleccion)})`;
+  document.getElementById('planAviso').innerHTML=PLAN_OK?'':'<div class="veredicto v-amarillo" role="alert"><span class="ti ti-database-off" style="font-size:24px"></span><div><b>Falta correr el SQL del Plan en Supabase</b>Se ven las metas del Plan financiero v1, pero no se pueden guardar actividades ni ajustes hasta crear las tablas.</div></div>';
+  // línea de etapas
+  document.getElementById('planEtapas').innerHTML=E.map((x,i)=>{const c=hoy<x.ini?'gris':veredicto(indicadores(i)).c;
+    return `<button class="etapa${i===ETAPA_VER?' ver':''}" aria-pressed="${i===ETAPA_VER}" onclick="ETAPA_VER=${i};renderPlan()">
+      <div class="en"><span class="sem" style="background:${COLV[c]}"></span>Etapa ${i+1}${i===iHoy?' · en curso':''}</div>
+      <div class="et">${esc(x.nombre)}</div><div class="ef">${fFecha(x.ini)} – ${fFecha(x.fin)}</div></button>`;}).join('');
+  // semáforo
+  const ind=indicadores(ETAPA_VER),v=fut?{c:'gris',t:'Etapa por venir',d:'Todavía no empezó: abajo están las metas que va a tener.'}:veredicto(ind);
+  const ico={verde:'circle-check',amarillo:'alert-triangle',rojo:'alert-octagon',gris:'clock'}[v.c];
+  document.getElementById('planVeredicto').innerHTML=`<div class="veredicto v-${v.c}" role="status"><span class="ti ti-${ico}" style="font-size:28px"></span><div><b>${v.t}</b>${v.d}${fut?'':` · Ejecución ${Math.round(v.ej*100)}% de lo esperado · ${Math.round(avance(e)*100)}% de la etapa transcurrido`}</div></div>`;
+  const val=(x,n)=>nro(n);
+  document.getElementById('planInd').innerHTML=ind.map(x=>{const c=fut?'gris':colorInd(x),pct=x.meta?Math.min(100,Math.round(x.real/x.meta*100)):100;
+    return `<tr><td><span class="sem" style="background:${COLV[c]}"></span><b>${x.k}</b>${x.de?` <span style="color:var(--gris);font-size:11px">de ${x.de}</span>`:''}</td>
+      <td><b>${val(x,x.real)}</b></td><td>${fut?'—':val(x,x.esp)}</td><td>${val(x,x.meta)}</td>
+      <td><div class="barra" role="img" aria-label="${pct}% de la meta"><i style="width:${pct}%;background:${COLV[c==='gris'?'verde':c]}"></i></div></td></tr>`;}).join('');
+  // aritmética
+  const conDni=REG.filter(p=>p.dni).length,falta=Math.max(0,A.necesarios-conDni),nec=Math.ceil(falta/Math.max(1,diasEl/7));
+  const desde=new Date(Date.now()-28*86400000).toISOString(),ritmo=Math.round(REG.filter(p=>p.dni&&p.creado_en>=desde).length/4);
+  const nRef=refsEquipo().filter(r=>capaDe(r)==='activo').length;
+  document.getElementById('planArit').innerHTML=[
+    [nro(A.votan),`votan (${P.participacion}% de ${nro(P.padron)})`],[nro(A.objetivo),`votos objetivo (meta ${nro(P.metaVotos)} + ${P.margen}%)`],
+    [nro(A.necesarios),`identificados necesarios (te vota el ${P.cumplimiento}%)`],[nro(conDni),'identificados hoy con DNI'],
+    [nro(nec),'necesarios por semana'],[nro(ritmo),'ritmo real (últimas 4 semanas)']]
+    .map(([n,l],i)=>`<div class="mini"><div class="n"${i===5?` style="color:${ritmo>=nec?'var(--verde-ok)':'var(--rojo)'}"`:''}>${n}</div><div class="l">${l}</div></div>`).join('');
+  document.getElementById('planAritMsg').innerHTML=`<div class="veredicto v-${ritmo>=nec?'verde':'rojo'}" style="margin:0"><div>${ritmo>=nec?'✓ Al ritmo actual se llega a la meta de identificación.':`⚠ Faltan ${nro(falta)} identificados. Hacen falta ${nro(nec)} por semana${nRef?`: unos ${nro(Math.ceil(nec/nRef))} por referente activo`:''}.`}</div></div>`;
+  // embudo
+  const tot=REG.length,cnt={porconv:0,cont:0,prom:0,conf:0};REG.forEach(p=>cnt[cnt[p.estado]!=null?p.estado:'cont']++);
+  document.getElementById('planEmbudo').innerHTML=tot?[['porconv','Por convencer','var(--rojo)'],['cont','Contactado','#8a949a'],['prom','Prometió','var(--amarillo)'],['conf','Confirmado','var(--verde-ok)']]
+    .map(([k,l,c])=>{const p=Math.round(cnt[k]/tot*100);return `<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px"><b>${l}</b><span>${nro(cnt[k])} · ${p}%</span></div><div class="barra"><i style="width:${p}%;background:${c}"></i></div></div>`;}).join('')
+    +`<div style="font-size:12px;color:var(--gris);margin-top:6px">${Math.round((cnt.prom+cnt.conf)/tot*100)}% ya prometió o confirmó. El trabajo de la etapa es mover gente hacia la derecha del embudo, no solo sumar nombres.</div>`
+    :'<div class="empty">Todavía no hay personas cargadas.</div>';
+  // actividades
+  const d0=new Date();d0.setDate(d0.getDate()-((d0.getDay()+6)%7));const lun=d0.toISOString().slice(0,10),eh=E[iHoy];
+  const sem=ACTS.filter(a=>a.hecho&&a.fecha>=lun&&a.fecha<=hoy),cS=t=>sem.filter(a=>a.tipo===t).length;
+  const acts=ACTS.filter(a=>a.fecha>=e.ini&&a.fecha<=e.fin).sort((a,b)=>b.fecha.localeCompare(a.fecha)),hechasE=acts.filter(a=>a.hecho);
+  const nuevos=suma(hechasE,'nuevos'),asis=suma(hechasE,'asistentes'),venc=ACTS.filter(a=>!a.hecho&&a.fecha<hoy).length;
+  const reuS=Math.round(eh.reuMes*12/52),actS=Math.max(1,Math.round(eh.actMes*12/52));
+  document.getElementById('planSemana').innerHTML=[
+    [`${cS('reunion_sectorial')} / ${reuS}`,'reuniones sectoriales esta semana',cS('reunion_sectorial')>=reuS],
+    [`${cS('actividad_comunitaria')} / ${actS}`,'actividades comunitarias esta semana',cS('actividad_comunitaria')>=actS],
+    [cS('mesa_chica')?'✓ Hecha':'Falta','mesa chica de esta semana',cS('mesa_chica')>0],
+    [venc,'vencidas sin marcar como hechas',!venc],
+    [nro(nuevos),'nuevos registros generados en la etapa',null],
+    [nro(asis),'asistentes en la etapa',null]]
+    .map(([n,l,ok])=>`<div class="mini"><div class="n" style="color:${ok==null?'var(--tinta)':ok?'var(--verde-ok)':'var(--rojo)'}">${n}</div><div class="l">${l}</div></div>`).join('');
+  document.getElementById('planActs').innerHTML=acts.length?acts.map(a=>`<tr>
+    <td>${fFecha(a.fecha)}</td><td style="font-size:12px">${TIPOS_ACT[a.tipo]||esc(a.tipo)}</td><td><b>${esc(a.titulo)}</b>${a.responsable?`<div style="font-size:11px;color:var(--gris)">${esc(a.responsable)}</div>`:''}</td>
+    <td>${esc([a.barrio,a.sector].filter(Boolean).join(' · ')||'—')}</td><td>${a.asistentes??'—'}</td><td>${a.nuevos??'—'}</td>
+    <td><input type="checkbox" aria-label="Marcar como hecha" ${a.hecho?'checked':''} onchange="marcarAct('${a.id}',this.checked)"></td>
+    <td><button class="icobtn" aria-label="Editar actividad" onclick="abrirAct('${a.id}')">✏️</button></td></tr>`).join('')
+    :'<tr><td colspan="9" class="empty">No hay actividades cargadas en esta etapa. Cargá reuniones, mesas chicas y actividades con "+ Actividad".</td></tr>';
+}
+/* --- formularios --- */
+function campo(id,lab,tipo,val,extra){return `<div class="f"><label for="${id}">${lab}</label><input id="${id}" type="${tipo||'number'}" ${tipo?'':'min="0" step="any" inputmode="decimal"'} value="${esc(val)}" ${extra||''}></div>`;}
+function numCampo(id,entero){const v=document.getElementById(id).value.trim();if(v==='')return null;const n=Number(v);return Number.isFinite(n)&&n>=0&&(!entero||Number.isInteger(n))?n:NaN;}
+const fechaOk=s=>/^\d{4}-\d{2}-\d{2}$/.test(s)&&!isNaN(dia(s));
+async function guardarFila(tabla,arr,id,obj){
+  if(id){if(!await upd(tabla,id,obj))return;Object.assign(arr.find(x=>x.id===id),obj);}
+  else{const {data,error}=await sb.from(tabla).insert(obj).select().single();
+    if(error){toast(/does not exist|schema cache/i.test(error.message)?'Falta correr el SQL del Plan en Supabase.':'Error: '+error.message);return;}arr.push(data);}
+  toast('Guardado ✓',true);cerrarDrawer();renderTodo();
+}
+async function borrarFila(tabla,arr,id,pregunta){
+  if(!confirm(pregunta))return;const {error}=await sb.from(tabla).delete().eq('id',id);
+  if(error){toast('Error: '+error.message);return;}arr.splice(arr.findIndex(x=>x.id===id),1);toast('Borrado ✓',true);cerrarDrawer();renderTodo();
+}
+function pieForm(id,guardar,borrar){return (id?`<button class="btn" aria-label="Borrar" onclick="${borrar}">🗑</button>`:`<button class="btn" onclick="cerrarDrawer()">Cancelar</button>`)+`<button class="btn verde" style="flex:1;justify-content:center" onclick="${guardar}">Guardar</button>`;}
+function abrirAct(id){
+  const a=id?ACTS.find(x=>x.id===id):{fecha:hoyISO(),tipo:'reunion_sectorial'};
+  const sect=[...new Set(ACTS.map(x=>x.sector).filter(Boolean))].sort();
+  abrirDrawer(id?'Editar actividad':'Nueva actividad',zonasDatalist()+`<datalist id="plSect">${sect.map(s=>`<option value="${esc(s)}">`).join('')}</datalist>
+    <div class="frow">${campo('aFecha','Fecha','date',a.fecha,'required')}
+    <div class="f"><label for="aTipo">Tipo</label><select id="aTipo">${Object.entries(TIPOS_ACT).map(([k,v])=>`<option value="${k}"${a.tipo===k?' selected':''}>${v}</option>`).join('')}</select></div></div>
+    ${campo('aTitulo','Qué se hace','text',a.titulo,'required placeholder="Ej: Mateada con vecinos de Villa Alta"')}
+    <div class="frow">${campo('aBarrio','Barrio','text',a.barrio,'list="eqZonas"')}${campo('aSector','Sector','text',a.sector,'list="plSect" placeholder="Iglesia, club, comerciantes…"')}</div>
+    ${campo('aResp','Responsable','text',a.responsable)}
+    <label class="chk"><input type="checkbox" id="aHecho"${a.hecho?' checked':''}> Ya se hizo</label>
+    <div style="font-size:12px;color:var(--gris);margin:4px 0 10px">Resultado: completalo cuando se hizo. Con esto se mide qué actividades suman más gente.</div>
+    <div class="frow">${campo('aAsis','Asistentes','',a.asistentes)}${campo('aNuevos','Nuevos con DNI','',a.nuevos)}</div>
+    <div class="f"><label for="aNotas">Acuerdos y tareas</label><textarea id="aNotas" rows="3" placeholder="Qué se acordó, quién lo hace y para cuándo">${esc(a.notas)}</textarea></div>`,
+    pieForm(id,`guardarAct(${id?`'${id}'`:'null'})`,`borrarFila('actividades',ACTS,'${id}','¿Borrar esta actividad?')`));
+}
+function guardarAct(id){
+  const g=k=>document.getElementById(k).value.trim();
+  const nums={asistentes:numCampo('aAsis',true),nuevos:numCampo('aNuevos',true)};
+  if(Object.values(nums).some(Number.isNaN)){toast('Asistentes y nuevos tienen que ser números enteros.');return;}
+  const obj={fecha:g('aFecha'),tipo:g('aTipo'),titulo:g('aTitulo'),barrio:g('aBarrio')||null,sector:g('aSector')||null,responsable:g('aResp')||null,
+    hecho:document.getElementById('aHecho').checked,notas:g('aNotas')||null,...nums};
+  if(!fechaOk(obj.fecha)){toast('Poné una fecha válida');return;}
+  if(!obj.titulo){toast('Escribí qué se hace');return;}
+  if(!TIPOS_ACT[obj.tipo]){toast('Elegí el tipo');return;}
+  guardarFila('actividades',ACTS,id,obj);
+}
+async function marcarAct(id,val){if(await upd('actividades',id,{hecho:val})){ACTS.find(x=>x.id===id).hecho=val;renderPlan();}}
+const PL_GLOB=[['eleccion','Fecha de elección (de trabajo)','date'],['padron','Electores en el padrón'],['participacion','Participación esperada (%)'],['metaVotos','Votos para ganar'],['margen','Margen de seguridad (%)'],['cumplimiento','De los identificados, % que te vota'],['mesas','Mesas a fiscalizar'],['fiscalesMesa','Fiscales por mesa']];
+const PL_ET=[['nombre','Nombre','text'],['ini','Desde','date'],['fin','Hasta','date'],['referentes','Referentes activos al cierre'],['cobertura','Barrios grandes cubiertos (%)'],['reuMes','Reuniones sectoriales por mes'],['actMes','Actividades comunitarias por mes'],['identif','Identificados acumulados (% del total)'],['fiscales','Fiscales reclutados (% del total)']];
+const PL_PCT=new Set(['participacion','cumplimiento','cobertura','identif','fiscales']);
+function abrirPlan(){
+  const P=plan();
+  abrirDrawer('Ajustar plan',`<div style="margin-bottom:14px;padding:10px;background:var(--arena);border-radius:10px;font-size:12px;color:var(--gris)">Los valores iniciales salen del Plan v1 (referentes, reuniones y actividades). Las metas de votos, identificación, cobertura y fiscales son supuestos de trabajo: ajustalos.</div>`
+    +PL_GLOB.map(([k,l,t])=>campo('pl_'+k,l,t,P[k])).join('')
+    +P.etapas.map((e,i)=>`<h4 style="margin:18px 0 10px;color:var(--selva)">Etapa ${i+1}</h4>`+PL_ET.map(([k,l,t])=>campo(`pl_${i}_${k}`,l,t,e[k])).join('')).join(''),
+    `<button class="btn" onclick="guardarPlan(true)">Volver al plan v1</button><button class="btn verde" style="flex:1;justify-content:center" onclick="guardarPlan(false)">Guardar plan</button>`);
+}
+function leerCampo(id,k,l,t){
+  const x=document.getElementById(id).value.trim();
+  if(t==='text'){if(!x)throw l;return x;}
+  if(t==='date'){if(!fechaOk(x))throw l;return x;}
+  const n=Number(x);if(x===''||!Number.isFinite(n)||n<0||(PL_PCT.has(k)&&n>100)||(k==='cumplimiento'&&n===0))throw l;return n;
+}
+async function guardarPlan(reset){
+  let datos;
+  try{
+    if(reset){if(!confirm('¿Volver a los valores del Plan financiero v1?'))return;datos=PLAN_BASE;}
+    else{datos={etapas:[]};PL_GLOB.forEach(([k,l,t])=>datos[k]=leerCampo('pl_'+k,k,l,t));
+      plan().etapas.forEach((_,i)=>{const e={};PL_ET.forEach(([k,l,t])=>e[k]=leerCampo(`pl_${i}_${k}`,k,`${l} (etapa ${i+1})`,t));
+        if(e.ini>e.fin)throw `fechas de la etapa ${i+1}`;datos.etapas.push(e);});}
+  }catch(c){toast('Revisá: '+c);return;}
+  const {error}=await sb.from('plan_config').upsert({id:1,datos,actualizado:new Date().toISOString()});
+  if(error){toast(/does not exist|schema cache/i.test(error.message)?'Falta correr el SQL del Plan en Supabase.':'Error: '+error.message);return;}
+  PLAN=datos;toast('Plan guardado ✓',true);cerrarDrawer();renderTodo();
+}
+// navegación del menú también con teclado
+document.querySelectorAll('.nav-item').forEach(n=>{n.tabIndex=0;n.setAttribute('role','button');n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();n.click();}});});
 
 /* ===== RESUMEN ===== */
 function renderResumen(){
@@ -1020,7 +1234,7 @@ function iniciarMapaCmd(){
   if(!document.getElementById('mapaCmd'))return;
   if(!_mapC){
     _mapC=L.map('mapaCmd').setView([-25.599,-54.573],13);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(_mapC);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(_mapC);
   }
   setTimeout(()=>_mapC.invalidateSize(),150);
   actualizarMapaCmd(false);

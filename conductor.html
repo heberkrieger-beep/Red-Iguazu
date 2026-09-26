@@ -138,7 +138,7 @@ function renderMapaCond(){
   box.style.display='block';
   if(!_mapCond){
     _mapCond=L.map('mapaCond',{zoomControl:false}).setView([-25.599,-54.573],13);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(_mapCond);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(_mapCond);
     L.control.zoom({position:'bottomright'}).addTo(_mapCond);
   }
   setTimeout(()=>_mapCond.invalidateSize(),120);
