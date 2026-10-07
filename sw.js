@@ -1,7 +1,7 @@
-// Red Iguazú — Service Worker v49
+// Red Iguazú — Service Worker v50
 // Sube el número de versión en cada cambio de la app para que los celulares
 // agarren la versión nueva y no queden con caché viejo.
-const CACHE = 'red-iguazu-v49';
+const CACHE = 'red-iguazu-v50';
 
 // Archivos del ecosistema que se guardan para que la app abra sin conexión.
 const ARCHIVOS = [
@@ -39,6 +39,9 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // Solo guardamos los archivos de la app. NUNCA respuestas de la base (datos de votantes)
+  // ni mapas: así no quedan datos personales en el celular ni se llena la memoria.
+  if (new URL(req.url).origin !== self.location.origin) return;
   e.respondWith(
     fetch(req)
       .then(resp => {
