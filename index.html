@@ -333,7 +333,7 @@ async function fetchLimpio(u,o){
 
 <div id="app">
   <div class="topbar">
-    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v50</span></div></div>
+    <div class="brand"><div class="brand-dot">R</div><div class="brand-name">Red Iguazú <span style="font-size:9px;opacity:.5;font-weight:400">v52</span></div></div>
     <div class="whoami">
       <span class="role" id="roleTag">Referente</span>
       <span class="hide-sm" id="userName">—</span>
@@ -441,6 +441,28 @@ async function fetchLimpio(u,o){
   </div>
 
   <!-- AGENDA -->
+  <div class="view" id="view-reclamos">
+    <div class="view-head"><h2>Reclamos del barrio</h2><p>Anotá lo que te piden los vecinos. Queda el mapa de los problemas reales de Iguazú y la lista para volver con respuesta.</p></div>
+    <style>#rcCats label:has(input:checked){border-color:var(--selva);background:#eef4f1;color:var(--selva)}</style>
+    <div class="form-card" style="margin-bottom:22px">
+      <fieldset style="border:0;padding:0;margin:0 0 14px"><legend style="font-size:13px;font-weight:700;margin-bottom:8px">¿Qué problema es? <span class="req">*</span></legend>
+        <div id="rcCats" style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px"></div></fieldset>
+      <div class="form-field full"><label for="rcDesc">Contanos el reclamo <span class="req">*</span></label>
+        <textarea id="rcDesc" rows="3" maxlength="1000" placeholder="Ej: la calle se inunda cuando llueve y no pasa el colectivo"></textarea></div>
+      <div class="form-field full"><label for="rcBarrio">Barrio <span class="req">*</span></label>
+        <input id="rcBarrio" list="barriosList" maxlength="80" autocomplete="off"></div>
+      <div class="form-field full"><label for="rcBusca">Vecino que lo pidió <span class="opt">(opcional, para avisarle cuando se resuelva)</span></label>
+        <input id="rcBusca" placeholder="🔍 Buscalo en tus contactos..." autocomplete="off" oninput="rcBuscar()">
+        <div id="rcRes" style="display:none;max-height:170px;overflow:auto;border:1px solid var(--linea);border-radius:10px;background:var(--blanco);margin-top:6px"></div>
+        <input type="hidden" id="rcContacto">
+        <div id="rcSel" style="display:none;font-size:13px;margin-top:6px;padding:8px 11px;background:#eef4f1;border-radius:9px;color:var(--selva)"></div></div>
+      <button type="button" id="rcGpsBtn" class="filtro-btn" onclick="rcUbicacion()" style="margin-bottom:14px">📍 Marcar el lugar exacto (opcional)</button>
+      <button type="button" id="rcGuardar" class="btn-add" onclick="guardarReclamo()">Guardar reclamo</button>
+    </div>
+    <div id="rcFiltros" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px"></div>
+    <div id="rcLista"></div>
+  </div>
+
   <div class="view" id="view-agenda">
     <div class="view-head"><h2>Agenda</h2><p>Tu calendario de reuniones. Los referentes reservan turno para reunirse con vos. Lunes a sábado.</p></div>
     <div id="calWrap" style="display:none;margin-bottom:20px">
@@ -722,6 +744,7 @@ function iniciarSesion(){
   cargarEventosDB();    // traer la agenda
   cargarBarriosDB();    // traer los barrios
   cargarFiscalesDB();   // traer los fiscales de mesa
+  cargarReclamosDB();   // traer los reclamos de vecinos
 }
 
 /* ============ CAPA DE BASE DE DATOS — REGISTROS ============ */
@@ -1084,9 +1107,102 @@ function toast(msg, ok){
   t.textContent=msg; t.style.display='block';
   clearTimeout(window._toastT); window._toastT=setTimeout(()=>{t.style.display='none'},3500);
 }
+/* ============ RECLAMOS DE VECINOS ============ */
+const RC_CATS=[['calles','🛣','Calles'],['luz','💡','Luz'],['agua','💧','Agua / cloacas'],['basura','🗑','Basura'],['seguridad','🚓','Seguridad'],['salud','🏥','Salud'],['verde','🌳','Plazas / verde'],['otro','📝','Otro']];
+const RC_EST={pendiente:['Pendiente','var(--rojo)'],gestion:['En gestión','var(--amarillo)'],resuelto:['Resuelto','var(--verde-ok)']};
+let RECLAMOS=[],rcFiltro='abiertos',rcGeo=null;
+async function cargarReclamosDB(){
+  if(!sb)return;
+  try{const {data,error}=await sb.from('reclamos').select('*').order('creado_en',{ascending:false});if(error)throw error;RECLAMOS=data||[];renderReclamos();}
+  catch(e){console.error('cargar reclamos:',e);}
+}
+function rcCat(id){return RC_CATS.find(c=>c[0]===id)||RC_CATS[RC_CATS.length-1];}
+function renderReclamos(){
+  const cats=document.getElementById('rcCats');if(!cats||!current)return;
+  if(!cats.children.length)cats.innerHTML=RC_CATS.map(c=>`<label style="display:flex;align-items:center;gap:8px;padding:12px;border:1.5px solid var(--linea);border-radius:11px;cursor:pointer;font-weight:700;font-size:13.5px"><input type="radio" name="rcCat" value="${c[0]}" style="accent-color:var(--selva)"> ${c[1]} ${c[2]}</label>`).join('');
+  const esCoord=current.role==='admin'||current.coord;
+  const mios=RECLAMOS.filter(r=>esCoord||r.creado_por===current.id);
+  const n={abiertos:mios.filter(r=>r.estado!=='resuelto').length,resuelto:mios.filter(r=>r.estado==='resuelto').length,todos:mios.length};
+  document.getElementById('rcFiltros').innerHTML=[['abiertos','Abiertos'],['resuelto','Resueltos'],['todos','Todos']].map(([k,l])=>`<button type="button" class="filtro-btn${rcFiltro===k?' active':''}" onclick="rcFiltro='${k}';renderReclamos()">${l} (${n[k]})</button>`).join('');
+  const lista=mios.filter(r=>rcFiltro==='todos'||(rcFiltro==='resuelto')===(r.estado==='resuelto'));
+  const cont=document.getElementById('rcLista');
+  if(!lista.length){cont.innerHTML='<div style="text-align:center;color:var(--gris);font-size:13px;padding:18px">'+(mios.length?'No hay reclamos en esta lista.':'Todavía no hay reclamos. Cuando un vecino te cuente un problema, anotalo arriba.')+'</div>';return;}
+  cont.innerHTML=lista.map(r=>{
+    const c=rcCat(r.categoria),e=RC_EST[r.estado]||RC_EST.pendiente,d=new Date(r.creado_en);
+    const vec=r.contacto_id?REGISTROS.find(p=>p.id===r.contacto_id):null,wl=vec&&vec.tel?waLink(vec.tel):null;
+    const msg='Hola '+(vec?vec.nombre:'')+'! Te escribo por el reclamo que nos contaste ('+c[2].toLowerCase()+', '+(r.barrio||'tu barrio')+'). '+(r.estado==='resuelto'?'¡Ya quedó resuelto! Gracias por avisarnos 🙌':'Lo estamos siguiendo, te vamos contando.');
+    const puede=esCoord||r.creado_por===current.id;
+    return `<div class="form-card" style="margin-bottom:10px;padding:14px;border-left:4px solid ${e[1]}">
+      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="font-weight:800;font-size:14.5px">${c[1]} ${c[2]} · ${r.barrio||'—'}</div><span style="font-size:11px;font-weight:800;color:${e[1]};white-space:nowrap">${e[0]}</span></div>
+      <div style="font-size:13.5px;margin:6px 0 8px">${r.descripcion}</div>
+      <div style="font-size:11.5px;color:var(--gris)">${d.getDate()}/${d.getMonth()+1} · cargó ${r.creado_por_nom||'—'}${r.contacto_nom?' · vecino: <b>'+r.contacto_nom+'</b>':''}${r.lat?' · 📍 con ubicación':''}</div>
+      ${puede?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center">
+        ${esCoord?`<select aria-label="Estado del reclamo" onchange="estadoReclamo('${r.id}',this.value)" style="padding:7px 10px;border-radius:20px;border:1.5px solid var(--linea);font-size:12.5px;font-weight:700">${Object.entries(RC_EST).map(([k,v])=>`<option value="${k}" ${r.estado===k?'selected':''}>${v[0]}</option>`).join('')}</select>`:''}
+        ${wl?`<a class="filtro-btn" style="text-decoration:none" target="_blank" rel="noopener" href="${wl}?text=${encodeURIComponent(msg)}">💬 Avisarle</a>`:''}
+        <button type="button" class="filtro-btn" aria-label="Borrar reclamo" onclick="borrarReclamo('${r.id}')">🗑</button></div>`:''}
+    </div>`;
+  }).join('');
+}
+function rcBuscar(){
+  const q=(document.getElementById('rcBusca').value||'').toLowerCase().trim(),box=document.getElementById('rcRes');
+  if(q.length<2){box.style.display='none';return;}
+  const esCoord=current.role==='admin'||current.coord;
+  const res=REGISTROS.filter(p=>(p.tipo==='persona'||p.tipo==='conf')&&(esCoord||p.ref===current.id)&&((p.nombre||'')+' '+(p.apellido||'')+' '+(p.dni||'')).toLowerCase().includes(q)).slice(0,8);
+  box.style.display='block';
+  box.innerHTML=res.length?res.map(p=>`<button type="button" onclick="rcElegir('${p.id}')" style="display:block;width:100%;text-align:left;padding:10px 12px;border-bottom:1px solid var(--arena-2);font-size:13.5px;background:none"><b>${p.nombre} ${p.apellido}</b> <span style="color:var(--gris)">${p.barrio||''}</span></button>`).join(''):'<div style="padding:10px;font-size:12.5px;color:var(--gris)">No aparece. Podés guardar el reclamo igual, sin vecino.</div>';
+}
+function rcElegir(id){
+  const p=REGISTROS.find(x=>x.id===id);if(!p)return;
+  const sel=document.getElementById('rcSel');
+  document.getElementById('rcContacto').value=id;document.getElementById('rcBusca').value='';document.getElementById('rcRes').style.display='none';
+  sel.dataset.nom=p.nombre+' '+p.apellido;sel.style.display='block';
+  sel.innerHTML=`✔ <b>${p.nombre} ${p.apellido}</b> <button type="button" onclick="rcQuitar()" style="color:var(--rojo);background:none;margin-left:8px">✕ quitar</button>`;
+  const b=document.getElementById('rcBarrio');if(!b.value.trim()&&p.barrio)b.value=p.barrio;
+}
+function rcQuitar(){document.getElementById('rcContacto').value='';const s=document.getElementById('rcSel');s.style.display='none';s.dataset.nom='';}
+function rcUbicacion(){
+  const b=document.getElementById('rcGpsBtn');
+  if(!navigator.geolocation){alert('Este celular no permite tomar la ubicación.');return;}
+  b.textContent='📍 Buscando ubicación...';
+  navigator.geolocation.getCurrentPosition(pos=>{rcGeo={lat:pos.coords.latitude,lng:pos.coords.longitude};b.textContent='✔ Ubicación marcada';},
+    ()=>{rcGeo=null;b.textContent='📍 Marcar el lugar exacto (opcional)';alert('No se pudo leer la ubicación. Fijate que el GPS esté prendido. Podés guardar igual.');},{enableHighAccuracy:true,timeout:15000});
+}
+async function guardarReclamo(){
+  const cat=(document.querySelector('input[name=rcCat]:checked')||{}).value;
+  const desc=document.getElementById('rcDesc').value.trim(),barrio=document.getElementById('rcBarrio').value.trim();
+  if(!cat){alert('Elegí qué tipo de problema es.');return;}
+  if(desc.length<5){alert('Contá el reclamo con un poco más de detalle.');document.getElementById('rcDesc').focus();return;}
+  if(!barrio){alert('Poné el barrio.');document.getElementById('rcBarrio').focus();return;}
+  if(!sb){alert('Sin conexión con la base.');return;}
+  const cid=document.getElementById('rcContacto').value||null,btn=document.getElementById('rcGuardar');
+  btn.disabled=true;btn.textContent='Guardando...';
+  const {data,error}=await sb.from('reclamos').insert({categoria:cat,descripcion:desc.slice(0,1000),barrio:barrio.slice(0,80),contacto_id:cid,
+    contacto_nom:cid?(document.getElementById('rcSel').dataset.nom||null):null,lat:rcGeo?rcGeo.lat:null,lng:rcGeo?rcGeo.lng:null,
+    creado_por:current.id,creado_por_nom:current.nombre}).select().single();
+  btn.disabled=false;btn.textContent='Guardar reclamo';
+  if(error){toast('No se pudo guardar: '+error.message);return;}
+  RECLAMOS.unshift(data);
+  document.getElementById('rcDesc').value='';document.getElementById('rcBarrio').value='';rcQuitar();rcGeo=null;
+  document.getElementById('rcGpsBtn').textContent='📍 Marcar el lugar exacto (opcional)';
+  document.querySelectorAll('input[name=rcCat]').forEach(x=>x.checked=false);
+  rcFiltro='abiertos';renderReclamos();toast('Reclamo guardado ✓',true);
+}
+async function estadoReclamo(id,estado){
+  const r=RECLAMOS.find(x=>x.id===id);if(!r)return;
+  const upd={estado,resuelto_en:estado==='resuelto'?new Date().toISOString():null};
+  const {error}=await sb.from('reclamos').update(upd).eq('id',id);
+  if(error){toast('Error: '+error.message);renderReclamos();return;}
+  Object.assign(r,upd);renderReclamos();toast(estado==='resuelto'?'¡Resuelto! Avisale al vecino 💬':'Estado actualizado',true);
+}
+async function borrarReclamo(id){
+  if(!confirm('¿Borrar este reclamo? No se puede deshacer.'))return;
+  const {error}=await sb.from('reclamos').delete().eq('id',id);
+  if(error){toast('Error: '+error.message);return;}
+  RECLAMOS=RECLAMOS.filter(x=>x.id!==id);renderReclamos();toast('Reclamo borrado',true);
+}
 function renderAll(){
   // cada dibujado va protegido: si uno falla, los demás siguen andando
-  const partes=[renderDash,renderRecent,renderTree,renderAgenda,renderMapa,renderReferentes,renderFiscales,refreshUserSelect,refreshBarrios,renderLista,renderDiaD];
+  const partes=[renderDash,renderRecent,renderTree,renderAgenda,renderMapa,renderReferentes,renderFiscales,refreshUserSelect,refreshBarrios,renderLista,renderDiaD,renderReclamos];
   partes.forEach(fn=>{try{fn();}catch(e){console.error('Error en '+fn.name+':',e);}});
 }
 function logout(){current=null;document.getElementById('app').style.display='none';document.getElementById('login').style.display='flex';}
@@ -1334,8 +1450,8 @@ function buildTabs(){
   const esCoord = current.role==='admin'||current.coord;
   // [id, label corto, ícono tabler]
   const all = esCoord
-    ? [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Lista','ti-list'],['piramide','Pirámide','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Elección','ti-car'],['mapa','Mapa','ti-map-2'],['referentes','Referentes','ti-users']]
-    : [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Mi lista','ti-list'],['piramide','Mi red','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['diad','Elección','ti-car']];
+    ? [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Lista','ti-list'],['piramide','Pirámide','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['reclamos','Reclamos','ti-message-report'],['diad','Elección','ti-car'],['mapa','Mapa','ti-map-2'],['referentes','Referentes','ti-users']]
+    : [['dash','Inicio','ti-home'],['cargar','Cargar','ti-user-plus'],['lista','Mi lista','ti-list'],['piramide','Mi red','ti-binary-tree'],['agenda','Agenda','ti-calendar'],['reclamos','Reclamos','ti-message-report'],['diad','Elección','ti-car']];
   window._tabs=all;
   // barra superior (desktop): todas las pestañas
   const c=document.getElementById('tabs');c.innerHTML='';

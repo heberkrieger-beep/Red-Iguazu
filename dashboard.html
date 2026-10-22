@@ -157,6 +157,101 @@ async function fetchLimpio(u,o){
   .zoomctl button{width:36px;height:36px;border-radius:9px;background:#fff;border:1px solid var(--linea);font-size:18px;font-weight:700;color:var(--selva);box-shadow:var(--sombra)}
   .zoomctl button:focus-visible{outline:2px solid var(--tierra-claro);outline-offset:2px}
   @media(max-width:900px){.etapas,.subgrid{grid-template-columns:1fr 1fr}}
+
+  /* ======================================================================
+     VERSIÓN CELULAR (hasta 700px): menú abajo, tarjetas, todo a un dedo.
+     En PC no cambia nada.
+     ====================================================================== */
+  #botnav,#masSheet{display:none}
+  @media(max-width:700px){
+    body{font-size:15px}
+    .side{display:none}
+    .main{margin-left:0;max-width:100%;padding:14px 12px calc(92px + env(safe-area-inset-bottom))}
+    /* menú inferior */
+    #botnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;background:var(--blanco);border-top:1px solid var(--linea);
+      box-shadow:0 -4px 16px rgba(15,61,46,.08);padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+    #botnav button{flex:1;background:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;
+      font-size:11px;font-weight:700;color:var(--gris);border-radius:10px;min-height:52px}
+    #botnav button .ti{font-size:23px}
+    #botnav button.on{color:var(--tierra)}
+    #botnav button:focus-visible{outline:2px solid var(--tierra-claro)}
+    #masSheet.open{display:flex;position:fixed;inset:0;z-index:70;background:rgba(15,42,35,.45);align-items:flex-end}
+    #masSheet .hoja{background:var(--blanco);width:100%;border-radius:20px 20px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom));max-height:85vh;overflow:auto}
+    #masSheet .tir{width:40px;height:4px;background:var(--linea);border-radius:3px;margin:0 auto 14px}
+    #masSheet .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+    #masSheet .grid button{background:var(--arena);border-radius:13px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;
+      font-size:12.5px;font-weight:700;color:var(--tinta);min-height:78px}
+    #masSheet .grid button .ti{font-size:24px;color:var(--selva)}
+    #masSheet .grid button.on{background:var(--selva);color:#fff}
+    #masSheet .grid button.on .ti{color:#fff}
+    #masSheet .salir{width:100%;margin-top:12px;padding:13px;border-radius:12px;background:var(--arena-2);font-weight:700;color:var(--rojo)}
+    /* encabezado de cada sección */
+    .page-h{margin-bottom:14px;gap:10px}
+    .page-h h1{font-size:20px}
+    .hbtns{width:100%}
+    .hbtns .btn{flex:1;justify-content:center;padding:11px 10px}
+    .btn{min-height:44px}
+    /* números y paneles */
+    .kpis{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+    .kpi{padding:13px}
+    .kpi .n{font-size:25px}
+    .kpi.hero{grid-column:1/-1}
+    .panel{padding:15px 13px;border-radius:13px;margin-bottom:12px}
+    .grid2{grid-template-columns:1fr;gap:12px}
+    .chart-box{height:220px}
+    .subgrid,.etapas{grid-template-columns:1fr 1fr;gap:9px}
+    /* tablas comunes: se deslizan de costado en vez de romper la pantalla */
+    .panel{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .panel table:not(#tPersonas){min-width:540px}
+    th,td{padding:10px 8px}
+    .icobtn{width:40px;height:40px;font-size:17px}
+    /* filtros de Personas */
+    .toolbar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .toolbar .busca{grid-column:1/-1;min-width:0}
+    .toolbar input,.toolbar select{font-size:16px;padding:11px 10px;width:100%;min-width:0}
+    /* Personas como tarjetas */
+    #tPersonas thead{display:none}
+    #tPersonas,#tPersonas tbody{display:block}
+    #tPersonas tr{display:grid;grid-template-columns:30px 1fr auto;grid-template-areas:
+      "chk nom est" "chk dat dat" "chk bar bar" "chk vis vis" "chk ref ref" "chk acc acc";
+      column-gap:8px;row-gap:3px;padding:13px 12px;border-bottom:1px solid var(--linea)}
+    #tPersonas tr:hover td{background:none}
+    #tPersonas td{display:block;padding:0;border:0;font-size:13px;color:var(--gris);min-width:0}
+    #tPersonas td:nth-child(1){grid-area:chk;padding-top:2px}
+    #tPersonas td:nth-child(1) input{width:20px;height:20px}
+    #tPersonas td:nth-child(2){grid-area:nom;font-size:15px;color:var(--tinta);line-height:1.3}
+    #tPersonas td:nth-child(3){grid-area:dat;display:inline}
+    #tPersonas td:nth-child(3)::before{content:'DNI '}
+    #tPersonas td:nth-child(4){grid-area:dat;justify-self:end}
+    #tPersonas td:nth-child(4)::before{content:'📞 '}
+    #tPersonas td:nth-child(5){grid-area:bar}
+    #tPersonas td:nth-child(5)::before{content:'📍 '}
+    #tPersonas td:nth-child(6){grid-area:bar;justify-self:end}
+    #tPersonas td:nth-child(6)::before{content:'Mesa '}
+    #tPersonas td:nth-child(7){grid-area:est}
+    #tPersonas td:nth-child(8){grid-area:vis}
+    #tPersonas td:nth-child(8)::before{content:'Última visita: '}
+    #tPersonas td:nth-child(9){grid-area:ref}
+    #tPersonas td:nth-child(9)::before{content:'Referente: '}
+    #tPersonas td:nth-child(10){grid-area:acc;display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+    #tPersonas .mini-sel{font-size:13px;padding:7px 6px;max-width:132px}
+    #v-personas .panel{max-height:none;overflow:visible}
+    .pager{justify-content:space-between;flex-wrap:wrap}
+    .pager span{width:100%;text-align:center}
+    .pager button{flex:1;padding:11px}
+    .bulkbar{position:fixed;left:8px;right:8px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:55;margin:0;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+    .bulkbar select{flex:1;min-width:120px;font-size:15px;padding:9px}
+    /* ficha lateral → pantalla completa */
+    .drawer{width:100vw;max-width:100vw;right:-100vw}
+    .drawer .df{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+    .drawer .df .btn{min-height:48px}
+    .f input,.f select,.f textarea{font-size:16px;padding:13px 12px}
+    .frow{grid-template-columns:1fr}
+    /* mapas más bajos para no quedar "atrapado" al deslizar */
+    #mapaCmd,#mapaEquipo,#mapaRc{height:58vh !important;min-height:300px}
+    .autos-grid{grid-template-columns:1fr;gap:10px}
+    .toast{bottom:calc(84px + env(safe-area-inset-bottom));width:calc(100% - 24px);text-align:center}
+  }
 </style>
 </head>
 <body>
@@ -178,7 +273,7 @@ async function fetchLimpio(u,o){
 
 <div class="layout" id="app" style="display:none">
   <div class="side">
-    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v49</span></div></div></div>
+    <div class="brand"><div class="dot">R</div><div><div class="bn">Red Iguazú</div><div class="bs">Centro de comando <span style="font-size:9px;opacity:.5">v52</span></div></div></div>
     <div class="nav-item active" data-v="resumen" onclick="irA('resumen')"><span class="ti ti-layout-dashboard"></span><span>Resumen</span></div>
     <div class="nav-item" data-v="plan" onclick="irA('plan')"><span class="ti ti-flag"></span><span>Plan de campaña</span></div>
     <div class="nav-item" data-v="estrategia" onclick="irA('estrategia')"><span class="ti ti-target-arrow"></span><span>Estrategia</span></div>
@@ -188,9 +283,14 @@ async function fetchLimpio(u,o){
     <div class="nav-item" data-v="moviles" onclick="irA('moviles')"><span class="ti ti-car"></span><span>Móviles</span></div>
     <div class="nav-item" data-v="fisca" onclick="irA('fisca')"><span class="ti ti-shield"></span><span>Fiscalización</span></div>
     <div class="nav-item" data-v="agenda" onclick="irA('agenda')"><span class="ti ti-calendar"></span><span>Mi agenda</span></div>
+    <div class="nav-item" data-v="reclamos" onclick="irA('reclamos')"><span class="ti ti-message-report"></span><span>Reclamos</span></div>
     <div class="nav-item" data-v="analisis" onclick="irA('analisis')"><span class="ti ti-chart-line"></span><span>Análisis</span></div>
     <div class="foot"><button onclick="salirDash()"><span class="ti ti-logout"></span> Salir</button></div>
   </div>
+  <nav id="botnav" aria-label="Secciones"></nav>
+  <div id="masSheet" onclick="if(event.target===this)cerrarMas()"><div class="hoja" role="dialog" aria-label="Todas las secciones">
+    <div class="tir"></div><div class="grid" id="masGrid"></div>
+    <button class="salir" onclick="salirDash()"><span class="ti ti-logout"></span> Salir</button></div></div>
 
   <div class="main">
     <div id="loading" class="loading"><div class="spinner"></div>Cargando datos de la campaña...</div>
@@ -384,6 +484,25 @@ async function fetchLimpio(u,o){
       <div class="panel"><h2><span class="ti ti-list-check"></span> Próximas visitas</h2><div id="agLista"></div></div>
     </div>
 
+    <div id="v-reclamos" style="display:none">
+      <div class="page-h"><div><h1>Reclamos de vecinos</h1><div class="sub">Lo que piden los vecinos en la calle: insumo para tus propuestas y la lista para volver con respuesta.</div></div>
+        <div class="hbtns"><button class="btn" onclick="cargarTodo()"><span class="ti ti-refresh"></span> Actualizar</button></div></div>
+      <div class="kpis" id="rcKpis"></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
+        <div class="panel"><h2><span class="ti ti-category"></span> Qué reclaman</h2><div id="rcCatBars"></div></div>
+        <div class="panel"><h2><span class="ti ti-map-pin"></span> Dónde reclaman más</h2><div id="rcBarBars"></div></div>
+      </div>
+      <div class="panel"><h2><span class="ti ti-map-2"></span> Mapa de reclamos <span style="font-size:11.5px;color:var(--gris);font-weight:400">— solo los que marcaron ubicación; respeta los filtros de abajo</span></h2>
+        <div id="mapaRc" style="height:460px;border-radius:12px;border:1px solid var(--linea)"></div></div>
+      <div class="panel"><h2><span class="ti ti-list"></span> Listado</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <select id="rcFEst" aria-label="Filtrar por estado" onchange="renderReclamosD()"><option value="abiertos">Abiertos</option><option value="pendiente">Pendientes</option><option value="gestion">En gestión</option><option value="resuelto">Resueltos</option><option value="">Todos</option></select>
+          <select id="rcFCat" aria-label="Filtrar por tipo" onchange="renderReclamosD()"></select>
+          <select id="rcFBar" aria-label="Filtrar por barrio" onchange="renderReclamosD()"></select>
+        </div>
+        <div id="rcTabla" style="overflow-x:auto"></div></div>
+    </div>
+
     <div id="v-analisis" style="display:none">
       <div class="page-h"><div><h1>Análisis</h1><div class="sub">Inteligencia territorial y demográfica sobre el padrón real de Iguazú.</div></div></div>
       <div class="panel"><h2><span class="ti ti-map-search"></span> Cobertura territorial — dónde sos fuerte y dónde estás ciego</h2>
@@ -414,7 +533,7 @@ const SUPABASE_URL='https://qgogamniszilcefqvtcq.supabase.co';
 const SUPABASE_KEY='sb_publishable_RtlHSBqEDAi-aCfF6ZzKAg_RHg968Cr';
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{global:{fetch:fetchLimpio}});
 
-let REG=[],REF=[],EV=[],AUTOS=[],FISC=[],VISI=[],COLAB=[];
+let REG=[],REF=[],EV=[],AUTOS=[],FISC=[],VISI=[],COLAB=[],RECL=[];
 const PESO={porconv:0,cont:0.35,prom:0.55,conf:0.80};
 let charts={},vistaActual='resumen';
 
@@ -456,6 +575,7 @@ async function cargarTodo(){
     REG=regs;REF=(r2.data||[]);EV=r3.data||[];AUTOS=r4.data||[];FISC=r5.data||[];
     // visitas: tabla nueva, puede no existir todavía (si no corrió el SQL) — tolerante
     try{const rv=await sb.from('visitas').select('*');VISI=rv.data||[];}catch(e){VISI=[];}
+    try{const rr=await sb.from('reclamos').select('*').order('creado_en',{ascending:false});RECL=rr.data||[];}catch(e){RECL=[];}
     try{const rc=await sb.from('colaboradores').select('*');COLAB=rc.error?[]:(rc.data||[]);}catch(e){COLAB=[];}
     try{const [ra,rp]=await Promise.all([sb.from('actividades').select('*'),sb.from('plan_config').select('datos').eq('id',1).maybeSingle()]);
       PLAN_OK=!ra.error&&!rp.error;ACTS=ra.data||[];PLAN=rp.data?.datos||null;}catch(e){PLAN_OK=false;ACTS=[];}
@@ -664,8 +784,29 @@ async function borrarColab(id){
 }
 
 function irA(v){vistaActual=v;document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.v===v));
-  ['resumen','plan','estrategia','tareas','personas','equipo','moviles','fisca','agenda','analisis'].forEach(x=>document.getElementById('v-'+x).style.display=x===v?'block':'none');
+  marcarBotnav(v);window.scrollTo(0,0);
+  ['resumen','plan','estrategia','tareas','personas','equipo','moviles','fisca','agenda','reclamos','analisis'].forEach(x=>document.getElementById('v-'+x).style.display=x===v?'block':'none');
   renderTodo();}
+/* ===== MENÚ DEL CELULAR (se arma solo con las secciones del menú lateral) ===== */
+const BOT_FIJOS=['resumen','personas','moviles','agenda'];
+function armarBotnav(){
+  const items=[...document.querySelectorAll('.side .nav-item')].map(n=>({v:n.dataset.v,ic:n.querySelector('.ti').className,tx:n.querySelector('span:last-child').textContent}));
+  const corto={resumen:'Inicio',personas:'Personas',moviles:'Móviles',agenda:'Agenda'};
+  document.getElementById('botnav').innerHTML=items.filter(i=>BOT_FIJOS.includes(i.v)).map(i=>
+    `<button type="button" data-v="${i.v}" onclick="irA('${i.v}')"><span class="${i.ic}" aria-hidden="true"></span>${corto[i.v]||i.tx}</button>`).join('')+
+    '<button type="button" data-v="__mas" onclick="abrirMas()" aria-haspopup="dialog"><span class="ti ti-dots" aria-hidden="true"></span>Más</button>';
+  document.getElementById('masGrid').innerHTML=items.map(i=>
+    `<button type="button" data-v="${i.v}" onclick="cerrarMas();irA('${i.v}')"><span class="${i.ic}" aria-hidden="true"></span>${i.tx}</button>`).join('');
+  marcarBotnav(vistaActual);
+}
+function marcarBotnav(v){
+  const fijo=BOT_FIJOS.includes(v);
+  document.querySelectorAll('#botnav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v||(b.dataset.v==='__mas'&&!fijo)));
+  document.querySelectorAll('#masGrid button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+}
+function abrirMas(){document.getElementById('masSheet').classList.add('open');}
+function cerrarMas(){document.getElementById('masSheet').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')cerrarMas();});
 function renderTodo(){
   if(vistaActual==='resumen')renderResumen();
   if(vistaActual==='plan')renderPlan();
@@ -676,7 +817,52 @@ function renderTodo(){
   if(vistaActual==='moviles')renderMoviles();
   if(vistaActual==='fisca')renderFisca();
   if(vistaActual==='agenda')renderAgenda();
+  if(vistaActual==='reclamos')renderReclamosD();
   if(vistaActual==='analisis'){renderCobertura();renderEdades();renderBarrio();renderTablaRefs();}
+}
+/* ===== RECLAMOS DE VECINOS ===== */
+const RC_CATS=[['calles','🛣','Calles'],['luz','💡','Luz'],['agua','💧','Agua / cloacas'],['basura','🗑','Basura'],['seguridad','🚓','Seguridad'],['salud','🏥','Salud'],['verde','🌳','Plazas / verde'],['otro','📝','Otro']];
+const RC_EST={pendiente:['Pendiente','var(--rojo)'],gestion:['En gestión','var(--amarillo)'],resuelto:['Resuelto','var(--verde-ok)']};
+const rcCat=id=>RC_CATS.find(c=>c[0]===id)||RC_CATS[RC_CATS.length-1];
+let _mapRc=null,_capaRc=null;
+function renderReclamosD(){
+  const abiertos=RECL.filter(r=>r.estado!=='resuelto'),res=RECL.length-abiertos.length;
+  const porBarrio={};abiertos.forEach(r=>{const b=r.barrio||'Sin barrio';porBarrio[b]=(porBarrio[b]||0)+1;});
+  const top=Object.entries(porBarrio).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('rcKpis').innerHTML=`
+    <div class="kpi"><span class="ti ti-alert-circle" style="color:var(--rojo)"></span><div class="n">${abiertos.length}</div><div class="l">reclamos abiertos</div></div>
+    <div class="kpi"><span class="ti ti-progress" style="color:var(--amarillo)"></span><div class="n">${RECL.filter(r=>r.estado==='gestion').length}</div><div class="l">en gestión</div></div>
+    <div class="kpi"><span class="ti ti-circle-check" style="color:var(--verde-ok)"></span><div class="n">${res}</div><div class="l">resueltos${RECL.length?' ('+Math.round(res/RECL.length*100)+'%)':''}</div></div>
+    <div class="kpi"><span class="ti ti-map-pin" style="color:var(--tierra)"></span><div class="n" style="font-size:20px">${top.length?top[0][0]:'—'}</div><div class="l">barrio con más reclamos abiertos</div></div>`;
+  const vacio='<div class="empty">Todavía no hay reclamos cargados. Se cargan desde la app del celular, sección «Reclamos».</div>';
+  document.getElementById('rcCatBars').innerHTML=RECL.length?barras(RECL.map(r=>r.categoria),RC_CATS.map(c=>[c[0],c[1]+' '+c[2],'var(--selva)']).filter(o=>RECL.some(r=>r.categoria===o[0]))):vacio;
+  document.getElementById('rcBarBars').innerHTML=top.length?barras(abiertos.map(r=>r.barrio||'Sin barrio'),top.slice(0,10).map(([b])=>[b,b,'var(--tierra)'])):'<div class="empty">Sin reclamos abiertos.</div>';
+  // filtros (se rellenan conservando la elección)
+  const fc=document.getElementById('rcFCat'),fb=document.getElementById('rcFBar'),vc=fc.value,vb=fb.value;
+  fc.innerHTML='<option value="">Tipo: todos</option>'+RC_CATS.map(c=>`<option value="${c[0]}">${c[1]} ${c[2]}</option>`).join('');fc.value=vc;
+  fb.innerHTML='<option value="">Barrio: todos</option>'+[...new Set(RECL.map(r=>r.barrio).filter(Boolean))].sort().map(b=>`<option>${b}</option>`).join('');fb.value=vb;
+  const fe=document.getElementById('rcFEst').value;
+  const lista=RECL.filter(r=>(fe==='abiertos'?r.estado!=='resuelto':!fe||r.estado===fe)&&(!fc.value||r.categoria===fc.value)&&(!fb.value||r.barrio===fb.value));
+  document.getElementById('rcTabla').innerHTML=lista.length?'<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Barrio</th><th>Reclamo</th><th>Vecino</th><th>Cargó</th><th>Estado</th></tr></thead><tbody>'+
+    lista.map(r=>{const c=rcCat(r.categoria),d=new Date(r.creado_en);return `<tr><td>${d.getDate()}/${d.getMonth()+1}</td><td>${c[1]} ${c[2]}</td><td>${r.barrio||'—'}</td><td style="max-width:360px">${r.descripcion}${r.lat?' 📍':''}</td><td>${r.contacto_nom||'—'}</td><td>${r.creado_por_nom||'—'}</td>
+      <td><select aria-label="Estado" onchange="estadoReclamoD('${r.id}',this.value)" style="font-weight:700;color:${(RC_EST[r.estado]||RC_EST.pendiente)[1]}">${Object.entries(RC_EST).map(([k,v])=>`<option value="${k}" ${r.estado===k?'selected':''}>${v[0]}</option>`).join('')}</select></td></tr>`;}).join('')+'</tbody></table>'
+    :(RECL.length?'<div class="empty">No hay reclamos con esos filtros.</div>':vacio);
+  // mapa
+  if(!window.L)return;
+  if(!_mapRc){_mapRc=L.map('mapaRc').setView([-25.599,-54.573],13);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(_mapRc);_capaRc=L.layerGroup().addTo(_mapRc);}
+  setTimeout(()=>_mapRc.invalidateSize(),60);
+  _capaRc.clearLayers();
+  const pts=lista.filter(r=>r.lat&&r.lng);
+  pts.forEach(r=>{const c=rcCat(r.categoria),e=RC_EST[r.estado]||RC_EST.pendiente;
+    L.marker([r.lat,r.lng],{icon:L.divIcon({className:'',html:`<div style="font-size:22px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))">${c[1]}</div>`,iconSize:[26,26],iconAnchor:[13,13]})})
+     .bindPopup(`<b>${c[2]}</b> · ${r.barrio||''}<br>${r.descripcion}<br><span style="color:${e[1]};font-weight:700">${e[0]}</span>`).addTo(_capaRc);});
+  if(pts.length)_mapRc.fitBounds(L.latLngBounds(pts.map(r=>[r.lat,r.lng])).pad(.25),{maxZoom:16});
+}
+async function estadoReclamoD(id,estado){
+  const r=RECL.find(x=>x.id===id);if(!r)return;
+  const obj={estado,resuelto_en:estado==='resuelto'?new Date().toISOString():null};
+  if(await upd('reclamos',id,obj)){Object.assign(r,obj);toast(estado==='resuelto'?'Resuelto ✓ — avisale al vecino desde la app':'Estado actualizado ✓',true);}
+  renderReclamosD();
 }
 async function upd(tabla,id,obj){const {error}=await sb.from(tabla).update(obj).eq('id',id);if(error){toast('Error al guardar: '+error.message);return false;}return true;}
 
@@ -2038,6 +2224,7 @@ function exportar(){
 }
 
 /* ===== inicio ===== */
+armarBotnav();
 if(accesoValido()){document.getElementById('gate').style.display='none';document.getElementById('app').style.display='flex';cargarTodo();}
 irA('resumen');
 
